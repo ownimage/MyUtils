@@ -1,0 +1,30 @@
+
+            QMainWindow { background: #f4f6f5; }
+            QDialog { background: #f4f6f5; }
+            QWidget { font-family: "Segoe UI"; font-size: 10pt; color: #233a35; }
+            QLabel#title { font-size: 24pt; font-weight: 600; }
+            QLabel#eyebrow { font-size: 8pt; font-weight: 600; color: #507269; }
+            QLabel#muted { color: #64756f; font-size: 9pt; }
+            QLabel#count { font-size: 22pt; font-weight: 600; }
+            QFrame#card { background: white; border: 1px solid #dce5e0; border-radius: 9px; }
+            QLineEdit, QPlainTextEdit, QTableWidget {
+                background: white; border: 1px solid #d4dfd9; border-radius: 5px;
+                selection-background-color: #d4eae1; selection-color: #163e32;
+            }
+            QLineEdit { padding: 8px; }
+            QComboBox { background: white; padding: 6px 12px; border: 1px solid #cbd9d1; border-radius: 5px; }
+            QComboBox QAbstractItemView { background: white; color: #233a35; selection-background-color: #d4eae1; selection-color: #163e32; }
+            QLineEdit:focus { border: 1px solid #24745d; }
+            QPlainTextEdit { padding: 5px; font-size: 9pt; }
+            QTableWidget { alternate-background-color: #f6f9f7; gridline-color: #edf1ef; }
+            QHeaderView::section { background: #eaf0ec; border: none; padding: 10px 8px; font-weight: 600; }
+            QPushButton { padding: 9px 16px; background: white; border: 1px solid #cbd9d1; border-radius: 5px; }
+            QPushButton:hover { background: #e8f1eb; }
+            QPushButton:pressed { background: #d5e8dd; }
+            QPushButton:disabled { color: #94a29b; background: #edf1ee; border-color: #dfe6e1; }
+            QPushButton#primary { color: white; background: #246b53; border-color: #246b53; font-weight: 600; }
+            QPushButton#primary:hover { background: #19553f; }
+            QPushButton#primary:disabled { color: #8da899; background: #dce7df; border-color: #dce7df; }
+            QProgressBar { background: #dfe8e2; border: none; border-radius: 3px; }
+            QProgressBar::chunk { background: #328267; border-radius: 3px; }
+        

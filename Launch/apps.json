@@ -1,0 +1,22 @@
+[
+  {
+    "id": "camera-import",
+    "name": "Camera Import",
+    "description": "Organise imported photos into folders by the date taken.",
+    "detail": "Preview and organise camera files",
+    "folder": "../Import",
+    "module": "reorg_gui",
+    "window_class": "ImportWindow",
+    "icon": "camera"
+  },
+  {
+    "id": "yearbook",
+    "name": "Yearbook",
+    "description": "Bring the year's slideshow photos together in one folder.",
+    "detail": "Collect photos from your slideshows",
+    "folder": "../Yearbook",
+    "module": "yearbook_gui",
+    "window_class": "YearbookWindow",
+    "icon": "book"
+  }
+]
