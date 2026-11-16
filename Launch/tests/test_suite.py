@@ -97,7 +97,7 @@ class SuiteTests(unittest.TestCase):
         dialog.appearance.setCurrentIndex(dialog.appearance.findData('dark'))
         dialog.save()
         state = self.context.preferences.state
-        self.assertEqual(state['order'], ['yearbook', 'camera-import'])
+        self.assertEqual(state['order'], ['yearbook', 'camera-import', 'slideshow'])
         self.assertTrue(state['new_windows']['yearbook'])
         self.assertFalse(state['new_windows']['camera-import'])
         self.assertEqual(state['accent'], '#a34dce')
@@ -140,7 +140,7 @@ class SuiteTests(unittest.TestCase):
             dialog.move_item(-1)
             dialog.save()
             self.assertIs(self.window.stack.currentWidget(), self.window.home)
-            self.assertEqual(list(self.window.tiles), ['yearbook', 'camera-import'])
+            self.assertEqual(list(self.window.tiles), ['yearbook', 'camera-import', 'slideshow'])
             self.assertIs(self.window.tiles_layout.itemAtPosition(0, 0).widget(), original_tiles['yearbook'])
             self.assertIs(self.window.tiles_layout.itemAtPosition(0, 1).widget(), original_tiles['camera-import'])
             camera_theme.assert_not_called()
@@ -168,11 +168,11 @@ class SuiteTests(unittest.TestCase):
             self.direct.append(page)
             self.assertEqual([action.text() for action in page.menuBar().actions()], ['Settings', 'Launch'])
             self.assertEqual(list(page.suite_binding.navigation.launch_actions),
-                             ['camera-import', 'yearbook'])
-        self.context.preferences.update(order=['yearbook', 'camera-import'])
+                             ['camera-import', 'yearbook', 'slideshow'])
+        self.context.preferences.update(order=['yearbook', 'camera-import', 'slideshow'])
         for page in self.direct:
             self.assertEqual(list(page.suite_binding.navigation.launch_actions),
-                             ['yearbook', 'camera-import'])
+                             ['yearbook', 'camera-import', 'slideshow'])
 
     def test_cross_process_settings_update_every_open_app(self):
         self.window.open_app('camera-import')
@@ -185,7 +185,7 @@ class SuiteTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.context.preferences.refresh()
         self.assertIn('#ae395a', self.window.styleSheet())
-        self.assertEqual(list(self.window.navigation.launch_actions), ['yearbook', 'camera-import'])
+        self.assertEqual(list(self.window.navigation.launch_actions), ['yearbook', 'camera-import', 'slideshow'])
         for page in self.window.pages.values():
             self.assertIn('#ae395a', page.styleSheet())
             self.assertTrue(page.is_dark)
@@ -243,7 +243,7 @@ class SuiteTests(unittest.TestCase):
         self.assertIsNone(apps._drag_item)
         self.assertIsNone(apps._drag_overlay)
         dialog.save()
-        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import'])
+        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import', 'slideshow'])
         self.assertTrue(self.context.preferences.state['new_windows']['camera-import'])
         dialog.deleteLater()
 
@@ -324,7 +324,7 @@ dialog.close()
             result = subprocess.run([sys.executable, '-c', script, str(self.settings)],
                                     capture_output=True, text=True, env=environment)
             self.assertEqual(result.returncode, 0, result.stderr)
-            metrics = json.loads(result.stdout)
+            metrics = json.loads(result.stdout.strip().splitlines()[-1])
             for actual, expected in zip(metrics['preview'], metrics['row']):
                 self.assertAlmostEqual(actual, expected, delta=1)
             self.assertEqual(metrics['overlay'], metrics['row'])
@@ -386,7 +386,7 @@ dialog.close()
         self.context.preferences.settings.setValue('suite/state', json.dumps({
             'order': ['yearbook', 'missing-app', 'yearbook'], 'accent': 32, 'new_windows': []}))
         self.context.preferences.refresh()
-        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import'])
+        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import', 'slideshow'])
         self.assertEqual(self.context.preferences.state['accent'], '#246b53')
 
 

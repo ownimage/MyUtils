@@ -6,6 +6,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
+from qfluentwidgets import Theme, setTheme, setThemeColor, qconfig
 
 
 BASE_STYLE = Path(__file__).with_name('base.qss').read_text(encoding='utf-8')
@@ -101,10 +102,36 @@ def apply_theme(window, appearance='system', accent='#246b53'):
         palette.setColor(role, QColor(colors.get(value, value)))
     for role in (QPalette.ColorRole.Text, QPalette.ColorRole.WindowText, QPalette.ColorRole.ButtonText):
         palette.setColor(QPalette.ColorGroup.Disabled, role, QColor(colors.get('#94a29b', '#94a29b')))
-    stylesheet = re.sub(r'#[0-9a-fA-F]{6}|(?<=background: )white',
-                        lambda match: colors.get(match[0], match[0]), BASE_STYLE + EXTRA_STYLE)
-    # Use the more readable text color for any accent, including pale custom colors.
-    stylesheet += f'\nQPushButton#primary {{ color: {_foreground(accent)}; }}'
-    window.setStyleSheet(stylesheet)
+    theme = Theme.DARK if dark else Theme.LIGHT
+    if qconfig.theme != theme:
+        setTheme(theme)
+    if qconfig.get(qconfig.themeColor) != QColor(accent):
+        setThemeColor(accent)
+    # Leave Fluent controls' own styles intact; style only suite surfaces.
+    surface = colors['#f4f6f5']
+    card = colors['white']
+    ink = colors['#233a35']
+    muted = colors['#64756f']
+    border = colors['#dce5e0']
+    window.setStyleSheet(f"""
+        QMainWindow, QDialog, QWidget#home {{ background: {surface}; }}
+        QLabel {{ color: {ink}; background: transparent; }}
+        QLabel#title {{ font-size: 26pt; font-weight: 600; }}
+        QLabel#eyebrow {{ font-size: 9pt; font-weight: 600; color: {muted}; }}
+        QLabel#muted, QLabel#subtitle {{ color: {muted}; }}
+        QLabel#count {{ font-size: 24pt; font-weight: 600; }}
+        QFrame#card, QPushButton#tile {{ background: {card}; border: 1px solid {border}; border-radius: 12px; }}
+        QPushButton#tile:hover {{ border: 1px solid {accent}; }}
+        QLabel#tileTitle {{ font-size: 19pt; font-weight: 600; }}
+        QLabel#tileNumber, QLabel#tileLaunch {{ color: {accent}; }}
+        QMenuBar {{ background: {surface}; color: {ink}; padding: 5px 18px; }}
+        QMenuBar::item {{ padding: 6px 12px; }}
+        QMenu {{ background: {card}; color: {ink}; padding: 5px; }}
+        QMenu::item {{ padding: 7px 32px 7px 14px; }}
+        QMenu::item:selected {{ background: {selection}; }}
+        QTabWidget::pane {{ background: {card}; border: 1px solid {border}; border-radius: 8px; }}
+        QTabBar::tab {{ background: {surface}; padding: 10px 22px; color: {ink}; }}
+        QTabBar::tab:selected {{ border-bottom: 2px solid {accent}; }}
+    """)
     window.setPalette(palette)
     return dark

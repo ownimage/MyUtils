@@ -8,6 +8,8 @@ from PySide6.QtWidgets import (
     QMessageBox, QPushButton, QTabWidget, QVBoxLayout, QWidget,
 )
 
+from .fluent import QPushButton, QLineEdit, QPlainTextEdit, QProgressBar, QTableWidget, QComboBox, PrimaryPushButton, QDialogButtonBox
+
 from .preferences import DEFAULT_ACCENT
 from .app_list import AppList
 from .theme import apply_theme
@@ -17,7 +19,7 @@ class SettingsDialog(QDialog):
     def __init__(self, context, parent=None):
         super().__init__(parent)
         self.context = context
-        self.setWindowTitle('Settings · Photo Tools')
+        self.setWindowTitle('Settings Â· Photo Tools')
         self.resize(640, 510)
         self.setMinimumSize(580, 460)
         layout = QVBoxLayout(self)
@@ -68,7 +70,7 @@ class SettingsDialog(QDialog):
         reset.clicked.connect(lambda: self.accent.setText(DEFAULT_ACCENT))
         row.addWidget(reset)
         layout.addLayout(row)
-        self.sample = QPushButton('Accent preview')
+        self.sample = PrimaryPushButton('Accent preview')
         self.sample.setObjectName('primary')
         self.sample.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         layout.addWidget(self.sample, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -147,6 +149,12 @@ class SettingsDialog(QDialog):
         self.color_error.setText('Enter a colour name or a hex value such as #246b53.' if valid
                                  else 'Enter a valid, fully opaque colour before saving.')
         apply_theme(self, self.appearance.currentData(), color.name() if valid else DEFAULT_ACCENT)
+
+    def done(self, result):
+        # Fluent's theme is process-wide: discard an unsaved colour preview.
+        state = self.context.preferences.state
+        apply_theme(self, state['appearance'], state['accent'])
+        super().done(result)
 
     def save(self):
         color = QColor(self.accent.text().strip())

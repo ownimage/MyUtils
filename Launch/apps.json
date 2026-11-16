@@ -18,5 +18,15 @@
     "module": "yearbook_gui",
     "window_class": "YearbookWindow",
     "icon": "book"
+  },
+  {
+    "id": "slideshow",
+    "name": "Slideshow",
+    "description": "Create titled slides from your highlight photos.",
+    "detail": "Edit dates and titles, then create slides",
+    "folder": "../Slideshow",
+    "module": "slideshow_gui",
+    "window_class": "SlideshowWindow",
+    "icon": "photo"
   }
 ]

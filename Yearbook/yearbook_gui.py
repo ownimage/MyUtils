@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
     QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar,
     QPushButton, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
+from photo_tools.fluent import QPushButton, QLineEdit, QPlainTextEdit, QProgressBar, QTableWidget, QComboBox, PrimaryPushButton
+
 
 from yearbook import CopyResult, PlannedFile, ScanResult, copy_plan, scan_directory
 
@@ -182,7 +184,7 @@ class YearbookWindow(QMainWindow):
         self.cancel.clicked.connect(self.cancel_work)
         self.cancel.hide()
         actions.addWidget(self.cancel)
-        self.create = QPushButton('Create yearbook')
+        self.create = PrimaryPushButton('Create yearbook')
         self.create.setObjectName('primary')
         self.create.clicked.connect(self.confirm_create)
         actions.addWidget(self.create)
