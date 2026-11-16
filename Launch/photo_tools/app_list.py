@@ -4,6 +4,7 @@ from PySide6.QtCore import QPoint, QTimer, Qt
 from PySide6.QtGui import QCursor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QAbstractItemView, QLabel, QListWidget
 
+from .fluent import QListWidget
 
 class RowDragPreview(QLabel):
     """Paint in a Qt window, avoiding Windows' native drag-cursor magnification."""

@@ -118,3 +118,10 @@ The shared `photo_tools` component supplies menus and styling to both apps.
 Switching apps preserves each page's current work. See the launcher README for
 setup, settings storage, and integration details. The command-line processing
 behaviour is unchanged.
+
+## Fluent Windows interface
+
+The launcher, Camera Import, Yearbook, Slideshow and shared settings now use
+QFluentWidgets controls. Install the updated requirements.txt in the Python
+environment used by the batch launcher. Slideshow appears automatically in the
+launcher, Launch menu and Settings > Apps, preserving existing preferences.

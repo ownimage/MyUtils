@@ -1,6 +1,6 @@
 # Photo Tools Launcher
 
-A shared desktop workspace for **Camera Import** and **Yearbook**. The workspace lives
+A shared desktop workspace for **Camera Import**, **Yearbook**, and **Slideshow**. The workspace lives
 in `P:\git\MyUtils` with the sibling folders `Launch`, `Import`, and `Yearbook`.
 
 ## Start
@@ -113,3 +113,10 @@ shared menus, saving and cancelling settings, cross-process updates, invalid
 preferences, unavailable apps, and closing while a hidden worker is running.
 The original app tests remain in their respective `tests` folders and use an
 isolated shared-settings file. Tests use temporary data, not real photo folders.
+
+## Fluent Windows interface
+
+The launcher, Camera Import, Yearbook, Slideshow and shared settings now use
+QFluentWidgets controls. Install the updated requirements.txt in the Python
+environment used by the batch launcher. Slideshow appears automatically in the
+launcher, Launch menu and Settings > Apps, preserving existing preferences.

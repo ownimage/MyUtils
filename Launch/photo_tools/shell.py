@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
     QMessageBox, QPushButton, QStackedWidget, QVBoxLayout, QWidget,
 )
 
+from .fluent import QPushButton, QLineEdit, QPlainTextEdit, QProgressBar, QTableWidget, QComboBox, PrimaryPushButton
+
 from .preferences import Preferences
 from .registry import load_apps, load_window_class
 from .settings_dialog import SettingsDialog
@@ -359,6 +361,13 @@ class SuiteWindow(QMainWindow):
             self.close_timer.start()
             event.ignore()
             return
+        for page in self.pages.values():
+            if getattr(page, 'dirty', False) and not page._discard():
+                event.ignore()
+                return
+        for page in self.pages.values():
+            if hasattr(page, 'dirty'):
+                page.dirty = False
         self.context.windows.discard(self)
         for page in self.pages.values():
             page.close()

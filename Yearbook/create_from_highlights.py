@@ -15,7 +15,7 @@ def process_dir(yearbook_dir, dir):
     print(f'dirname = {dirname}')
     for subdir in [f for f in dir.iterdir() if f.is_dir()]:
         print(f"subdir = {subdir}")
-        os.system(f'copy "P:\\git\\image-processing-examples\\08c Slideshow Python and Photoshop\\bootstrap.cmd" "{subdir}"')
+        os.system(f'copy "P:\\git\\MyUtils\\Slideshow\\bootstrap.cmd" "{subdir}"')
         os.chdir(subdir)
         os.system("bootstrap.cmd")
 

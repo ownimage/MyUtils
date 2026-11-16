@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
     QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar,
     QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
+from photo_tools.fluent import QPushButton, QLineEdit, QPlainTextEdit, QProgressBar, QTableWidget, QComboBox, PrimaryPushButton
+
 
 from reorg import MoveResult, PlannedFile, ScanResult, apply_plan, scan_directory
 
@@ -178,7 +180,7 @@ class ImportWindow(QMainWindow):
         self.cancel.clicked.connect(self.cancel_work)
         self.cancel.hide()
         actions.addWidget(self.cancel)
-        self.organise = QPushButton('Organise files')
+        self.organise = PrimaryPushButton('Organise files')
         self.organise.setObjectName('primary')
         self.organise.clicked.connect(self.confirm_organise)
         actions.addWidget(self.organise)
