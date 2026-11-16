@@ -29,8 +29,8 @@ shared Python explicitly. Do not create environments in the application folders.
 
 ## Run all tests
 
-```powershell
-.\venv\Scripts\python.exe .\run_tests.py
+```shell
+venv\Scripts\activate.bat && python .\run_tests.py
 ```
 
 This runs the Launch, Camera Import, Yearbook and Slideshow suites in separate
