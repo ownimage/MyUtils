@@ -68,3 +68,7 @@ Type a font-name prefix or use the font dropdown's Up/Down arrows for live previ
 
 **Create slideshow** also writes `slideshow/template.json` alongside the output
 images, using the exact template snapshot for that run.
+
+Slideshow creation automatically uses the available logical CPUs. Text/glow
+overlays are prepared once per distinct title/date, then reused by image workers.
+Cancel stops publishing new results and waits for active temporary jobs to finish.

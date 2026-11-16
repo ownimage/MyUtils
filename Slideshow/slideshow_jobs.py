@@ -6,10 +6,15 @@ import os
 import shutil
 import json
 import tempfile
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+from threading import Event
+from PySide6.QtGui import QImage
 from dataclasses import dataclass
 from pathlib import Path
 
-from template_render import default_template, validate_template, render_file, ensure_fonts, preferred_template
+from template_render import (validate_template, ensure_fonts, preferred_template,
+                             render_overlay, render_prepared_file, missing_fonts)
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATE_FILE = 'template.json'
@@ -131,39 +136,124 @@ def save_slides(folder, slides, template=None):
     _atomic_text(folder / 'slideshow' / CSV_FILE, write_csv)
 
 
+def render_worker_count(total, max_workers=None):
+    if max_workers is not None and (isinstance(max_workers,bool) or not isinstance(max_workers,int) or max_workers < 1):
+        raise ValueError('Worker count must be a positive integer.')
+    return min(max(1,total), max_workers or os.cpu_count() or 1)
+
+
+def _render_one(source, target, title, date, template, overlay, renderer, stopping):
+    if stopping.is_set():
+        return None
+    if not source.is_file() or source.is_symlink():
+        raise ValueError('Missing or linked highlight image: ' + source.name)
+    target.parent.mkdir()
+    shutil.copy2(source,target)
+    if stopping.is_set():
+        return None
+    if renderer is not None:
+        renderer(target,title,date)
+    else:
+        render_prepared_file(target,overlay,template)
+    return target
+
+
 def render_slides(folder, slides, *, cancelled=lambda: False, progress=lambda *args: None,
-                  renderer=None, template=None):
+                  renderer=None, template=None, max_workers=None):
     folder = event_folder(folder)
+    slides = list(slides)
+    workers = render_worker_count(len(slides),max_workers)
+    if not slides or cancelled():
+        return 0
     default_date, default_title = defaults(folder)
     template = validate_template(template if template is not None else load_project(folder)['template'])
+    names = set()
+    for slide in slides:
+        if Path(slide.image).name != slide.image or '/' in slide.image or '\\' in slide.image:
+            raise ValueError('Invalid image filename: ' + slide.image)
+        key = slide.image.casefold()
+        if key in names:
+            raise ValueError('Duplicate slideshow filename: ' + slide.image)
+        names.add(key)
     if renderer is None:
         ensure_fonts()
+        absent = missing_fonts(template)
+        if absent:
+            raise ValueError('Missing font: ' + ', '.join(absent) + '. Choose another font in Edit template.')
     output = folder / 'slideshow'
     output.mkdir(exist_ok=True)
     completed = 0
-    for slide in slides:
-        if cancelled():
-            break
-        # Only direct highlight children may be rendered, even for edited data files.
-        if Path(slide.image).name != slide.image or '/' in slide.image or '\\' in slide.image:
-            raise ValueError('Invalid image filename: ' + slide.image)
-        source = folder / 'highlight' / slide.image
-        if not source.is_file() or source.is_symlink():
-            raise ValueError('Missing or linked highlight image: ' + slide.image)
-        # Render a fresh copy every time. A failure leaves an existing slide intact.
-        with tempfile.TemporaryDirectory(prefix='.render-', dir=output) as temporary:
-            target = Path(temporary) / slide.image
-            shutil.copy2(source, target)
-            date, title = slide.date or default_date, slide.title or default_title
-            if renderer is not None:
-                renderer(target, title, date)
+    stopping = Event()
+    # Nothing is published by workers. They only prepare isolated image copies.
+    with tempfile.TemporaryDirectory(prefix='.render-',dir=output) as temporary:
+        staging = Path(temporary)
+        overlay_directory = staging / 'overlays'
+        overlay_directory.mkdir()
+        memory_cache = OrderedDict()
+        saved_overlays = {}
+
+        def get_overlay(title,date):
+            key = (title,date)
+            if key in memory_cache:
+                image = memory_cache.pop(key)
+            elif key in saved_overlays:
+                image = QImage(str(saved_overlays[key]))
+                if image.isNull():
+                    raise OSError('Could not read cached text overlay.')
             else:
-                render_file(target, title, date, template)
-            if completed == 0:
-                # Record the exact run snapshot before publishing its first image.
-                _atomic_text(output / TEMPLATE_FILE,
-                             lambda stream: json.dump(template, stream, ensure_ascii=False, indent=2))
-            os.replace(target, output / slide.image)
-        completed += 1
-        progress(completed, len(slides), slide.image)
+                # Only this coordinator creates fonts, paths and text/glow pixels.
+                image = render_overlay(title,date,template)
+                path = overlay_directory / (str(len(saved_overlays))+'.png')
+                if not image.save(str(path),'PNG'):
+                    raise OSError('Could not save cached text overlay.')
+                saved_overlays[key] = path
+            memory_cache[key] = image
+            # PNGs retain every distinct overlay without unbounded image RAM.
+            while len(memory_cache) > min(workers,8):
+                memory_cache.popitem(last=False)
+            return image
+
+        executor = ThreadPoolExecutor(max_workers=workers,thread_name_prefix='slideshow')
+        pending = {}
+        next_index = 0
+        try:
+            while next_index < len(slides) or pending:
+                if cancelled():
+                    break
+                while next_index < len(slides) and len(pending) < workers:
+                    if cancelled():
+                        break
+                    slide = slides[next_index]
+                    title, date = slide.title or default_title, slide.date or default_date
+                    overlay = get_overlay(title,date) if renderer is None else None
+                    if cancelled():
+                        break
+                    source = folder / 'highlight' / slide.image
+                    target = staging / str(next_index) / slide.image
+                    future = executor.submit(_render_one,source,target,title,date,
+                                             template,overlay,renderer,stopping)
+                    pending[future] = (next_index,slide)
+                    next_index += 1
+                if cancelled() or not pending:
+                    break
+                done, _ = wait(pending,timeout=.05,return_when=FIRST_COMPLETED)
+                for future in sorted(done,key=lambda item:pending[item][0]):
+                    if cancelled():
+                        break
+                    _,slide = pending.pop(future)
+                    target = future.result()
+                    if target is None:
+                        continue
+                    if completed == 0:
+                        _atomic_text(output / TEMPLATE_FILE,
+                                     lambda stream: json.dump(template,stream,ensure_ascii=False,indent=2))
+                    os.replace(target,output / slide.image)
+                    completed += 1
+                    progress(completed,len(slides),slide.image)
+        finally:
+            stopping.set()
+            for future in pending:
+                future.cancel()
+            # In-flight image work finishes in staging, then is discarded on cancel/error.
+            executor.shutdown(wait=True,cancel_futures=True)
     return completed

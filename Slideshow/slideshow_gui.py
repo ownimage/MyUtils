@@ -12,7 +12,7 @@ from PySide6.QtCore import QSettings, QThread, QUrl, Qt, Signal, QSize
 from PySide6.QtGui import QDesktopServices, QImageReader, QPixmap
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QLabel, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView, QSplitter, QSizePolicy, QStackedWidget)
-from slideshow_jobs import Slide, event_folder, load_slides, save_slides, render_slides, defaults, load_project, save_template
+from slideshow_jobs import Slide, event_folder, load_slides, save_slides, render_slides, defaults, load_project, save_template, render_worker_count
 
 from template_render import ensure_fonts, default_template, render_image
 from template_editor import TemplateEditor
@@ -383,7 +383,7 @@ class SlideshowWindow(QMainWindow):
         self.progress.setRange(0, self.table.rowCount())
         self.progress.setValue(0)
         self.log.clear()
-        self.status.setText('Creating slides…')
+        self.status.setText(f'Creating slides using up to {render_worker_count(self.table.rowCount())} workers…')
         self.worker = RenderWorker(self.loaded_folder, self.slides(), self, template=self.template_settings)
         self.worker.progress.connect(self._progress)
         self.worker.result.connect(self._result)
@@ -412,7 +412,7 @@ class SlideshowWindow(QMainWindow):
     def cancel_work(self):
         if self.worker:
             self.worker.requestInterruption()
-            self.status.setText('Stopping after the current image finishes…')
+            self.status.setText('Stopping… waiting for images already in progress.')
 
     def show_folder(self):
         if self.loaded_folder:

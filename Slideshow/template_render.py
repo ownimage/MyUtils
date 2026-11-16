@@ -133,19 +133,14 @@ def load_photo(path):
     return image
 
 
-def render_image(photo, title, date, template):
+def render_overlay(title, date, template):
+    """Render text once in the coordinator; workers only read this alpha image."""
     ensure_fonts()
-    image = QImage(1920, 1080, QImage.Format.Format_RGB32)
-    image.fill(QColor(template['background']))
-    image.setDotsPerMeterX(round(300 / .0254))
-    image.setDotsPerMeterY(round(300 / .0254))
+    image = QImage(1920, 1080, QImage.Format.Format_ARGB32_Premultiplied)
+    image.fill(Qt.GlobalColor.transparent)
     painter = QPainter(image)
-    painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     try:
-        if photo is not None and not photo.isNull():
-            size = photo.size().scaled(QSize(1920,1080), Qt.AspectRatioMode.KeepAspectRatio)
-            painter.drawImage(QRectF((1920-size.width())/2, (1080-size.height())/2,
-                                     size.width(), size.height()), photo)
         for name, text in (('title', title), ('date', date)):
             layer = template[name]
             if not layer['enabled'] or not text:
@@ -169,11 +164,38 @@ def render_image(photo, title, date, template):
     return image
 
 
+def compose_image(photo, overlay, template):
+    """Composite independent images only; no font or GUI work occurs here."""
+    image = QImage(1920, 1080, QImage.Format.Format_RGB32)
+    image.fill(QColor(template['background']))
+    image.setDotsPerMeterX(round(300 / .0254))
+    image.setDotsPerMeterY(round(300 / .0254))
+    painter = QPainter(image)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+    try:
+        if photo is not None and not photo.isNull():
+            size = photo.size().scaled(QSize(1920,1080), Qt.AspectRatioMode.KeepAspectRatio)
+            painter.drawImage(QRectF((1920-size.width())/2, (1080-size.height())/2,
+                                     size.width(), size.height()), photo)
+        painter.drawImage(QPointF(0,0),overlay)
+    finally:
+        painter.end()
+    return image
+
+
+def render_image(photo, title, date, template):
+    return compose_image(photo, render_overlay(title,date,template), template)
+
+
+def render_prepared_file(path, overlay, template):
+    image = compose_image(load_photo(path), overlay, template)
+    if not image.save(str(path), 'JPEG', 100):
+        raise OSError('Could not save slide: ' + str(path))
+
+
 def render_file(path, title, date, template):
     template = validate_template(template)
     absent = missing_fonts(template)
     if absent:
         raise ValueError('Missing font: ' + ', '.join(absent) + '. Choose another font in Edit template.')
-    image = render_image(load_photo(path), title, date, template)
-    if not image.save(str(path), 'JPEG', 100):
-        raise OSError('Could not save slide: ' + str(path))
+    render_prepared_file(path,render_overlay(title,date,template),template)

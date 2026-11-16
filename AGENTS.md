@@ -160,10 +160,28 @@ and validation. Read it before making changes anywhere in this repository.
 - Blank CSV date/title cells use event-folder defaults; blank is not a hide flag.
   Layer visibility controls hide text. Settings are event-specific. Opening an
   old layout with an unavailable font requires selecting an installed font.
-- Native rendering uses fresh highlight copies in temporary output folders,
-  then replaces each destination after success. Original highlights and previous
-  outputs survive errors. Cancellation is between images. RenderWorker is a
-  QThread with a template snapshot, without a subprocess.
+- RenderWorker is the QThread coordinator with a validated template snapshot.
+  It runs a bounded ThreadPoolExecutor with min(photo count, logical CPU count)
+  workers; max_workers is an optional backend/test override. Jobs only decode,
+  composite and JPEG-save unique temporary photo copies. The coordinator alone
+  publishes results, writes the run template snapshot and emits progress. Photos
+  finish out of order; do not write tests that assume alphabetical completion.
+- Render title/date/glow once per distinct resolved pair into an ARGB transparent
+  overlay, entirely on the coordinator. No pool worker may use fonts, text_path,
+  ensure_fonts or widgets. render_prepared_file/compose_image are font-free.
+  Preview and normal render_file use the same overlay/composition implementation.
+- Keep up to min(worker count,8) overlay QImages in memory and retain PNGs in the
+  run staging directory. Reload evicted overlays from PNG without rerendering
+  text. Workers share overlays read-only and paint only their independent output
+  QImages. Qt's thread-painting guidance is documented at
+  https://doc.qt.io/qt-6.10/threads-modules.html (Painting in Threads).
+- Submit no more than one job per worker. Cancel stops new scheduling/publication;
+  in-flight jobs finish only in staging and their results are discarded. On error,
+  stop publishing, cancel pending work and wait before temporary cleanup. Existing
+  published slides remain. Duplicate case-insensitive destinations are rejected.
+  The coordinator must save template.json successfully before publishing the
+  first result. A render failure or metadata-write error must not replace that
+  image or source. Progress callbacks run on the coordinator, not pool threads.
 - Legacy param.py/run.cmd/create_slide remain native. The CSV CLI still edits
   existing slideshow images in place, so refresh them from highlights first.
 
@@ -210,16 +228,14 @@ py -3.11 -m venv venv
 - Offscreen Qt may expose no installed fonts in a restricted environment.
   Register Windows Segoe UI with QFontDatabase in the visual-check harness when
   necessary; missing-glyph screenshots are not automatically a production bug.
-- Latest full validation on 2026-11-16: all 103 tests passed (Launch 18,
-  Import 27, Yearbook 19, Slideshow 39) after immediate Apply template saving,
-  embedded editing and native font navigation. Tests cover atomic user-default
-  writes, immutable system defaults, new-event fallback and event precedence,
-  missing/corrupt user files, Apply/Cancel and unsaved-close state, font prefix
-  typing (including spaces), arrow-key popup previews and Escape handling.
-  The embedded layout was visually checked inside the shared main window;
-  diff formatting passed. Apply-save tests verify immediate template persistence,
-  unchanged CSV/source images and safe failure with the editor kept open.
-  Date/title overrides remain CSV, separate from layout.
+- Latest full validation on 2026-11-16: all 113 tests passed (Launch 18,
+  Import 27, Yearbook 19, Slideshow 49) after parallel rendering and transparent
+  overlay reuse. Checks prove concurrent workers, CPU-count sizing, coordinator-only
+  font rendering, PNG cache reuse after memory eviction, transparent backgrounds,
+  cancellation without publishing in-flight results, duplicate-name rejection,
+  and byte-identical single-worker/parallel JPEGs. Existing defaults, CSV/template
+  persistence, source protection, embedded editing and snapshot tests also pass.
+  Diff formatting passed. Performance measurements are recorded below.
 
 - Root launcher move validated on 2026-11-16: batch smoke check passed
   from a different working folder and a path containing spaces; arguments and
@@ -279,4 +295,20 @@ py -3.11 -m venv venv
 
 - Output-template copy validated on 2026-11-16: all 42 Slideshow tests passed,
   including snapshot refresh, partial cancellation and template-write failure.
-  Diff formatting passed; the latest full-suite baseline remains 103 tests above.
+  This was the output-template baseline before the parallel-rendering change.
+
+- Parallel/overlay performance check on 2026-11-16 used 32 temporary 2400 x 1600
+  samples and an explicit system template, avoiding real user defaults. Single
+  worker: 3.63 s; automatic mode: 0.77 s. All 32 worker threads were used (21 peak
+  simultaneously active native jobs); sequential/parallel JPEG hashes matched.
+  Fonts are verified to render only on the coordinator; cache-eviction tests
+  verify text is not rerendered. Preserve cancellation and source/image safeguards.
+
+- Branching gotcha: after a squash merge, start the next feature from the latest
+  origin/main rather than continuing the old PR branch. Otherwise rebase can try
+  to replay already-merged commits and produce misleading add/add conflicts.
+  For this repair, main's tree exactly matched the old feature parent (84bb091),
+  so only the new parallel-rendering commit was replayed onto origin/main.
+  Feature file content was verified unchanged; all 113 tests passed after rebase.
+  The interrupted index/rebase/files were backed up under .git and the original
+  tip retained in refs/backup/slideshow-before-main-rebase-20261116.
