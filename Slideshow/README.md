@@ -92,14 +92,37 @@ supplies its template only when the new file is absent. Invalid active template
 settings report an error rather than silently resetting or overwriting them.
 
 The GUI renders from fresh highlight copies, avoiding stacked text on repeated
-runs. Source photos remain unchanged. Cancellation stops after the current
-image, keeping completed slides. Errors preserve the previous output image.
+runs. Source photos remain unchanged. Cancellation stops new scheduling and
+publication; already-running jobs finish in temporary storage and are discarded.
+Completed output slides are kept. Errors preserve the previous output for the
+failed image, stop further publication and wait for temporary work to finish.
 
 The original `bootstrap.cmd`, `param.py` and `run.cmd` remain usable. The CSV CLI
 edits slideshow images in place; refresh them from highlights before rerunning.
 The GUI does that preparation automatically. Yearbook keeps existing copies;
 replace specific old yearbook copies intentionally before recollecting updates.
 JPEG highlights produce JPEG files, but Yearbook currently collects only .jpg.
+
+## Parallel rendering and reusable overlays
+
+Creating a slideshow uses up to one worker per logical CPU, limited to the number
+of photos. The main view reports the worker count. Photos can complete in any
+order; progress counts completed files rather than assuming filename order.
+
+The coordinator renders title/date text and glow onto a transparent image once
+per distinct combination. Photos with the same text reuse that overlay; overrides
+get their own. Parallel workers only decode photos, composite the prepared alpha
+image and write JPEGs: no fonts, text paths or widgets are used in these workers.
+
+A small memory cache and temporary PNG cache keep overlay memory bounded even
+when many photos have different text. Only one job per worker is submitted at a
+time. The coordinator alone publishes completed images, writes the template
+snapshot and reports progress. Cancel/error cleanup waits for all active jobs
+before deleting temporary files. Duplicate output filenames are rejected.
+
+A 32-photo temporary test on the 32-logical-CPU machine measured 3.63 s with one
+worker and 0.77 s in automatic parallel mode, with byte-identical JPEGs. Actual
+speed depends on the photo sizes and storage device.
 
 ## Setup and tests
 
