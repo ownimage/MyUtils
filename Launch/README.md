@@ -1,20 +1,19 @@
 # Photo Tools Launcher
 
 A shared desktop workspace for **Camera Import**, **Yearbook**, and **Slideshow**. The workspace lives
-in `P:\git\MyUtils` with the sibling folders `Launch`, `Import`, and `Yearbook`.
+in `P:\git\MyUtils` with the sibling folders `Launch`, `Import`, `Yearbook`, and `Slideshow`.
 
 ## Start
 
-Double-click **launcher.bat** or **run_gui.bat** in this folder. The launcher uses
-this folder's `venv` if available, otherwise the existing environment in
-`../Import/venv`, then `python`.
+Double-click **launcher.bat** in the MyUtils root, or **run_gui.bat** in this
+Launch folder. The root batch file delegates to this folder's run_gui.bat. Every app
+uses the single top-level `../venv`, with dependencies from `../requirements.txt`.
+Follow [commands.md](../commands.md) for setup from the MyUtils root.
 
-For a separate environment, use Python 3.10 or newer:
+To start directly from this Launch folder:
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\python.exe -m pip install -r requirements.txt
-.\venv\Scripts\python.exe launcher.py
+..\venv\Scripts\python.exe launcher.py
 ```
 
 The Camera Import and Yearbook batch launchers still work. They start directly
@@ -101,11 +100,10 @@ an explicit settings-file path for isolated testing or a portable configuration.
 
 ## Checks
 
-Run from this folder with the environment above or the existing Camera Import
-environment:
+Run this suite from the Launch folder with the shared environment:
 
 ```powershell
-.\venv\Scripts\python.exe -m unittest discover -s tests -v
+..\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 Tests cover switching and preserving app state, new-window preferences, app order,
@@ -117,6 +115,5 @@ isolated shared-settings file. Tests use temporary data, not real photo folders.
 ## Fluent Windows interface
 
 The launcher, Camera Import, Yearbook, Slideshow and shared settings now use
-QFluentWidgets controls. Install the updated requirements.txt in the Python
-environment used by the batch launcher. Slideshow appears automatically in the
+QFluentWidgets controls. Install the top-level `../requirements.txt` in the shared `../venv`. Slideshow appears automatically in the
 launcher, Launch menu and Settings > Apps, preserving existing preferences.

@@ -49,21 +49,14 @@ are skipped. No source photos are moved or deleted.
 
 ### Python setup
 
-The launcher prefers this folder's `venv`, otherwise it reuses the Camera Import
-app's existing `..\Import\venv`, then tries `python`.
-No separate installation is needed if the Camera Import environment is available.
-
-For an independent installation, use Python 3.10 or newer:
-
-```powershell
-python -m venv venv
-.\venv\Scripts\python.exe -m pip install -r requirements.txt
-```
+All MyUtils apps use the top-level `../venv` and `../requirements.txt`.
+Follow the setup commands in [commands.md](../commands.md) from the MyUtils root.
+There is no separate environment or requirements file in this app folder.
 
 You can launch directly or pass an initial year folder:
 
 ```powershell
-.\venv\Scripts\python.exe yearbook_gui.py "D:\Photos\2026"
+..\venv\Scripts\python.exe yearbook_gui.py "D:\Photos\2026"
 .\yearbook_gui.bat "D:\Photos\2026"
 ```
 
@@ -72,7 +65,7 @@ You can launch directly or pass an initial year folder:
 The original command still works without PySide6:
 
 ```powershell
-python yearbook.py "D:\Photos\2026"
+..\venv\Scripts\python.exe yearbook.py "D:\Photos\2026"
 ```
 
 This retains the original script's behaviour, including replacing existing
@@ -86,17 +79,17 @@ Tests use temporary sample files; they do not touch your photo collection.
 GUI tests use Qt's offscreen platform.
 
 ```powershell
-.\venv\Scripts\python.exe -m unittest discover -s tests -v
+..\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-If reusing the Camera Import environment, substitute its Python path above.
+Run all app suites from the MyUtils root using the command in [commands.md](../commands.md).
 
 
 ## Shared Photo Tools launcher
 
 This app now participates in the workspace in `../Launch`. Its existing
 batch launcher opens this app directly, with the shared **Settings** and
-**Launch** menus. Start `../Launch/launcher.bat` for the front page.
+**Launch** menus. Start `../launcher.bat` for the front page.
 
 **Settings > Display** sets a shared accent colour and Light / Dark / Follow
 Windows appearance. The app's Appearance control also changes that shared
@@ -110,6 +103,5 @@ behaviour is unchanged.
 ## Fluent Windows interface
 
 The launcher, Camera Import, Yearbook, Slideshow and shared settings now use
-QFluentWidgets controls. Install the updated requirements.txt in the Python
-environment used by the batch launcher. Slideshow appears automatically in the
+QFluentWidgets controls. Install the top-level `../requirements.txt` in the shared `../venv`. Slideshow appears automatically in the
 launcher, Launch menu and Settings > Apps, preserving existing preferences.

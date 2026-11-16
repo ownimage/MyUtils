@@ -7,11 +7,59 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'Launch'))
 from photo_tools import apply_theme, bind_window, run_app
 from photo_tools.fluent import (QComboBox, QLineEdit, QPushButton, PrimaryPushButton,
                                QTableWidget, QPlainTextEdit, QProgressBar)
-from PySide6.QtCore import QSettings, QThread, QUrl, Qt, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QSettings, QThread, QUrl, Qt, Signal, QSize
+from PySide6.QtGui import QDesktopServices, QImageReader, QPixmap
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView)
+    QHBoxLayout, QLabel, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView, QSplitter, QSizePolicy)
 from slideshow_jobs import Slide, event_folder, load_slides, save_slides, render_slides, defaults
+
+
+class PhotoPreview(QLabel):
+    """A bounded, orientation-aware image that fits without stretching."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.image_path = None
+        self.source_pixmap = QPixmap()
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setWordWrap(True)
+        self.setMinimumSize(220, 160)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
+        self.setAccessibleName('Selected highlight image preview')
+        self.set_image(None)
+
+    def sizeHint(self):
+        return QSize(360, 260)
+
+    def set_image(self, path):
+        if path is not None and path == self.image_path:
+            return
+        self.image_path = path
+        self.source_pixmap = QPixmap()
+        self.clear()
+        if path is None:
+            self.setText('Select a photo to preview it.')
+            return
+        reader = QImageReader(str(path))
+        reader.setAutoTransform(True)
+        size = reader.size()
+        if size.isValid() and (size.width() > 1600 or size.height() > 1200):
+            reader.setScaledSize(size.scaled(QSize(1600, 1200), Qt.AspectRatioMode.KeepAspectRatio))
+        image = reader.read()
+        if image.isNull():
+            self.setText('Preview unavailable.\nThe image is missing or could not be read.')
+            return
+        self.source_pixmap = QPixmap.fromImage(image)
+        self._fit()
+
+    def _fit(self):
+        if not self.source_pixmap.isNull():
+            available = self.contentsRect().size() - QSize(12, 12)
+            self.setPixmap(self.source_pixmap.scaled(available,
+                Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._fit()
 
 
 class RenderWorker(QThread):
@@ -88,7 +136,30 @@ class SlideshowWindow(QMainWindow):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().hide()
         self.table.itemChanged.connect(self._edited)
-        layout.addWidget(self.table, 1)
+        self.table.currentCellChanged.connect(self._update_preview)
+        editor = QSplitter(Qt.Orientation.Horizontal)
+        editor.setChildrenCollapsible(False)
+        editor.addWidget(self.table)
+        preview_panel = QWidget()
+        preview_layout = QVBoxLayout(preview_panel)
+        preview_layout.setContentsMargins(12, 0, 0, 0)
+        preview_heading = QLabel('Selected photo')
+        preview_heading.setObjectName('eyebrow')
+        preview_layout.addWidget(preview_heading)
+        self.image_preview = PhotoPreview()
+        preview_layout.addWidget(self.image_preview, 1)
+        self.preview_filename = QLabel('')
+        self.preview_filename.setWordWrap(True)
+        self.preview_filename.setTextFormat(Qt.TextFormat.PlainText)
+        preview_layout.addWidget(self.preview_filename)
+        preview_hint = QLabel('Original highlight image')
+        preview_hint.setObjectName('muted')
+        preview_layout.addWidget(preview_hint)
+        editor.addWidget(preview_panel)
+        editor.setStretchFactor(0, 3)
+        editor.setStretchFactor(1, 2)
+        editor.setSizes([650, 380])
+        layout.addWidget(editor, 1)
         self.status = QLabel('Load an event to edit dates and titles. Photoshop is required to create slides.')
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
@@ -147,8 +218,20 @@ class SlideshowWindow(QMainWindow):
     def _folder_changed(self, text):
         if self.loaded_folder is not None and text != str(self.loaded_folder):
             self.loaded_folder = None
+            self._update_preview()
             self.status.setText('Load this event before saving or creating slides.')
             self._actions()
+
+    def _update_preview(self, *_):
+        row = self.table.currentRow()
+        item = self.table.item(row, 0) if row >= 0 else None
+        if self.loaded_folder is None or item is None:
+            self.image_preview.set_image(None)
+            self.preview_filename.setText('')
+            return
+        filename = item.text()
+        self.preview_filename.setText(filename)
+        self.image_preview.set_image(self.loaded_folder / 'highlight' / filename)
 
     def _discard(self):
         return not self.dirty or QMessageBox.question(self, 'Unsaved edits',
@@ -176,6 +259,12 @@ class SlideshowWindow(QMainWindow):
                     self.table.setItem(row, column, item)
             self.table.blockSignals(False)
             self.loaded_folder = event
+            self.image_preview.set_image(None)
+            if slides:
+                self.table.setCurrentCell(0, 0)
+            else:
+                self.table.setCurrentItem(None)
+            self._update_preview()
             self.folder.setText(str(event))
             self.settings.setValue('lastFolder', str(event))
             date, title = defaults(event)

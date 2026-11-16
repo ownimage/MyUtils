@@ -93,9 +93,9 @@ def render_slides(folder, slides, *, cancelled=lambda: False, progress=lambda *a
             if renderer is not None:
                 renderer(target, title, date)
             else:
-                python = ROOT / 'venv' / 'Scripts' / 'python.exe'
+                python = ROOT.parent / 'venv' / 'Scripts' / 'python.exe'
                 if not python.is_file():
-                    raise RuntimeError('Slideshow Python environment is missing. See README.md.')
+                    raise RuntimeError('Shared MyUtils Python environment is missing. See commands.md in the MyUtils folder.')
                 command = [str(python), str(ROOT / 'render_slide.py'), str(target), title, date]
                 result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
                                         errors='replace', creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))

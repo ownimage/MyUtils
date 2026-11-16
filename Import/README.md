@@ -14,30 +14,23 @@ Import folder/
 
 ## Install
 
-Use Python 3.10 or newer and install the dependencies in your environment.
-From this project folder on Windows:
-
-```powershell
-python -m venv venv
-.\venv\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-If you already have a virtual environment, use its Python to install the updated
-requirements. Activation is optional when using the full Python path below.
+All MyUtils apps use the top-level `../venv` and `../requirements.txt`.
+Follow the setup commands in [commands.md](../commands.md) from the MyUtils root.
+There is no separate environment or requirements file in this app folder.
 
 ## Desktop app
 
-On Windows, double-click **run_gui.bat** to launch using the project's `venv`.
+On Windows, double-click **run_gui.bat** to launch using the shared `../venv`.
 Alternatively, from a terminal:
 
 ```powershell
-.\venv\Scripts\python.exe reorg_gui.py
+..\venv\Scripts\python.exe reorg_gui.py
 ```
 
 You can also supply an initial folder:
 
 ```powershell
-.\venv\Scripts\python.exe reorg_gui.py "D:\Photos\Import"
+..\venv\Scripts\python.exe reorg_gui.py "D:\Photos\Import"
 ```
 
 1. Browse to the folder containing the imported images, or enter its path and
@@ -63,13 +56,13 @@ updates the app when the Windows colour mode changes, including while it is open
 The original command still works:
 
 ```powershell
-python reorg.py "D:\Photos\Import"
+..\venv\Scripts\python.exe reorg.py "D:\Photos\Import"
 ```
 
 Preview without moving anything:
 
 ```powershell
-python reorg.py "D:\Photos\Import" --dry-run
+..\venv\Scripts\python.exe reorg.py "D:\Photos\Import" --dry-run
 ```
 
 ## Behaviour
@@ -97,7 +90,7 @@ python reorg.py "D:\Photos\Import" --dry-run
 The tests create temporary sample images; they do not touch your photos.
 
 ```powershell
-.\venv\Scripts\python.exe -m unittest discover -s tests -v
+..\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 The GUI tests use Qt's offscreen platform and exercise previewing, moving,
@@ -108,7 +101,7 @@ cancellation, and closing while a worker is running.
 
 This app now participates in the workspace in `../Launch`. Its existing
 batch launcher opens this app directly, with the shared **Settings** and
-**Launch** menus. Start `../Launch/launcher.bat` for the front page.
+**Launch** menus. Start `../launcher.bat` for the front page.
 
 **Settings > Display** sets a shared accent colour and Light / Dark / Follow
 Windows appearance. The app's Appearance control also changes that shared
@@ -122,6 +115,5 @@ behaviour is unchanged.
 ## Fluent Windows interface
 
 The launcher, Camera Import, Yearbook, Slideshow and shared settings now use
-QFluentWidgets controls. Install the updated requirements.txt in the Python
-environment used by the batch launcher. Slideshow appears automatically in the
+QFluentWidgets controls. Install the top-level `../requirements.txt` in the shared `../venv`. Slideshow appears automatically in the
 launcher, Launch menu and Settings > Apps, preserving existing preferences.

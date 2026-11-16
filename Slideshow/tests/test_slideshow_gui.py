@@ -6,6 +6,8 @@ from pathlib import Path
 from unittest.mock import patch
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QImage, QColor
+from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from photo_tools.shell import SuiteContext, SuiteWindow
 from photo_tools.settings_dialog import SettingsDialog
@@ -22,7 +24,9 @@ class SlideshowGuiTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.event = self.root / '20260615 Holiday'
         (self.event / 'highlight').mkdir(parents=True)
-        (self.event / 'highlight/001.jpg').write_bytes(b'original')
+        image = QImage(640, 320, QImage.Format.Format_RGB32)
+        image.fill(QColor('red'))
+        image.save(str(self.event / 'highlight/001.jpg'))
         self.context = SuiteContext(self.app, settings_path=self.root / 'suite.ini')
         self.app._photo_tools_context = self.context
         self.window = SuiteWindow(self.context)
@@ -56,6 +60,52 @@ class SlideshowGuiTests(unittest.TestCase):
         self.window.show_home()
         self.window.open_app('slideshow')
         self.assertIs(self.page, self.window.pages['slideshow'])
+
+    def test_selected_photo_follows_date_and_title_cells(self):
+        image = QImage(320, 640, QImage.Format.Format_RGB32)
+        image.fill(QColor('blue'))
+        image.save(str(self.event / 'highlight/002.jpg'))
+        self.page.load()
+        preview = self.page.image_preview
+        self.assertEqual(preview.image_path.name, '001.jpg')
+        self.assertFalse(preview.source_pixmap.isNull())
+        self.assertEqual(preview.source_pixmap.size().width(), 640)
+        self.page.table.setCurrentCell(1, 1)
+        self.assertEqual(preview.image_path.name, '002.jpg')
+        self.assertEqual(self.page.preview_filename.text(), '002.jpg')
+        self.page.table.setCurrentCell(1, 2)
+        self.page.table.item(1, 2).setText('Edited while previewing')
+        self.assertEqual(preview.image_path.name, '002.jpg')
+        self.page.table.setFocus()
+        QTest.keyClick(self.page.table, Qt.Key.Key_Up)
+        self.assertEqual(preview.image_path.name, '001.jpg')
+        self.assertEqual(self.page.table.item(1, 2).text(), 'Edited while previewing')
+
+    def test_preview_preserves_aspect_ratio_and_clears_on_folder_change(self):
+        self.page.load()
+        preview = self.page.image_preview
+        preview.resize(300, 300)
+        preview._fit()
+        rendered = preview.pixmap()
+        self.assertAlmostEqual(rendered.width() / rendered.height(), 2, delta=.02)
+        self.page.folder.setText(str(self.root / 'other-event'))
+        self.assertIsNone(preview.image_path)
+        self.assertTrue(preview.pixmap().isNull())
+        self.assertFalse(self.page.create.isEnabled())
+
+    def test_unreadable_image_and_empty_event_clear_stale_preview(self):
+        self.page.load()
+        (self.event / 'highlight/002.jpg').write_bytes(b'invalid image')
+        self.page.load()
+        self.page.table.setCurrentCell(1, 0)
+        self.assertTrue(self.page.image_preview.source_pixmap.isNull())
+        self.assertIn('Preview unavailable', self.page.image_preview.text())
+        for image in (self.event / 'highlight').iterdir():
+            image.unlink()
+        self.page.load()
+        self.assertIsNone(self.page.image_preview.image_path)
+        self.assertEqual(self.page.preview_filename.text(), '')
+        self.assertFalse(self.page.create.isEnabled())
 
     def test_worker_failure_returns_to_editable_view(self):
         self.page.load()

@@ -2,7 +2,9 @@
 
 Open **slideshow_gui.bat** or choose **Slideshow** in the Photo Tools launcher.
 Select an event folder containing `highlight`, then **Load photos**. JPG and JPEG
-highlights are listed. Edit dates and titles in the table; blank cells use the
+highlights are listed. Select any date or title cell to see its original highlight
+image alongside the table. The first image is selected automatically; drag the
+divider to resize the preview. Edit dates and titles in the table; blank cells use the
 event folder name (for example `20260615 Holiday` gives `2026 06 15` and `Holiday`).
 
 **Save dates and titles** writes `slideshow/data.txt` with Image,Date,Title columns.
@@ -21,9 +23,9 @@ The GUI uses the shared appearance, accent colour, menus and app ordering from
 
 ## Setup
 
-Use Python 3.11 and install `requirements.txt` into this folder's `venv`.
-The Photoshop rendering worker uses `venv/Scripts/python.exe`, even when the
-GUI is opened from the launcher with Camera Import's Python environment.
+All apps use the top-level `../requirements.txt` and `../venv` (Python 3.11).
+Follow [commands.md](../commands.md) for shared setup. The GUI, Photoshop worker,
+and original run.cmd all use this same environment. Photoshop must be installed.
 
 ## Original command-line workflow
 
@@ -37,5 +39,6 @@ remove the specific old copies before collecting regenerated slides again.
 
 ## Checks
 
-Run `python -m unittest discover -s tests -v` using the suite Python environment.
+From this Slideshow folder, run `..\venv\Scripts\python.exe ..\run_tests.py`
+to run all app suites, including Slideshow. See [commands.md](../commands.md).
 Tests use temporary folders and a simulated renderer, without changing photos.

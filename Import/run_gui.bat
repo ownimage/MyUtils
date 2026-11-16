@@ -1,17 +1,19 @@
 @echo off
 setlocal
 pushd "%~dp0"
-if not exist "venv\Scripts\python.exe" (
-    echo The project Python environment was not found. See README.md for setup.
+if errorlevel 1 exit /b 1
+set "suite_python=%~dp0..\venv\Scripts\python.exe"
+if not exist "%suite_python%" (
+    echo The shared MyUtils Python environment is missing. See ..\commands.md for setup.
     pause
     popd
     exit /b 1
 )
-"venv\Scripts\python.exe" "reorg_gui.py"
+"%suite_python%" -X utf8 "reorg_gui.py" %*
 set "gui_exit_code=%errorlevel%"
 if not "%gui_exit_code%"=="0" (
     echo.
-    echo Camera Import could not finish. See the error above.
+    echo Camera Import could not finish. See the error above and ..\commands.md.
     pause
 )
 popd

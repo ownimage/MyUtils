@@ -1,5 +1,7 @@
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 from pathlib import Path
 from slideshow_jobs import Slide, defaults, load_slides, save_slides, render_slides
 
@@ -49,6 +51,14 @@ class SlideshowTests(unittest.TestCase):
             progress=lambda *args: completed.append(args))
         self.assertEqual(count, 1)
         self.assertFalse((self.folder / 'slideshow/002.JPG').exists())
+
+    def test_photoshop_worker_uses_shared_environment(self):
+        shared_python = Path(__file__).resolve().parents[2] / 'venv' / 'Scripts' / 'python.exe'
+        with patch('slideshow_jobs.subprocess.run', return_value=SimpleNamespace(returncode=0)) as run:
+            self.assertEqual(render_slides(self.folder, [Slide('001.jpg')]), 1)
+        command = run.call_args.args[0]
+        self.assertEqual(Path(command[0]), shared_python)
+        self.assertEqual(Path(command[1]).name, 'render_slide.py')
 
     def test_rejects_image_outside_highlights(self):
         with self.assertRaises(ValueError):
