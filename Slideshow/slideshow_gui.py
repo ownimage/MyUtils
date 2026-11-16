@@ -1,6 +1,7 @@
 """Fluent desktop view for preparing an event slideshow."""
 from __future__ import annotations
 import sys
+import copy
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'Launch'))
@@ -10,8 +11,11 @@ from photo_tools.fluent import (QComboBox, QLineEdit, QPushButton, PrimaryPushBu
 from PySide6.QtCore import QSettings, QThread, QUrl, Qt, Signal, QSize
 from PySide6.QtGui import QDesktopServices, QImageReader, QPixmap
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView, QSplitter, QSizePolicy)
-from slideshow_jobs import Slide, event_folder, load_slides, save_slides, render_slides, defaults
+    QHBoxLayout, QLabel, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView, QSplitter, QSizePolicy, QDialog)
+from slideshow_jobs import Slide, event_folder, load_slides, save_slides, render_slides, defaults, load_project
+
+from template_render import ensure_fonts, default_template, render_image
+from template_editor import TemplateEditor
 
 
 class PhotoPreview(QLabel):
@@ -20,6 +24,7 @@ class PhotoPreview(QLabel):
         super().__init__(parent)
         self.image_path = None
         self.source_pixmap = QPixmap()
+        self.rendered_pixmap = QPixmap()
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setWordWrap(True)
         self.setMinimumSize(220, 160)
@@ -35,6 +40,7 @@ class PhotoPreview(QLabel):
             return
         self.image_path = path
         self.source_pixmap = QPixmap()
+        self.rendered_pixmap = QPixmap()
         self.clear()
         if path is None:
             self.setText('Select a photo to preview it.')
@@ -42,8 +48,8 @@ class PhotoPreview(QLabel):
         reader = QImageReader(str(path))
         reader.setAutoTransform(True)
         size = reader.size()
-        if size.isValid() and (size.width() > 1600 or size.height() > 1200):
-            reader.setScaledSize(size.scaled(QSize(1600, 1200), Qt.AspectRatioMode.KeepAspectRatio))
+        if size.isValid() and (size.width() > 1920 or size.height() > 1080):
+            reader.setScaledSize(size.scaled(QSize(1920, 1080), Qt.AspectRatioMode.KeepAspectRatio))
         image = reader.read()
         if image.isNull():
             self.setText('Preview unavailable.\nThe image is missing or could not be read.')
@@ -51,10 +57,18 @@ class PhotoPreview(QLabel):
         self.source_pixmap = QPixmap.fromImage(image)
         self._fit()
 
-    def _fit(self):
+    def set_slide(self, path, title, date, template):
+        self.set_image(path)
         if not self.source_pixmap.isNull():
+            image = render_image(self.source_pixmap.toImage(), title, date, template)
+            self.rendered_pixmap = QPixmap.fromImage(image)
+            self._fit()
+
+    def _fit(self):
+        pixmap = self.rendered_pixmap if not self.rendered_pixmap.isNull() else self.source_pixmap
+        if not pixmap.isNull():
             available = self.contentsRect().size() - QSize(12, 12)
-            self.setPixmap(self.source_pixmap.scaled(available,
+            self.setPixmap(pixmap.scaled(available,
                 Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
 
     def resizeEvent(self, event):
@@ -67,14 +81,15 @@ class RenderWorker(QThread):
     result = Signal(int)
     failed = Signal(str)
 
-    def __init__(self, folder, slides, parent=None):
+    def __init__(self, folder, slides, parent=None, *, template=None):
         super().__init__(parent)
         self.folder, self.slides = folder, slides
+        self.template = copy.deepcopy(template)
 
     def run(self):
         try:
             count = render_slides(self.folder, self.slides, cancelled=self.isInterruptionRequested,
-                                  progress=self.progress.emit)
+                                  progress=self.progress.emit, template=self.template)
             self.result.emit(count)
         except Exception as error:
             self.failed.emit(str(error))
@@ -83,6 +98,8 @@ class RenderWorker(QThread):
 class SlideshowWindow(QMainWindow):
     def __init__(self, directory='', *, suite=None):
         super().__init__()
+        ensure_fonts()
+        self.template_settings = default_template()
         self.settings = QSettings('Slideshow', 'Create')
         self.busy = False
         self.worker = None
@@ -110,7 +127,7 @@ class SlideshowWindow(QMainWindow):
         title = QLabel('Give every photo its story')
         title.setObjectName('title')
         layout.addWidget(title)
-        subtitle = QLabel('Create slides from an event’s highlight photos, with dates and titles from your Photoshop template.')
+        subtitle = QLabel('Create slides from an event’s highlight photos, with dates and titles you can style and position visually.')
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
         layout.addWidget(QLabel('Event folder (contains highlight)'))
@@ -152,7 +169,7 @@ class SlideshowWindow(QMainWindow):
         self.preview_filename.setWordWrap(True)
         self.preview_filename.setTextFormat(Qt.TextFormat.PlainText)
         preview_layout.addWidget(self.preview_filename)
-        preview_hint = QLabel('Original highlight image')
+        preview_hint = QLabel('Rendered slide preview · 1920 × 1080')
         preview_hint.setObjectName('muted')
         preview_layout.addWidget(preview_hint)
         editor.addWidget(preview_panel)
@@ -160,7 +177,7 @@ class SlideshowWindow(QMainWindow):
         editor.setStretchFactor(1, 2)
         editor.setSizes([650, 380])
         layout.addWidget(editor, 1)
-        self.status = QLabel('Load an event to edit dates and titles. Photoshop is required to create slides.')
+        self.status = QLabel('Load an event to edit dates and titles. Edit the template to change fonts and move the text.')
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
         self.progress = QProgressBar()
@@ -176,11 +193,11 @@ class SlideshowWindow(QMainWindow):
         self.open_folder = QPushButton('Open slideshow')
         self.open_folder.clicked.connect(self.show_folder)
         row.addWidget(self.open_folder)
-        self.template = QPushButton('Open Photoshop template')
-        self.template.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path(__file__).with_name('template.psd')))))
+        self.template = QPushButton('Edit template…')
+        self.template.clicked.connect(self.edit_template)
         row.addWidget(self.template)
         row.addStretch()
-        self.save = QPushButton('Save dates and titles')
+        self.save = QPushButton('Save slideshow')
         self.save.clicked.connect(self.save_data)
         row.addWidget(self.save)
         self.cancel = QPushButton('Cancel')
@@ -209,11 +226,13 @@ class SlideshowWindow(QMainWindow):
         ready = self.loaded_folder is not None and self.table.rowCount() > 0
         self.save.setEnabled(not self.busy and ready)
         self.create.setEnabled(not self.busy and ready)
+        self.template.setEnabled(not self.busy and ready)
         self.open_folder.setEnabled(not self.busy and self.loaded_folder is not None)
         self.cancel.setVisible(self.busy)
 
     def _edited(self, *_):
         self.dirty = True
+        self._update_preview()
 
     def _folder_changed(self, text):
         if self.loaded_folder is not None and text != str(self.loaded_folder):
@@ -231,11 +250,14 @@ class SlideshowWindow(QMainWindow):
             return
         filename = item.text()
         self.preview_filename.setText(filename)
-        self.image_preview.set_image(self.loaded_folder / 'highlight' / filename)
+        default_date, default_title = defaults(self.loaded_folder)
+        date = self.table.item(row, 1).text() or default_date
+        title = self.table.item(row, 2).text() or default_title
+        self.image_preview.set_slide(self.loaded_folder / 'highlight' / filename, title, date, self.template_settings)
 
     def _discard(self):
         return not self.dirty or QMessageBox.question(self, 'Unsaved edits',
-            'Discard unsaved date and title edits?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            'Discard unsaved slideshow edits, including template changes?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes
 
     def choose_folder(self):
@@ -248,6 +270,7 @@ class SlideshowWindow(QMainWindow):
             return
         try:
             event = event_folder(folder if isinstance(folder, str) else self.folder.text())
+            project = load_project(event)
             slides = load_slides(event)
             self.table.blockSignals(True)
             self.table.setRowCount(len(slides))
@@ -258,6 +281,7 @@ class SlideshowWindow(QMainWindow):
                         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                     self.table.setItem(row, column, item)
             self.table.blockSignals(False)
+            self.template_settings = project['template']
             self.loaded_folder = event
             self.image_preview.set_image(None)
             if slides:
@@ -281,20 +305,38 @@ class SlideshowWindow(QMainWindow):
 
     def save_data(self):
         try:
-            save_slides(self.loaded_folder, self.slides())
+            save_slides(self.loaded_folder, self.slides(), self.template_settings)
             self.dirty = False
-            self.status.setText('Saved dates and titles to slideshow/data.txt.')
+            self.status.setText('Saved layout and dates/titles to highlight/slideshow.json (CSV also exported).')
             return True
         except Exception as error:
             QMessageBox.warning(self, 'Could not save data', str(error))
             return False
+
+    def edit_template(self):
+        if self.loaded_folder is None or self.busy:
+            return
+        row = self.table.currentRow()
+        date, title = defaults(self.loaded_folder)
+        path = None
+        if row >= 0:
+            path = self.loaded_folder / 'highlight' / self.table.item(row,0).text()
+            date = self.table.item(row,1).text() or date
+            title = self.table.item(row,2).text() or title
+        dialog = TemplateEditor(self.template_settings, path, title, date, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.template_settings = copy.deepcopy(dialog.value)
+            self.dirty = True
+            self._update_preview()
+            self.status.setText('Template updated. Save slideshow to keep it in the highlight folder.')
+        dialog.deleteLater()
 
     def create_slides(self):
         if self.busy or self.loaded_folder is None:
             return
         answer = QMessageBox.question(self, 'Create slideshow?',
             'Create slides from the highlight originals? Existing slides with matching filenames will be replaced. '
-            'Highlight originals stay unchanged. Photoshop will open as needed.',
+            'Highlight originals stay unchanged.',
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
         if answer != QMessageBox.StandardButton.Yes or not self.save_data():
             return
@@ -303,8 +345,8 @@ class SlideshowWindow(QMainWindow):
         self.progress.setRange(0, self.table.rowCount())
         self.progress.setValue(0)
         self.log.clear()
-        self.status.setText('Creating slides in Photoshop…')
-        self.worker = RenderWorker(self.loaded_folder, self.slides(), self)
+        self.status.setText('Creating slides…')
+        self.worker = RenderWorker(self.loaded_folder, self.slides(), self, template=self.template_settings)
         self.worker.progress.connect(self._progress)
         self.worker.result.connect(self._result)
         self.worker.failed.connect(self._failed)
@@ -332,13 +374,13 @@ class SlideshowWindow(QMainWindow):
     def cancel_work(self):
         if self.worker:
             self.worker.requestInterruption()
-            self.status.setText('Stopping after the current Photoshop image finishes…')
+            self.status.setText('Stopping after the current image finishes…')
 
     def show_folder(self):
         if self.loaded_folder:
             folder = self.loaded_folder / 'slideshow'
             if not folder.is_dir():
-                QMessageBox.information(self, 'Slideshow folder', 'Save dates and titles or create slides first.')
+                QMessageBox.information(self, 'Slideshow folder', 'Save the slideshow or create slides first.')
             else:
                 QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 

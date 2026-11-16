@@ -4,12 +4,15 @@ from __future__ import annotations
 import csv
 import os
 import shutil
-import subprocess
+import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from template_render import default_template, validate_template, render_file, ensure_fonts
+
 ROOT = Path(__file__).resolve().parent
+PROJECT_FILE = 'slideshow.json'
 
 
 @dataclass
@@ -35,17 +38,39 @@ def defaults(folder):
     return date, title
 
 
+def load_project(folder):
+    folder = event_folder(folder)
+    path = folder / 'highlight' / PROJECT_FILE
+    if not path.exists():
+        return {'version': 1, 'template': default_template(), 'images': []}
+    try:
+        project = json.loads(path.read_text(encoding='utf-8-sig'))
+    except (ValueError, OSError) as error:
+        raise ValueError(f'Could not load highlight/{PROJECT_FILE}: {error}') from error
+    if not isinstance(project, dict) or project.get('version') != 1 or not isinstance(project.get('images'), list):
+        raise ValueError('Unsupported slideshow settings format.')
+    project['template'] = validate_template(project.get('template'))
+    for row in project['images']:
+        if not isinstance(row, dict) or any(not isinstance(row.get(key), str) for key in ('image','date','title')):
+            raise ValueError('Invalid image overrides in highlight/slideshow.json.')
+    return project
+
+
 def load_slides(folder):
     folder = event_folder(folder)
     overrides = {}
-    data = folder / 'slideshow' / 'data.txt'
-    if data.exists():
-        with data.open(newline='', encoding='utf-8-sig') as stream:
-            reader = csv.reader(stream)
-            next(reader, None)
-            for row in reader:
-                if row:
-                    overrides[row[0].casefold()] = (row + ['', ''])[1:3]
+    project_path = folder / 'highlight' / PROJECT_FILE
+    if project_path.exists():
+        overrides = {row['image'].casefold(): (row['date'], row['title']) for row in load_project(folder)['images']}
+    else:
+        data = folder / 'slideshow' / 'data.txt'
+        if data.exists():
+            with data.open(newline='', encoding='utf-8-sig') as stream:
+                reader = csv.reader(stream)
+                next(reader, None)
+                for row in reader:
+                    if row:
+                        overrides[row[0].casefold()] = (row + ['', ''])[1:3]
     result = []
     for image in sorted((folder / 'highlight').iterdir(), key=lambda p: p.name.casefold()):
         if image.is_file() and image.suffix.lower() in ('.jpg', '.jpeg'):
@@ -54,25 +79,40 @@ def load_slides(folder):
     return result
 
 
-def save_slides(folder, slides):
-    folder = event_folder(folder)
-    output = folder / 'slideshow'
-    output.mkdir(exist_ok=True)
-    descriptor, filename = tempfile.mkstemp(dir=output, prefix='.data-', suffix='.tmp')
+def _atomic_text(path, write):
+    path.parent.mkdir(exist_ok=True)
+    descriptor, filename = tempfile.mkstemp(dir=path.parent, prefix='.slideshow-', suffix='.tmp')
     try:
         with os.fdopen(descriptor, 'w', newline='', encoding='utf-8') as stream:
-            writer = csv.writer(stream)
-            writer.writerow(['Image', 'Date', 'Title'])
-            writer.writerows((slide.image, slide.date, slide.title) for slide in slides)
-        os.replace(filename, output / 'data.txt')
+            write(stream)
+        os.replace(filename, path)
     finally:
         Path(filename).unlink(missing_ok=True)
 
 
+def save_slides(folder, slides, template=None):
+    folder = event_folder(folder)
+    slides = list(slides)
+    template = validate_template(template if template is not None else load_project(folder)['template'])
+    project = {'version': 1, 'template': template,
+               'images': [dict(image=s.image, date=s.date, title=s.title) for s in slides]}
+    _atomic_text(folder / 'highlight' / PROJECT_FILE,
+                 lambda stream: json.dump(project, stream, ensure_ascii=False, indent=2))
+    # Retain a CSV export for older tools; highlight/slideshow.json is authoritative.
+    def write_csv(stream):
+        writer = csv.writer(stream)
+        writer.writerow(['Image', 'Date', 'Title'])
+        writer.writerows((slide.image, slide.date, slide.title) for slide in slides)
+    _atomic_text(folder / 'slideshow' / 'data.txt', write_csv)
+
+
 def render_slides(folder, slides, *, cancelled=lambda: False, progress=lambda *args: None,
-                  renderer=None):
+                  renderer=None, template=None):
     folder = event_folder(folder)
     default_date, default_title = defaults(folder)
+    template = validate_template(template if template is not None else load_project(folder)['template'])
+    if renderer is None:
+        ensure_fonts()
     output = folder / 'slideshow'
     output.mkdir(exist_ok=True)
     completed = 0
@@ -93,14 +133,7 @@ def render_slides(folder, slides, *, cancelled=lambda: False, progress=lambda *a
             if renderer is not None:
                 renderer(target, title, date)
             else:
-                python = ROOT.parent / 'venv' / 'Scripts' / 'python.exe'
-                if not python.is_file():
-                    raise RuntimeError('Shared MyUtils Python environment is missing. See commands.md in the MyUtils folder.')
-                command = [str(python), str(ROOT / 'render_slide.py'), str(target), title, date]
-                result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
-                                        errors='replace', creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-                if result.returncode:
-                    raise RuntimeError(f'{slide.image}: {result.stderr.strip() or result.stdout.strip()}')
+                render_file(target, title, date, template)
             os.replace(target, output / slide.image)
         completed += 1
         progress(completed, len(slides), slide.image)

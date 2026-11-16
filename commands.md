@@ -9,7 +9,7 @@ Set-Location P:\git\MyUtils
 ## Set up or update the shared environment
 
 All applications use the single top-level `venv` and `requirements.txt`.
-Python 3.11 is used for the GUI apps and Photoshop integration.
+Python 3.11 is used for all GUI apps and native image rendering.
 
 For a fresh checkout:
 
@@ -36,8 +36,9 @@ shared Python explicitly. Do not create environments in the application folders.
 This runs the Launch, Camera Import, Yearbook and Slideshow suites in separate
 processes using the shared environment. It runs every suite even if one fails
 and returns a nonzero exit code if any suite fails. GUI tests run without
-opening visible windows. Tests use temporary sample folders; Photoshop rendering
-is simulated. Windows must allow the temporary folder-link test in Camera Import.
+opening visible windows. Tests use temporary sample folders and perform native
+image rendering without Photoshop. Windows must allow the temporary folder-link
+test in Camera Import.
 
 ## Open the launcher
 
@@ -53,5 +54,7 @@ is simulated. Windows must allow the temporary folder-link test in Camera Import
 .\Slideshow\slideshow_gui.bat
 ```
 
-Slideshow's Photoshop worker and original `Slideshow/run.cmd` also use the
-shared environment. Photoshop must be installed to render actual slides.
+Slideshow's background renderer and original `Slideshow/run.cmd` use the shared
+environment. Photoshop is not required. Save slideshow writes the layout and
+date/title overrides to the event's `highlight/slideshow.json`. For visual layout
+changes, load an event in Slideshow and select **Edit template**.

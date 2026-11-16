@@ -21,7 +21,7 @@ and validation. Read it before making changes anywhere in this repository.
 - Work only in `P:\git\MyUtils`. Slideshow was brought into this repository;
   the old image-processing-examples folder is no longer the working source.
 - Use one top-level `requirements.txt` and one top-level `venv` for every app,
-  launcher, test suite, and Photoshop worker. Do not add per-app environments or
+  launcher, test suite, and native renderer. Do not add per-app environments or
   dependency manifests. Do not commit `venv` (ignored by root `.gitignore`).
 - The shared environment is Python 3.11 on Windows. GUI dependencies use
   PySide6 and **PySide6-Fluent-Widgets**; do not mix PyQt variants into it.
@@ -34,7 +34,7 @@ and validation. Read it before making changes anywhere in this repository.
 
 | Path | Responsibility |
 | --- | --- |
-| `requirements.txt` | Combined GUI, import, image, and Photoshop dependencies |
+| `requirements.txt` | Combined GUI, import and image dependencies |
 | `venv/` | Shared Python 3.11 environment; generated, not source |
 | `commands.md` | Setup, launch, and full-test commands |
 | `run_tests.py` | Runs all four suites in separate processes |
@@ -46,11 +46,14 @@ and validation. Read it before making changes anywhere in this repository.
 | `Import/reorg_gui.py` | Camera Import view and background worker |
 | `Yearbook/yearbook.py` | Scan and collect existing slideshow JPGs |
 | `Yearbook/yearbook_gui.py` | Yearbook view and background worker |
-| `Slideshow/slideshow_jobs.py` | Overrides, fresh-image preparation, worker invocation |
-| `Slideshow/slideshow_gui.py` | Date/title editor, selected-image preview, render worker |
-| `Slideshow/render_slide.py` | Isolated Photoshop process entry point |
-| `Slideshow/slideshow.py` | Resize image, apply PSD layers, save rendered JPEG |
-| `Slideshow/template.psd` | Shared Photoshop layout and text styling |
+| `Slideshow/slideshow_jobs.py` | Event JSON/CSV settings, fresh-image preparation, native rendering |
+| `Slideshow/slideshow_gui.py` | Date/title editor, rendered slide preview, background render worker |
+| `Slideshow/template_render.py` | Shared Qt renderer for live preview and JPEG output |
+| `Slideshow/template_editor.py` | Visual template canvas, drag/resize, fonts and controls |
+| `Slideshow/default_template.json` | Shipped layout measured from the PSD |
+| `Slideshow/render_slide.py` | Legacy single-image native render command |
+| `Slideshow/slideshow.py` | Compatibility create_slide API for native rendering |
+| `Slideshow/template.psd` | Original layout reference, not a runtime dependency |
 
 ## Shared GUI architecture
 
@@ -96,35 +99,47 @@ and validation. Read it before making changes anywhere in this repository.
 
 ### Slideshow
 
-- Select an event directory containing `highlight`, or its `highlight` /
-  `slideshow` subdirectory. The GUI lists JPG and JPEG highlights.
-- Overrides live in `event/slideshow/data.txt`: CSV columns `Image,Date,Title`.
-  Use CSV quoting for commas and UTF-8 for Unicode. Blank date/title cells fall
-  back to the event directory name, e.g. `20260615 Holiday` gives date
-  `2026 06 15` and title `Holiday`. Blank is a fallback, not an explicit hide flag.
-- The editor previews the selected **original highlight image**, not a Photoshop
-  rendering with live text overlays. Mouse and keyboard selection both update it;
-  first load selects the first image. A splitter controls table/preview width.
-- `PhotoPreview` uses `QImageReader` auto-transform for image orientation,
-  bounds decoded previews to fit 1600 x 1200, and preserves aspect ratio when
-  resizing. Missing/unreadable images show a message. Folder changes and empty
-  events must clear stale previews and invalidate create/save readiness.
-- GUI rendering always starts from a fresh highlight copy. Each slide is rendered
-  in a temporary directory inside the event's slideshow directory, then replaces
-  its destination only after success. Highlights remain unchanged; a failed
-  render preserves the previous output slide. Re-rendering avoids stacked text.
-- `RenderWorker` is a QThread that invokes `render_slide.py` in a separate process
-  using the root `venv/Scripts/python.exe`. Photoshop work stays out of the GUI
-  thread and uses that environment even when opened through the launcher.
-- Photoshop must be installed for real rendering. Cancellation is between images,
-  so it waits for the current Photoshop call/process; it does not kill Photoshop.
-- `slideshow.py` loads `template.psd` beside itself, independent of working
-  directory. Text fonts, sizes, colours, and positions come from PSD layers
-  `Title` and `Date`; the image layer is named `Image`. Python changes text
-  contents and replaces the image. Output canvas is 1920 x 1080.
-- Original `param.py` / `run.cmd` processing remains available. It edits slideshow
-  images in place: refresh from highlights before rerendering through that path.
-  `param.py` accepts a date in a two-column row and reads UTF-8/BOM CSV.
+- Photoshop is no longer a dependency. `template_render.py` uses Qt QImage,
+  QPainter and text paths for both live previews and JPEG output. Fonts are
+  registered from TTF/OTF files in Slideshow; do this on the GUI thread before
+  starting a render worker. `ensure_fonts()` retains a QApplication for CLI use.
+- Output is 1920 x 1080 at 300 dpi with the photo centred and contained without
+  distortion on a black background. Image readers apply EXIF orientation. JPEG
+  density is set explicitly; point size becomes pixels via pt * 300 / 72.
+- Shipped default_template.json was extracted from the PSD: title Filmotype
+  LaSalle 28.8 pt, right baseline anchor (1825.5,128.10); date 7-Segment 11.2 pt,
+  left baseline anchor (36.48,1017.30). Text is black with white glow, sizes 16/7
+  pixels respectively. Font contours match the PSD within roughly two pixels
+  on its sample text; Qt anti-aliasing and the soft-stroke glow are approximations.
+- FilmotypeLaSalle.otf was copied from the user's installed Adobe font cache;
+  7segment.ttf from the user's Windows fonts. Font identity was verified from
+  metadata. See FONT-SOURCES.md for provenance/licences. Filmotype is commercial;
+  the local project copy is not a grant of redistribution rights.
+- `TemplateEditor` works on a deep copy: Apply returns changes to the view;
+  Cancel leaves its template unchanged. Choose Title/Date, drag to move, drag
+  the blue corner to resize, or edit font/size/position/alignment/visibility/
+  colours/glow controls. Font imports copy files into Slideshow with collision
+  handling. Preview and export share the same renderer.
+- Main view previews the rendered slide including current date/title overrides,
+  not just the source image. It follows mouse/keyboard selection; edits update
+  the preview. A splitter controls preview width. Missing images and changed or
+  empty folders must clear stale previews and invalidate create/save readiness.
+- Save slideshow and Create slideshow persist `event/highlight/slideshow.json`
+  with version, template and image overrides. JSON is authoritative once present.
+  Missing JSON imports legacy slideshow/data.txt; save exports the CSV as well.
+  Corrupt/unsupported JSON is reported, never silently discarded or reset.
+- Blank date/title values use the event folder's defaults; blank is not a hide
+  flag. Use each template layer's enabled setting to hide it. Settings are
+  event-specific and reload on opening that event. Font files live in the app.
+- Rendering starts from fresh highlight copies inside temporary output folders,
+  replaces each destination after success and leaves highlight images untouched.
+  Failures preserve prior slides; cancellation is between images. RenderWorker
+  runs this in a QThread with a snapshot of the template, without a subprocess.
+- Legacy param.py/run.cmd and create_slide remain native and load event settings
+  where applicable. The old CSV CLI still edits existing slideshow images in
+  place, so refresh them from highlights before rerendering. template.psd is
+  retained solely as a design reference. No psd-tools or fontTools is needed at
+  runtime (they were used only to inspect the PSD/fonts during migration).
 
 ### Yearbook
 
@@ -156,9 +171,10 @@ py -3.11 -m venv venv
   after failures and returns nonzero if any suite fails.
 - Keep suites in separate processes: duplicate test module names (`test_gui`)
   and QApplication/shared Qt state make combined discovery unreliable.
-- GUI tests use `QT_QPA_PLATFORM=offscreen` and temporary sample data. Photoshop
-  rendering is simulated; passing tests do not establish a successful real
-  Photoshop run. Never exercise file-operation tests on the user's photo library.
+- GUI tests use `QT_QPA_PLATFORM=offscreen` and temporary sample data.
+  Slideshow tests now exercise actual native rendering, output dimensions/DPI,
+  event settings and visual template interactions without Photoshop. Never
+  exercise file-operation tests on the user's photo library.
 - Camera Import has a temporary Windows junction test. Access denied while
   creating that junction can be a test-environment permission problem; verify
   with suitable access rather than weakening source-path protection.
@@ -168,9 +184,13 @@ py -3.11 -m venv venv
 - Offscreen Qt may expose no installed fonts in a restricted environment.
   Register Windows Segoe UI with QFontDatabase in the visual-check harness when
   necessary; missing-glyph screenshots are not automatically a production bug.
-- Latest full validation on 2026-11-16, after environment consolidation: all
-  76 tests passed from root `venv`; dependency imports and `pip check` passed.
-  Real Photoshop rendering has not been verified in this work.
+- Latest full validation on 2026-11-16, after the native-renderer migration:
+  all 88 tests passed (Launch 18, Import 27, Yearbook 19, Slideshow 24).
+  This includes actual native JPEG rendering at 1920 x 1080 / 300 dpi and source
+  preservation, JSON round trips, font loading, drag/resize and numeric editing.
+  Photoshop Python packages were uninstalled before the full run; pip check
+  passed. Light/dark editor layouts were visually inspected. The original PSD's
+  font geometry was inspected, but Photoshop itself was not used for rendering.
 
 - Root launcher move validated on 2026-11-16: batch smoke check passed
   from a different working folder and a path containing spaces; arguments and
@@ -179,7 +199,7 @@ py -3.11 -m venv venv
 
 ## Known maintenance points
 
-- Modern batch launchers and the render worker resolve the root environment
+- Modern batch launchers resolve the root environment
   relative to their files. Keep those paths portable when changing layout.
 - Legacy `Slideshow/bootstrap.cmd`, `Slideshow/run.lnk`, and
   `Yearbook/create_from_highlights.py` still contain references to
@@ -193,7 +213,8 @@ py -3.11 -m venv venv
 
 - Consolidated Slideshow into MyUtils; subsequent work stays in this repository.
 - Added Slideshow to the launcher and adopted shared Fluent controls/settings.
-- Kept editable CSV overrides and added an original-image preview beside the table.
+- Kept editable overrides; the original-image preview was subsequently upgraded
+  to a live rendered slide preview during the native-renderer migration.
 - Centralised dependency setup at root to avoid divergent per-app environments;
   combined on Pillow 11.3.0 and removed redundant pypiwin32 from the old setup.
 - Added a root test runner and commands.md; this file is the ongoing architecture,
@@ -201,3 +222,10 @@ py -3.11 -m venv venv
 
 - Moved launcher.bat to the repository root so the main entry point sits beside
   commands.md, requirements.txt, and the shared environment.
+
+- Replaced Photoshop automation with a native Qt renderer and visual template
+  editor. Project settings now live in highlight/slideshow.json; legacy CSV is
+  imported only before JSON exists and is still exported on save.
+- Qt 6.12 can collapse Fluent DoubleSpinBox's embedded line edit to one pixel.
+  The shared fluent.py adapter repairs its geometry when collapsed. Preserve
+  the numeric visibility/editing test; model values alone do not catch this.

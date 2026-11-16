@@ -1,4 +1,4 @@
-"""Isolated Photoshop process; the GUI stays responsive during rendering."""
+"""Render one image with the native renderer (legacy command entry point)."""
 import sys
 from slideshow import create_slide
 

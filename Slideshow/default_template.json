@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "width": 1920,
+  "height": 1080,
+  "dpi": 300,
+  "background": "#000000",
+  "title": {
+    "font_family": "Filmotype LaSalle",
+    "font_file": "FilmotypeLaSalle.otf",
+    "size_pt": 28.8,
+    "x": 1825.5,
+    "y": 128.09986,
+    "align": "right",
+    "color": "#000000",
+    "glow_color": "#ffffff",
+    "glow_size": 16,
+    "enabled": true
+  },
+  "date": {
+    "font_family": "7-Segment",
+    "font_file": "7segment.ttf",
+    "size_pt": 11.2,
+    "x": 36.47826,
+    "y": 1017.30435,
+    "align": "left",
+    "color": "#000000",
+    "glow_color": "#ffffff",
+    "glow_size": 7,
+    "enabled": true
+  }
+}

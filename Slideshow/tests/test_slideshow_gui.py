@@ -87,7 +87,7 @@ class SlideshowGuiTests(unittest.TestCase):
         preview.resize(300, 300)
         preview._fit()
         rendered = preview.pixmap()
-        self.assertAlmostEqual(rendered.width() / rendered.height(), 2, delta=.02)
+        self.assertAlmostEqual(rendered.width() / rendered.height(), 16/9, delta=.02)
         self.page.folder.setText(str(self.root / 'other-event'))
         self.assertIsNone(preview.image_path)
         self.assertTrue(preview.pixmap().isNull())
@@ -107,10 +107,37 @@ class SlideshowGuiTests(unittest.TestCase):
         self.assertEqual(self.page.preview_filename.text(), '')
         self.assertFalse(self.page.create.isEnabled())
 
+    def test_save_and_reload_template_in_highlight_folder(self):
+        self.page.load()
+        self.page.template_settings['title']['size_pt'] = 22
+        self.page.template_settings['date']['x'] = 80
+        self.page.table.item(0,2).setText('Saved title')
+        self.assertTrue(self.page.save_data())
+        import json
+        project = json.loads((self.event/'highlight/slideshow.json').read_text())
+        self.assertEqual(project['template']['title']['size_pt'],22)
+        self.assertEqual(project['images'][0]['title'],'Saved title')
+        self.page.template_settings['title']['size_pt'] = 15
+        self.page.load()
+        self.assertEqual(self.page.template_settings['title']['size_pt'],22)
+
+    def test_native_worker_creates_jpeg_without_external_process(self):
+        self.page.load()
+        with patch('slideshow_gui.QMessageBox.question',return_value=QMessageBox.Yes):
+            self.page.create_slides()
+            for _ in range(300):
+                QTest.qWait(10)
+                if not self.page.busy:
+                    break
+        self.assertFalse(self.page.busy)
+        image = QImage(str(self.event/'slideshow/001.jpg'))
+        self.assertEqual((image.width(),image.height()),(1920,1080))
+        self.assertIn('Finished',self.page.status.text())
+
     def test_worker_failure_returns_to_editable_view(self):
         self.page.load()
         with patch('slideshow_gui.QMessageBox.question', return_value=QMessageBox.Yes), \
-                patch('slideshow_gui.render_slides', side_effect=RuntimeError('Photoshop unavailable')):
+                patch('slideshow_gui.render_slides', side_effect=RuntimeError('Image unavailable')):
             self.page.create_slides()
             for _ in range(100):
                 QTest.qWait(10)
@@ -118,7 +145,7 @@ class SlideshowGuiTests(unittest.TestCase):
                     break
         self.assertFalse(self.page.busy)
         self.assertTrue(self.page.create.isEnabled())
-        self.assertIn('Photoshop unavailable', self.page.log.toPlainText())
+        self.assertIn('Image unavailable', self.page.log.toPlainText())
 
     def test_cancel_theme_preview_restores_fluent_global_theme(self):
         from qfluentwidgets import qconfig, Theme

@@ -3,7 +3,7 @@ from qfluentwidgets import (
     PushButton as QPushButton, PrimaryPushButton, LineEdit,
     PlainTextEdit as QPlainTextEdit, ProgressBar as QProgressBar,
     TableWidget, ListWidget as QListWidget,
-    ComboBox, CheckBox as QCheckBox,
+    ComboBox, CheckBox as QCheckBox, DoubleSpinBox as FluentDoubleSpinBox,
 )
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QDialogButtonBox as QtDialogButtonBox
@@ -49,3 +49,13 @@ class QDialogButtonBox(QWidget):
 
     def button(self, key):
         return self._buttons[key]
+
+
+class DoubleSpinBox(FluentDoubleSpinBox):
+    """Keep the text editor visible with Qt 6.12's spin-box geometry changes."""
+    def paintEvent(self, event):
+        edit = self.lineEdit()
+        if edit.width() < 30 and self.width() > 100:
+            right = min(self.upButton.x(), self.downButton.x())
+            edit.setGeometry(8, 1, max(30, right-12), self.height()-2)
+        super().paintEvent(event)

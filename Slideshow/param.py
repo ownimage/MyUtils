@@ -2,9 +2,11 @@ import os, sys, csv
 from pathlib import Path
 
 from slideshow import create_slide
+from slideshow_jobs import load_project
 
 csv_filename = sys.argv[1]
-csv_path = os.path.dirname(csv_filename)
+csv_path = os.path.dirname(os.path.abspath(csv_filename))
+template = load_project(Path(csv_path).parent)['template']
 
 print(f'{csv_path}')
 date_dir = os.path.split(os.path.split(Path(csv_path))[0])[1]
@@ -32,7 +34,7 @@ def process_row(row):
 
 def process(filename, date, title):
     print(f'filename={filename}, title={title}, date={date}')
-    create_slide(filename, title, date)
+    create_slide(filename, title, date, template)
 
 
 with open(csv_filename, 'r', encoding='utf-8-sig', newline='') as csv_file:

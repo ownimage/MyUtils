@@ -1,9 +1,10 @@
 import tempfile
+import json
+from PIL import Image
 import unittest
 from unittest.mock import patch
-from types import SimpleNamespace
 from pathlib import Path
-from slideshow_jobs import Slide, defaults, load_slides, save_slides, render_slides
+from slideshow_jobs import Slide, defaults, load_slides, save_slides, render_slides, load_project
 
 
 class SlideshowTests(unittest.TestCase):
@@ -52,13 +53,37 @@ class SlideshowTests(unittest.TestCase):
         self.assertEqual(count, 1)
         self.assertFalse((self.folder / 'slideshow/002.JPG').exists())
 
-    def test_photoshop_worker_uses_shared_environment(self):
-        shared_python = Path(__file__).resolve().parents[2] / 'venv' / 'Scripts' / 'python.exe'
-        with patch('slideshow_jobs.subprocess.run', return_value=SimpleNamespace(returncode=0)) as run:
-            self.assertEqual(render_slides(self.folder, [Slide('001.jpg')]), 1)
-        command = run.call_args.args[0]
-        self.assertEqual(Path(command[0]), shared_python)
-        self.assertEqual(Path(command[1]).name, 'render_slide.py')
+    def test_native_render_writes_size_dpi_and_preserves_original(self):
+        source = self.folder/'highlight/001.jpg'
+        Image.new('RGB',(600,300),'red').save(source)
+        original = source.read_bytes()
+        self.assertEqual(render_slides(self.folder,[Slide('001.jpg')]),1)
+        self.assertEqual(source.read_bytes(),original)
+        with Image.open(self.folder/'slideshow/001.jpg') as image:
+            self.assertEqual(image.size,(1920,1080))
+            self.assertAlmostEqual(image.info['dpi'][0],300,delta=1)
+            self.assertGreater(image.getpixel((960,540))[0],240)
+
+    def test_highlight_project_persists_template_and_unicode(self):
+        from template_render import default_template
+        template = default_template()
+        template['title']['size_pt'] = 20
+        save_slides(self.folder,[Slide('001.jpg','Yesterday','Café, Cornwall')],template)
+        project = load_project(self.folder)
+        self.assertEqual(project['template']['title']['size_pt'],20)
+        self.assertEqual(project['images'][0]['title'],'Café, Cornwall')
+        self.assertEqual(load_slides(self.folder)[0].title,'Café, Cornwall')
+
+    def test_legacy_csv_import_and_invalid_project_are_distinct(self):
+        output = self.folder/'slideshow'
+        output.mkdir()
+        (output/'data.txt').write_text('Image,Date,Title\n001.jpg,Yesterday,Legacy title\n',encoding='utf-8-sig')
+        self.assertEqual(load_slides(self.folder)[0].title,'Legacy title')
+        project = self.folder/'highlight/slideshow.json'
+        project.write_text('{broken',encoding='utf-8')
+        with self.assertRaisesRegex(ValueError,'Could not load'):
+            load_slides(self.folder)
+        self.assertEqual(project.read_text(),'{broken')
 
     def test_rejects_image_outside_highlights(self):
         with self.assertRaises(ValueError):
