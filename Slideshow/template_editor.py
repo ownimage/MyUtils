@@ -4,14 +4,14 @@ import copy
 import hashlib
 import shutil
 from pathlib import Path
-from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, Signal, QSignalBlocker
-from PySide6.QtGui import QColor, QFontDatabase, QPainter, QPen
-from PySide6.QtWidgets import (QWidget, QDialog, QHBoxLayout, QVBoxLayout, QFormLayout,
+from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, Signal, QSignalBlocker, QElapsedTimer
+from PySide6.QtGui import QColor, QFontDatabase, QPainter, QPen, QShortcut, QKeySequence
+from PySide6.QtWidgets import (QWidget, QApplication, QComboBox as NativeComboBox, QHBoxLayout, QVBoxLayout, QFormLayout,
     QLabel, QFileDialog, QColorDialog, QMessageBox)
-from qfluentwidgets import CheckBox
+from qfluentwidgets import CheckBox, qconfig, isDarkTheme
 from photo_tools.fluent import QPushButton, PrimaryPushButton, QComboBox, DoubleSpinBox
 from template_render import (ROOT, ensure_fonts, render_image, load_photo, layer_rect,
-                             default_template, validate_template, missing_fonts)
+                             default_template, validate_template, missing_fonts, user_default_template, save_user_default)
 
 
 class TemplateCanvas(QWidget):
@@ -133,14 +133,62 @@ class TemplateCanvas(QWidget):
             event.accept()
 
 
-class TemplateEditor(QDialog):
+class FontPicker(NativeComboBox):
+    """Native type-ahead and arrow navigation, including live popup highlighting."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName('fontPicker')
+        self._typing = QElapsedTimer()
+        self.setAccessibleName('Font: type a name or use arrow keys to preview')
+        self.setEditable(False)
+        self.setMaxVisibleItems(16)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.highlighted.connect(self.setCurrentIndex)
+        qconfig.themeChanged.connect(self.refresh_style)
+        self.refresh_style()
+
+    def keyPressEvent(self, event):
+        text = event.text()
+        typing = self._typing.isValid() and self._typing.elapsed() < QApplication.keyboardInputInterval()
+        plain = not (event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.MetaModifier))
+        if plain and text and text.isprintable() and (text != ' ' or typing):
+            # Reuse Qt's native incremental search, including repeated-letter
+            # cycling and its timeout, rather than Space opening mid-name.
+            self.view().keyboardSearch(text)
+            index = self.view().currentIndex().row()
+            if index >= 0:
+                self.setCurrentIndex(index)
+            self._typing.start()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    def refresh_style(self, *_):
+        dark = isDarkTheme()
+        background, foreground, border = ('#2b2b2b','#ffffff','#555555') if dark else ('#ffffff','#202020','#d0d0d0')
+        self.setStyleSheet(f"""
+            QComboBox#fontPicker {{ background: {background}; color: {foreground};
+                border: 1px solid {border}; border-radius: 5px; padding: 6px 10px;
+                font-family: 'Segoe UI'; font-size: 14px; min-height: 20px; }}
+            QComboBox#fontPicker:focus {{ border: 1px solid #0078d4; }}
+            QComboBox#fontPicker QAbstractItemView {{ background: {background};
+                color: {foreground}; selection-background-color: #0078d4;
+                selection-color: white; border: 1px solid {border}; outline: 0; }}
+            QComboBox#fontPicker QAbstractItemView::item {{ min-height: 26px; }}
+        """)
+
+
+class TemplateEditor(QWidget):
+    accepted = Signal()
+    rejected = Signal()
+
     def __init__(self, template, image_path=None, title='Title', date='2026 06 15', parent=None):
         super().__init__(parent)
         ensure_fonts()
         self.value = validate_template(template)
+        self.initial_value = copy.deepcopy(self.value)
         self.setWindowTitle('Edit slideshow template')
-        self.resize(1240, 810)
-        self.setMinimumSize(960, 680)
+        self.setObjectName('templateEditor')
         photo = None
         if image_path:
             try:
@@ -154,6 +202,21 @@ class TemplateEditor(QDialog):
         hint = QLabel('Drag a title or date to move it. Drag its blue square to resize. The preview uses the same layout as the saved JPEG.')
         hint.setWordWrap(True)
         outer.addWidget(hint)
+        defaults = QHBoxLayout()
+        self.load_user = QPushButton('Load user default')
+        self.load_user.clicked.connect(self.load_user_default)
+        defaults.addWidget(self.load_user)
+        self.load_system = QPushButton('Load system default')
+        self.load_system.clicked.connect(self.load_system_default)
+        defaults.addWidget(self.load_system)
+        self.save_default = QPushButton('Save user default')
+        self.save_default.clicked.connect(self.save_as_default)
+        defaults.addWidget(self.save_default)
+        defaults.addStretch()
+        outer.addLayout(defaults)
+        self.default_status = QLabel('Event changes are saved separately from your reusable default.')
+        self.default_status.setWordWrap(True)
+        outer.addWidget(self.default_status)
         body = QHBoxLayout()
         self.canvas = TemplateCanvas(self.value, photo, title or 'Title', date or '2026 06 15')
         body.addWidget(self.canvas, 1)
@@ -167,7 +230,7 @@ class TemplateEditor(QDialog):
         form.addRow('Edit', self.layer)
         self.visible = CheckBox('Show this text')
         form.addRow(self.visible)
-        self.font = QComboBox()
+        self.font = FontPicker()
         self.font.setMinimumWidth(160)
         self.font.setMaximumWidth(195)
         self._populate_fonts()
@@ -231,6 +294,9 @@ class TemplateEditor(QDialog):
         for spin in (self.size,self.x,self.y,self.glow):
             spin.valueChanged.connect(self.apply_controls)
         self.sync_controls()
+        self.cancel_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape),self)
+        self.cancel_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.cancel_shortcut.activated.connect(self.reject)
 
     def _populate_fonts(self):
         self.font.clear()
@@ -256,7 +322,7 @@ class TemplateEditor(QDialog):
         self.glow.setValue(layer['glow_size'])
         del blockers
         absent = missing_fonts(self.value)
-        self.warning.setText('Missing font: '+', '.join(absent) if absent else 'Changes apply to every photo in this event. Save the slideshow to keep them in highlight/template.json.')
+        self.warning.setText('Missing font: '+', '.join(absent) if absent else 'Changes apply to every photo in this event. Apply template saves them to highlight/template.json.')
         self.canvas.update()
 
     def apply_controls(self, *_):
@@ -271,7 +337,7 @@ class TemplateEditor(QDialog):
         self.canvas.schedule()
         absent = missing_fonts(self.value)
         if not absent:
-            self.warning.setText('Changes apply to every photo in this event. Save the slideshow to keep them in highlight/template.json.')
+            self.warning.setText('Changes apply to every photo in this event. Apply template saves them to highlight/template.json.')
 
     def pick_color(self, key):
         layer = self.value[self.layer.currentData()]
@@ -305,19 +371,56 @@ class TemplateEditor(QDialog):
         except Exception as error:
             QMessageBox.warning(self,'Could not add font',str(error))
 
-    def reset(self):
-        self.value = default_template()
+    def is_dirty(self):
+        return self.value != self.initial_value
+
+    def mark_clean(self):
+        self.initial_value = copy.deepcopy(self.value)
+
+    def _set_template(self, value):
+        self.value = validate_template(value)
         self.canvas.template = self.value
         self.sync_controls()
         self.canvas.refresh()
 
+    def load_user_default(self):
+        try:
+            self._set_template(user_default_template())
+            self.default_status.setText('Loaded user default from Slideshow/template.json. Apply to use it for this event.')
+        except (OSError, ValueError) as error:
+            self.default_status.setText(str(error))
+
+    def load_system_default(self):
+        try:
+            self._set_template(default_template())
+            self.default_status.setText('Loaded system default. Your saved user default is unchanged.')
+        except (OSError, ValueError) as error:
+            self.default_status.setText(str(error))
+
+    def reset(self):
+        self.load_system_default()
+
+    def _validate(self):
+        validate_template(self.value)
+        absent = missing_fonts(self.value)
+        if absent:
+            raise ValueError('Choose an available font: '+', '.join(absent))
+
+    def save_as_default(self):
+        try:
+            self._validate()
+            save_user_default(self.value)
+            self.default_status.setText('Saved user default to Slideshow/template.json. New events will use this layout.')
+        except (OSError, ValueError) as error:
+            self.default_status.setText('Could not save user default: '+str(error))
+
     def accept(self):
         try:
-            validate_template(self.value)
-            absent = missing_fonts(self.value)
-            if absent:
-                raise ValueError('Choose an available font: '+', '.join(absent))
+            self._validate()
         except ValueError as error:
-            QMessageBox.warning(self,'Template needs attention',str(error))
+            self.default_status.setText(str(error))
             return
-        super().accept()
+        self.accepted.emit()
+
+    def reject(self):
+        self.rejected.emit()

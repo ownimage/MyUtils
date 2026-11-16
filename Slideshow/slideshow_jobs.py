@@ -9,7 +9,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from template_render import default_template, validate_template, render_file, ensure_fonts
+from template_render import default_template, validate_template, render_file, ensure_fonts, preferred_template
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATE_FILE = 'template.json'
@@ -66,7 +66,7 @@ def load_project(folder):
             raise ValueError(f'Could not load highlight/{TEMPLATE_FILE}: {error}') from error
     else:
         legacy = _legacy_project(folder)
-        template = legacy['template'] if legacy is not None else default_template()
+        template = legacy['template'] if legacy is not None else preferred_template()
     return {'version': 1, 'template': validate_template(template)}
 
 
@@ -110,6 +110,13 @@ def _atomic_text(path, write):
         Path(filename).unlink(missing_ok=True)
 
 
+def save_template(folder, template):
+    folder = event_folder(folder)
+    template = validate_template(template)
+    _atomic_text(folder / 'highlight' / TEMPLATE_FILE,
+                 lambda stream: json.dump(template, stream, ensure_ascii=False, indent=2))
+
+
 def save_slides(folder, slides, template=None):
     folder = event_folder(folder)
     slides = list(slides)
@@ -120,8 +127,7 @@ def save_slides(folder, slides, template=None):
         writer.writerow(['Image', 'Date', 'Title'])
         writer.writerows((slide.image, slide.date, slide.title) for slide in slides)
     _atomic_text(folder / 'highlight' / CSV_FILE, write_csv)
-    _atomic_text(folder / 'highlight' / TEMPLATE_FILE,
-                 lambda stream: json.dump(template, stream, ensure_ascii=False, indent=2))
+    save_template(folder, template)
     _atomic_text(folder / 'slideshow' / CSV_FILE, write_csv)
 
 
@@ -153,6 +159,10 @@ def render_slides(folder, slides, *, cancelled=lambda: False, progress=lambda *a
                 renderer(target, title, date)
             else:
                 render_file(target, title, date, template)
+            if completed == 0:
+                # Record the exact run snapshot before publishing its first image.
+                _atomic_text(output / TEMPLATE_FILE,
+                             lambda stream: json.dump(template, stream, ensure_ascii=False, indent=2))
             os.replace(target, output / slide.image)
         completed += 1
         progress(completed, len(slides), slide.image)

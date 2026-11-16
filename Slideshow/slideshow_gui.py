@@ -11,8 +11,8 @@ from photo_tools.fluent import (QComboBox, QLineEdit, QPushButton, PrimaryPushBu
 from PySide6.QtCore import QSettings, QThread, QUrl, Qt, Signal, QSize
 from PySide6.QtGui import QDesktopServices, QImageReader, QPixmap
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView, QSplitter, QSizePolicy, QDialog)
-from slideshow_jobs import Slide, event_folder, load_slides, save_slides, render_slides, defaults, load_project
+    QHBoxLayout, QLabel, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView, QSplitter, QSizePolicy, QStackedWidget)
+from slideshow_jobs import Slide, event_folder, load_slides, save_slides, render_slides, defaults, load_project, save_template
 
 from template_render import ensure_fonts, default_template, render_image
 from template_editor import TemplateEditor
@@ -104,12 +104,16 @@ class SlideshowWindow(QMainWindow):
         self.busy = False
         self.worker = None
         self.loaded_folder = None
+        self.template_editor = None
         self.dirty = False
         self.setWindowTitle('Slideshow · Create titled slides')
         self.resize(1080, 840)
         self.setMinimumSize(900, 760)
         root = QWidget()
-        self.setCentralWidget(root)
+        self.main_page = root
+        self.content_stack = QStackedWidget()
+        self.content_stack.addWidget(root)
+        self.setCentralWidget(self.content_stack)
         layout = QVBoxLayout(root)
         layout.setContentsMargins(28, 24, 28, 22)
         layout.setSpacing(14)
@@ -197,7 +201,7 @@ class SlideshowWindow(QMainWindow):
         self.template.clicked.connect(self.edit_template)
         row.addWidget(self.template)
         row.addStretch()
-        self.save = QPushButton('Save slideshow')
+        self.save = QPushButton('Save data')
         self.save.clicked.connect(self.save_data)
         row.addWidget(self.save)
         self.cancel = QPushButton('Cancel')
@@ -209,6 +213,18 @@ class SlideshowWindow(QMainWindow):
         layout.addLayout(row)
         self._actions()
         self.suite_binding = bind_window(self, 'slideshow', suite)
+
+    @property
+    def dirty(self):
+        editor = getattr(self,'template_editor',None)
+        return getattr(self,'_dirty',False) or (editor is not None and editor.is_dirty())
+
+    @dirty.setter
+    def dirty(self, value):
+        self._dirty = bool(value)
+        editor = getattr(self,'template_editor',None)
+        if not value and editor is not None:
+            editor.mark_clean()
 
     def _appearance_changed(self):
         try:
@@ -316,6 +332,9 @@ class SlideshowWindow(QMainWindow):
     def edit_template(self):
         if self.loaded_folder is None or self.busy:
             return
+        if self.template_editor is not None:
+            self.content_stack.setCurrentWidget(self.template_editor)
+            return
         row = self.table.currentRow()
         date, title = defaults(self.loaded_folder)
         path = None
@@ -323,13 +342,32 @@ class SlideshowWindow(QMainWindow):
             path = self.loaded_folder / 'highlight' / self.table.item(row,0).text()
             date = self.table.item(row,1).text() or date
             title = self.table.item(row,2).text() or title
-        dialog = TemplateEditor(self.template_settings, path, title, date, self)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.template_settings = copy.deepcopy(dialog.value)
-            self.dirty = True
+        editor = TemplateEditor(self.template_settings, path, title, date, self.content_stack)
+        self.template_editor = editor
+        editor.accepted.connect(lambda: self._finish_template(True))
+        editor.rejected.connect(lambda: self._finish_template(False))
+        self.content_stack.addWidget(editor)
+        self.content_stack.setCurrentWidget(editor)
+
+    def _finish_template(self, accepted):
+        editor = self.template_editor
+        if editor is None:
+            return
+        if accepted:
+            try:
+                save_template(self.loaded_folder, editor.value)
+            except (OSError, ValueError) as error:
+                editor.default_status.setText('Could not save event template: '+str(error))
+                return
+            self.template_settings = copy.deepcopy(editor.value)
+        editor.canvas.timer.stop()
+        self.content_stack.setCurrentWidget(self.main_page)
+        self.content_stack.removeWidget(editor)
+        self.template_editor = None
+        editor.deleteLater()
+        if accepted:
             self._update_preview()
-            self.status.setText('Template updated. Save slideshow to keep it in the highlight folder.')
-        dialog.deleteLater()
+            self.status.setText('Template saved to highlight/template.json.')
 
     def create_slides(self):
         if self.busy or self.loaded_folder is None:
@@ -380,7 +418,7 @@ class SlideshowWindow(QMainWindow):
         if self.loaded_folder:
             folder = self.loaded_folder / 'slideshow'
             if not folder.is_dir():
-                QMessageBox.information(self, 'Slideshow folder', 'Save the slideshow or create slides first.')
+                QMessageBox.information(self, 'Slideshow folder', 'Use Save data or create slides first.')
             else:
                 QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 

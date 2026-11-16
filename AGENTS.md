@@ -50,7 +50,8 @@ and validation. Read it before making changes anywhere in this repository.
 | `Slideshow/slideshow_gui.py` | Date/title editor, rendered slide preview, background render worker |
 | `Slideshow/template_render.py` | Shared Qt renderer for live preview and JPEG output |
 | `Slideshow/template_editor.py` | Visual template canvas, drag/resize, fonts and controls |
-| `Slideshow/default_template.json` | Shipped default layout and font choices |
+| `Slideshow/default_template.json` | Shipped system layout; never overwrite on user-default save |
+| `Slideshow/template.json` | Optional user default, created by Save user default |
 | `Slideshow/render_slide.py` | Legacy single-image native render command |
 | `Slideshow/slideshow.py` | Compatibility create_slide API for native rendering |
 
@@ -114,10 +115,31 @@ and validation. Read it before making changes anywhere in this repository.
   7segment.ttf is included under SIL OFL; see FONT-SOURCES.md and 7segment-OFL.txt.
   Add only font files with appropriate distribution rights. Installed fonts can
   be selected without copying them; absent fonts are reported before export.
-- TemplateEditor works on a deep copy; Apply returns edits and Cancel preserves
-  the current template. Drag text to move; drag the blue corner to resize, or
-  change font/size/position/alignment/visibility/colours/glow controls. The reset
-  button must say **Reset to default**. Preview/export share the same renderer.
+- TemplateEditor is a QWidget page in SlideshowWindow's content_stack, not a
+  dialog or separate window. Replace the normal main_page until Apply/Cancel;
+  retain table edits, selection and app-switch state. Work on a deep copy;
+  Apply atomically saves highlight/template.json before copying it back and
+  returning. Do not save pending CSV edits on Apply. A failed save leaves the
+  editor open, its edits pending and the previous file/model intact. Cancel
+  discards only editor changes. A successful Apply does not mark a saved template
+  dirty; preserve any existing unsaved data edits. The parent dirty property combines
+  main-view edits and editor.is_dirty(); mark_clean prevents duplicate host-close
+  prompts after discard is accepted. Stop pending canvas timers on editor removal.
+- Drag text or its blue corner, or edit the font/size/position/alignment/
+  visibility/colours/glow. The reset button remains **Reset to default** and loads
+  the system layout. Preview/export share the same renderer.
+- Reusable user default is Slideshow/template.json; shipped system default is
+  Slideshow/default_template.json. Save user default atomically writes ONLY the
+  user file, immediately and independently of cancelling event edits. Load user
+  default / Load system default replace only the editor copy. Missing/corrupt
+  user defaults show an inline error without discarding current edits. New events
+  prefer the user default; saved event and migrated legacy layouts take precedence.
+- FontPicker is a native Qt combo with Fluent-compatible colours. Reuse the
+  native view's keyboardSearch for prefix search, repeated-letter cycling and
+  timeout; allow spaces during active typing. Native popup highlighted changes
+  must update the current index and render before Enter. Closed combo arrow keys
+  also update the preview. Test both open and closed dropdowns. Escape should
+  close the font popup before leaving the embedded editor.
 - Main view previews the rendered slide and follows mouse/keyboard selection.
   Date/title edits update it. Missing images and changed/empty event folders
   must clear stale previews and invalidate create/save readiness.
@@ -127,7 +149,7 @@ and validation. Read it before making changes anywhere in this repository.
   Highlight CSV is authoritative; the old slideshow CSV is read when it is absent.
   Never store per-photo overrides in new JSON files or let JSON mask CSV edits.
 - Store ONLY layout/styling in `event/highlight/template.json` using the existing
-  versioned template schema. Save slideshow and Create slideshow write CSV and
+  versioned template schema. Save data and Create slideshow write CSV and
   template separately using atomic file replacement. CSV/JSON are not a single
   filesystem transaction; propagate errors instead of claiming a failed save worked.
 - Migration: when CSVs are both absent, read overrides from the previous combined
@@ -188,12 +210,16 @@ py -3.11 -m venv venv
 - Offscreen Qt may expose no installed fonts in a restricted environment.
   Register Windows Segoe UI with QFontDatabase in the visual-check harness when
   necessary; missing-glyph screenshots are not automatically a production bug.
-- Latest full validation on 2026-11-16: all 90 tests passed (Launch 18,
-  Import 27, Yearbook 19, Slideshow 26) after CSV/template separation and removal
-  of the bundled commercial font. Checks include CSV precedence over older JSON,
-  Unicode/quoting/newlines/two-column rows, separate template round trips,
-  native rendering, system-font defaults, reset label and visual editing.
-  Source/docs search found no removed-product wording; diff formatting passed.
+- Latest full validation on 2026-11-16: all 103 tests passed (Launch 18,
+  Import 27, Yearbook 19, Slideshow 39) after immediate Apply template saving,
+  embedded editing and native font navigation. Tests cover atomic user-default
+  writes, immutable system defaults, new-event fallback and event precedence,
+  missing/corrupt user files, Apply/Cancel and unsaved-close state, font prefix
+  typing (including spaces), arrow-key popup previews and Escape handling.
+  The embedded layout was visually checked inside the shared main window;
+  diff formatting passed. Apply-save tests verify immediate template persistence,
+  unchanged CSV/source images and safe failure with the editor kept open.
+  Date/title overrides remain CSV, separate from layout.
 
 - Root launcher move validated on 2026-11-16: batch smoke check passed
   from a different working folder and a path containing spaces; arguments and
@@ -232,3 +258,25 @@ py -3.11 -m venv venv
 - Qt 6.12 can collapse Fluent DoubleSpinBox's embedded line edit to one pixel.
   The shared fluent.py adapter repairs its geometry when collapsed. Preserve
   the numeric visibility/editing test; model values alone do not catch this.
+
+- Added separate user/system defaults and embedded the template editor in the main
+  content stack. Font navigation now supports native prefix typing and live
+  arrow-key preview. Tests isolate USER_DEFAULT_PATH so saved user layouts cannot
+  leak into test runs and tests never overwrite the real project-level default.
+
+- Save action labels are **Save user default** (project-level template) and
+  **Save data** (main view). Apply template persists the event template immediately,
+  independently of unsaved date/title data. Keep inline failure handling and the
+  atomic-save/source/CSV-preservation checks when changing these actions.
+
+- Create slideshow also writes event/slideshow/template.json from the run's
+  validated template snapshot, not by copying a potentially changed event file.
+  Save it atomically after the first successful render and before publishing that
+  image; update it once per run. Partial/cancelled runs retain the snapshot.
+  A first-image render failure leaves existing output metadata untouched; a
+  template-write failure must not replace the existing image or source. This
+  output copy is a record, not a replacement for highlight/template.json.
+
+- Output-template copy validated on 2026-11-16: all 42 Slideshow tests passed,
+  including snapshot refresh, partial cancellation and template-write failure.
+  Diff formatting passed; the latest full-suite baseline remains 103 tests above.

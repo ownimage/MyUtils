@@ -2,6 +2,10 @@ import os
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 import copy
 import unittest
+import tempfile
+import json
+from pathlib import Path
+from unittest.mock import patch
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
@@ -17,6 +21,12 @@ class TemplateEditorTests(unittest.TestCase):
         ensure_fonts()
 
     def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.user_default = Path(self.temporary.name)/'template.json'
+        self.defaults_patch = patch('template_render.USER_DEFAULT_PATH',self.user_default)
+        self.defaults_patch.start()
+        self.addCleanup(self.defaults_patch.stop)
         self.original = default_template()
         self.dialog = TemplateEditor(self.original,title='Title',date='2026 06 15')
         self.dialog.show()
@@ -102,6 +112,79 @@ class TemplateEditorTests(unittest.TestCase):
         canvas = self.dialog.canvas
         expected = render_image(None,'Title','2026 06 15',self.original)
         self.assertEqual(canvas.rendered,expected)
+
+    def test_save_user_default_and_load_user_or_system(self):
+        from template_render import SYSTEM_DEFAULT_PATH
+        system_bytes = SYSTEM_DEFAULT_PATH.read_bytes()
+        self.dialog.size.setValue(19)
+        self.dialog.save_as_default()
+        saved = json.loads(self.user_default.read_text())
+        self.assertEqual(saved['title']['size_pt'],19)
+        self.assertNotIn('images',saved)
+        self.dialog.load_system_default()
+        self.assertEqual(self.dialog.value,self.original)
+        self.dialog.load_user_default()
+        self.assertEqual(self.dialog.value['title']['size_pt'],19)
+        self.assertEqual(SYSTEM_DEFAULT_PATH.read_bytes(),system_bytes)
+
+    def test_missing_or_invalid_user_default_preserves_current_template(self):
+        self.dialog.size.setValue(19)
+        current = copy.deepcopy(self.dialog.value)
+        self.dialog.load_user_default()
+        self.assertIn('No user default',self.dialog.default_status.text())
+        self.assertEqual(self.dialog.value,current)
+        self.user_default.write_text('{broken',encoding='utf-8')
+        self.dialog.load_user_default()
+        self.assertIn('Could not load',self.dialog.default_status.text())
+        self.assertEqual(self.dialog.value,current)
+
+    def test_failed_default_save_preserves_previous_file(self):
+        self.dialog.save_as_default()
+        original = self.user_default.read_bytes()
+        self.dialog.size.setValue(19)
+        with patch('template_render.os.replace',side_effect=PermissionError('Read only')):
+            self.dialog.save_as_default()
+        self.assertEqual(self.user_default.read_bytes(),original)
+        self.assertIn('Could not save',self.dialog.default_status.text())
+        self.assertFalse(list(self.user_default.parent.glob('.template-*.tmp')))
+
+    def test_font_typeahead_updates_the_render(self):
+        picker = self.dialog.font
+        picker.setCurrentIndex(0)
+        self.dialog.canvas.refresh()
+        before = self.dialog.canvas.rendered.copy()
+        picker.setFocus()
+        QTest.keyClicks(picker,'segoe u')
+        QTest.qWait(60)
+        self.assertEqual(picker.currentText(),'Segoe UI')
+        self.assertEqual(self.dialog.value['title']['font_family'],'Segoe UI')
+        self.assertNotEqual(before,self.dialog.canvas.rendered)
+
+    def test_font_popup_arrows_preview_without_enter(self):
+        picker = self.dialog.font
+        picker.setCurrentIndex(0)
+        self.dialog.canvas.refresh()
+        before = self.dialog.canvas.rendered.copy()
+        picker.showPopup()
+        self.app.processEvents()
+        QTest.keyClick(picker.view(),Qt.Key_Down)
+        QTest.qWait(60)
+        self.assertEqual(picker.currentIndex(),1)
+        self.assertTrue(picker.view().isVisible())
+        self.assertEqual(self.dialog.value['title']['font_family'],picker.itemData(1))
+        self.assertNotEqual(before,self.dialog.canvas.rendered)
+        picker.hidePopup()
+
+    def test_font_popup_supports_multi_letter_search(self):
+        picker = self.dialog.font
+        picker.setCurrentIndex(0)
+        picker.showPopup()
+        self.app.processEvents()
+        QTest.keyClicks(picker.view(),'segoe s')
+        QTest.qWait(60)
+        self.assertEqual(self.dialog.value['title']['font_family'],'Segoe Script')
+        self.assertTrue(picker.view().isVisible())
+        picker.hidePopup()
 
     def test_bad_template_rejected_instead_of_silent_reset(self):
         invalid = copy.deepcopy(self.original)

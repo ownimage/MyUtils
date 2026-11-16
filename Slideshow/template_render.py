@@ -4,6 +4,7 @@ import copy
 import json
 import math
 import os
+import tempfile
 from pathlib import Path
 from PySide6.QtCore import Qt, QPointF, QRectF, QSize
 from PySide6.QtGui import (QColor, QFont, QFontDatabase, QImage, QImageReader,
@@ -11,6 +12,8 @@ from PySide6.QtGui import (QColor, QFont, QFontDatabase, QImage, QImageReader,
 from PySide6.QtWidgets import QApplication
 
 ROOT = Path(__file__).resolve().parent
+SYSTEM_DEFAULT_PATH = ROOT / 'default_template.json'
+USER_DEFAULT_PATH = ROOT / 'template.json'
 _app = None
 _registered = set()
 
@@ -30,7 +33,34 @@ def ensure_fonts():
 
 
 def default_template():
-    return json.loads((ROOT / 'default_template.json').read_text(encoding='utf-8'))
+    return validate_template(json.loads(SYSTEM_DEFAULT_PATH.read_text(encoding='utf-8')))
+
+
+def user_default_template():
+    try:
+        value = json.loads(USER_DEFAULT_PATH.read_text(encoding='utf-8-sig'))
+    except FileNotFoundError as error:
+        raise ValueError('No user default saved yet. Use Save user default first.') from error
+    except (OSError, ValueError) as error:
+        raise ValueError(f'Could not load user default: {error}') from error
+    return validate_template(value)
+
+
+def preferred_template():
+    return user_default_template() if USER_DEFAULT_PATH.exists() else default_template()
+
+
+def save_user_default(value):
+    template = validate_template(value)
+    descriptor, filename = tempfile.mkstemp(dir=USER_DEFAULT_PATH.parent,
+                                             prefix='.template-',suffix='.tmp')
+    try:
+        with os.fdopen(descriptor,'w',encoding='utf-8') as stream:
+            json.dump(template,stream,ensure_ascii=False,indent=2)
+            stream.write('\n')
+        os.replace(filename,USER_DEFAULT_PATH)
+    finally:
+        Path(filename).unlink(missing_ok=True)
 
 
 def validate_template(value):

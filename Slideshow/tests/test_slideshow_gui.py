@@ -22,6 +22,9 @@ class SlideshowGuiTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
+        self.defaults_patch = patch('template_render.USER_DEFAULT_PATH',self.root/'user-default.json')
+        self.defaults_patch.start()
+        self.addCleanup(self.defaults_patch.stop)
         self.event = self.root / '20260615 Holiday'
         (self.event / 'highlight').mkdir(parents=True)
         image = QImage(640, 320, QImage.Format.Format_RGB32)
@@ -47,6 +50,7 @@ class SlideshowGuiTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_launcher_and_edit_save_reload(self):
+        self.assertEqual(self.page.save.text(),'Save data')
         self.assertIn('slideshow', self.window.tiles)
         self.assertIn('slideshow', self.window.navigation.launch_actions)
         self.assertIsInstance(self.page.create, PushButton)
@@ -125,6 +129,123 @@ class SlideshowGuiTests(unittest.TestCase):
         self.page.template_settings['title']['size_pt'] = 15
         self.page.load()
         self.assertEqual(self.page.template_settings['title']['size_pt'],22)
+
+    def test_template_editor_replaces_content_and_apply_preserves_table(self):
+        self.window.show()
+        self.page.load()
+        self.page.table.item(0,2).setText('Unchanged table edit')
+        self.page.table.setCurrentCell(0,2)
+        self.page.edit_template()
+        editor = self.page.template_editor
+        self.app.processEvents()
+        self.assertIs(self.page.content_stack.currentWidget(),editor)
+        self.assertFalse(editor.isWindow())
+        self.assertIs(editor.window(),self.window)
+        self.assertFalse(self.page.main_page.isVisible())
+        editor.size.setValue(19)
+        editor.accept()
+        self.assertIsNone(self.page.template_editor)
+        self.assertIs(self.page.content_stack.currentWidget(),self.page.main_page)
+        self.assertEqual(self.page.template_settings['title']['size_pt'],19)
+        self.assertEqual(self.page.table.item(0,2).text(),'Unchanged table edit')
+        self.assertEqual(self.page.table.currentColumn(),2)
+        self.assertTrue(self.page.dirty)
+
+    def test_apply_saves_template_immediately_without_saving_csv_edits(self):
+        import json
+        self.page.load()
+        self.page.table.item(0,2).setText('Previously saved title')
+        self.assertTrue(self.page.save_data())
+        csv_path = self.event/'highlight/data.txt'
+        original_csv = csv_path.read_bytes()
+        original_photo = (self.event/'highlight/001.jpg').read_bytes()
+        self.page.table.item(0,2).setText('Still unsaved data edit')
+        self.page.edit_template()
+        editor = self.page.template_editor
+        self.assertEqual(editor.save_default.text(),'Save user default')
+        editor.size.setValue(19)
+        editor.accept()
+        self.assertIsNone(self.page.template_editor)
+        saved = json.loads((self.event/'highlight/template.json').read_text())
+        self.assertEqual(saved['title']['size_pt'],19)
+        self.assertEqual(csv_path.read_bytes(),original_csv)
+        self.assertEqual((self.event/'highlight/001.jpg').read_bytes(),original_photo)
+        self.assertTrue(self.page.dirty)
+        # With no pending CSV edit, Apply leaves no unsaved template state.
+        self.page.save_data()
+        self.page.edit_template()
+        self.page.template_editor.size.setValue(20)
+        self.page.template_editor.accept()
+        self.assertFalse(self.page.dirty)
+        self.page.load()
+        self.assertEqual(self.page.template_settings['title']['size_pt'],20)
+
+    def test_apply_save_failure_keeps_editor_and_previous_template(self):
+        self.page.load()
+        self.page.save_data()
+        path = self.event/'highlight/template.json'
+        previous = path.read_bytes()
+        original_size = self.page.template_settings['title']['size_pt']
+        self.page.edit_template()
+        editor = self.page.template_editor
+        editor.size.setValue(19)
+        with patch('slideshow_jobs.os.replace',side_effect=PermissionError('Read only')):
+            editor.accept()
+        self.assertIs(self.page.template_editor,editor)
+        self.assertIs(self.page.content_stack.currentWidget(),editor)
+        self.assertEqual(path.read_bytes(),previous)
+        self.assertEqual(self.page.template_settings['title']['size_pt'],original_size)
+        self.assertIn('Could not save event template',editor.default_status.text())
+        self.assertTrue(self.page.dirty)
+        self.assertFalse(list(path.parent.glob('.slideshow-*.tmp')))
+        editor.reject()
+        self.assertFalse(self.page.dirty)
+
+    def test_cancel_embedded_editor_discards_only_its_changes(self):
+        self.page.load()
+        initial = self.page.template_settings['title']['size_pt']
+        self.page.edit_template()
+        self.page.template_editor.size.setValue(19)
+        self.assertTrue(self.page.dirty)
+        self.page.template_editor.reject()
+        self.assertFalse(self.page.dirty)
+        self.assertEqual(self.page.template_settings['title']['size_pt'],initial)
+        self.page.table.item(0,2).setText('Keep this edit')
+        self.page.edit_template()
+        self.page.template_editor.size.setValue(18)
+        self.page.template_editor.reject()
+        self.assertTrue(self.page.dirty)
+        self.assertEqual(self.page.table.item(0,2).text(),'Keep this edit')
+
+    def test_escape_closes_font_popup_before_leaving_embedded_editor(self):
+        self.window.show()
+        self.page.load()
+        self.page.edit_template()
+        editor = self.page.template_editor
+        picker = editor.font
+        picker.showPopup()
+        self.app.processEvents()
+        QTest.keyClick(picker.view(),Qt.Key_Escape)
+        self.app.processEvents()
+        self.assertIs(self.page.template_editor,editor)
+        self.assertFalse(picker.view().isVisible())
+        editor.reject()
+
+    def test_host_close_and_app_switch_preserve_pending_template_edits(self):
+        self.window.show()
+        self.page.load()
+        self.page.edit_template()
+        editor = self.page.template_editor
+        editor.size.setValue(19)
+        self.window.open_app('yearbook')
+        self.window.open_app('slideshow')
+        self.assertIs(self.page.content_stack.currentWidget(),editor)
+        with patch('slideshow_gui.QMessageBox.question',return_value=QMessageBox.No) as question:
+            self.window.close()
+        question.assert_called_once()
+        self.assertIn(self.window,self.context.windows)
+        self.assertIs(self.page.template_editor,editor)
+        editor.reject()
 
     def test_native_worker_creates_jpeg_without_external_process(self):
         self.page.load()

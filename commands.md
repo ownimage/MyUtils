@@ -55,7 +55,16 @@ test in Camera Import.
 ```
 
 Slideshow's background renderer and original `Slideshow/run.cmd` use the shared
-environment. **Save slideshow** writes date/title overrides as backwards-compatible
+environment. **Save data** writes date/title overrides as backwards-compatible
 CSV in `highlight/data.txt` (also copied to `slideshow/data.txt`) and layout only
 in `highlight/template.json`. For visual layout changes, load an event and select
-**Edit template**. **Reset to default** restores the shipped layout.
+**Edit template**; it replaces the main window content until Apply or Cancel.
+**Apply template** saves `highlight/template.json` immediately before returning;
+pending date/title edits remain unsaved until **Save data**.
+**Save user default** writes `Slideshow/template.json`. **Load user default** restores
+that layout; **Load system default** (or **Reset to default**) loads the unchanged
+`Slideshow/default_template.json`. New events use the user default when saved.
+Type a font-name prefix or use the font dropdown's Up/Down arrows for live preview.
+
+**Create slideshow** also writes `slideshow/template.json` alongside the output
+images, using the exact template snapshot for that run.

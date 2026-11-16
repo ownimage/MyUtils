@@ -11,6 +11,9 @@ class SlideshowTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
+        self.defaults_patch = patch('template_render.USER_DEFAULT_PATH',Path(self.temporary.name)/'user-default.json')
+        self.defaults_patch.start()
+        self.addCleanup(self.defaults_patch.stop)
         self.folder = Path(self.temporary.name) / '20260615 Holiday'
         (self.folder / 'highlight').mkdir(parents=True)
         (self.folder / 'highlight' / '001.jpg').write_bytes(b'original')
@@ -115,6 +118,55 @@ class SlideshowTests(unittest.TestCase):
         data = self.folder/'highlight/data.txt'
         data.write_text('Image,Date,Title\n001.jpg,Custom date\n',encoding='utf-8-sig')
         self.assertEqual(load_slides(self.folder)[0],Slide('001.jpg','Custom date',''))
+
+    def test_user_default_applies_to_new_events_and_local_template_wins(self):
+        from template_render import default_template,save_user_default
+        user = default_template()
+        user['title']['size_pt'] = 19
+        save_user_default(user)
+        self.assertEqual(load_project(self.folder)['template'],user)
+        event = default_template()
+        event['title']['size_pt'] = 21
+        save_slides(self.folder,load_slides(self.folder),event)
+        user['title']['size_pt'] = 23
+        save_user_default(user)
+        self.assertEqual(load_project(self.folder)['template'],event)
+
+    def test_render_records_exact_template_snapshot_and_refreshes_it(self):
+        from template_render import default_template
+        template = default_template()
+        template['title']['size_pt'] = 19
+        slides = [Slide('001.jpg')]
+        render_slides(self.folder,slides,template=template,renderer=lambda *args:None)
+        path = self.folder/'slideshow/template.json'
+        self.assertEqual(json.loads(path.read_text()),template)
+        template['date']['x'] = 100
+        render_slides(self.folder,slides,template=template,renderer=lambda *args:None)
+        self.assertEqual(json.loads(path.read_text()),template)
+        self.assertFalse((self.folder/'highlight/template.json').exists())
+        self.assertNotIn('images',json.loads(path.read_text()))
+
+    def test_cancelled_partial_run_keeps_its_template_snapshot(self):
+        from template_render import default_template
+        template = default_template()
+        template['date']['x'] = 90
+        completed = []
+        count = render_slides(self.folder,load_slides(self.folder),template=template,
+            renderer=lambda *args:None,cancelled=lambda:bool(completed),
+            progress=lambda *args:completed.append(args))
+        self.assertEqual(count,1)
+        self.assertEqual(json.loads((self.folder/'slideshow/template.json').read_text()),template)
+
+    def test_snapshot_save_failure_does_not_replace_existing_image(self):
+        output = self.folder/'slideshow'
+        output.mkdir()
+        image = output/'001.jpg'
+        image.write_bytes(b'previous slide')
+        with patch('slideshow_jobs._atomic_text',side_effect=PermissionError('Read only')):
+            with self.assertRaises(PermissionError):
+                render_slides(self.folder,[Slide('001.jpg')],renderer=lambda *args:None)
+        self.assertEqual(image.read_bytes(),b'previous slide')
+        self.assertEqual((self.folder/'highlight/001.jpg').read_bytes(),b'original')
 
     def test_rejects_image_outside_highlights(self):
         with self.assertRaises(ValueError):

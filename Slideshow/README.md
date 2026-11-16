@@ -10,12 +10,19 @@ Rendering uses the shared MyUtils Python environment.
    folder name: `20260615 Holiday` gives `2026 06 15` and `Holiday`.
 2. Select a date/title cell to see the finished slide preview. Table changes
    update the preview, which follows mouse and keyboard selection.
-3. Select **Edit template**. Choose Title or Date, or click the text on the canvas.
+3. Select **Edit template**. It replaces the main window content while you edit;
+   no separate editor window opens. Choose Title or Date, or click the text.
    Drag text to move it; drag its blue square to resize it. Controls set font,
    size, position, alignment, visibility, text colour and outer glow.
-   **Reset to default** restores the shipped layout. **Apply template** returns
-   edits to the main view; **Cancel** leaves the current template unchanged.
-4. **Save slideshow** saves the following files in the event's highlight folder:
+   Type a font-name prefix in the font selector to jump through the list, or use
+   Up/Down to browse. The text renders as the highlighted font changes, including
+   while the dropdown is open; Enter is not required to see a preview.
+   **Apply template** immediately saves `highlight/template.json`, then returns
+   to the photo table. It does not save pending date/title edits. If saving fails,
+   the editor stays open with an error; the previous template remains intact.
+   **Cancel** returns without saving template edits. Table edits and selection remain.
+   Unsaved template edits also participate in the main window's close prompt.
+4. **Save data** saves the following files in the event's highlight folder:
 
    - **data.txt**: ordinary CSV with the original `Image,Date,Title` header.
    - **template.json**: layout and styling only, with no image overrides.
@@ -23,15 +30,38 @@ Rendering uses the shared MyUtils Python environment.
    A matching CSV is also written to `slideshow/data.txt` for older tools.
    Creating slides saves these settings first.
 5. **Create slideshow** renders fresh copies of highlights into `slideshow`.
-   Existing matching outputs are replaced only after each successful render.
+   It also writes **slideshow/template.json**, recording the exact layout used
+   for that run. Existing matching outputs are replaced after successful rendering.
+   The template copy is updated before the first new slide is published, and
+   remains available if a partially completed run is cancelled.
 
 CSV is the source of truth for dates and titles. You can edit it externally;
 use normal CSV quoting for commas/newlines and UTF-8 for Unicode. Two-column
 rows (`Image,Date`) are accepted, with a blank title using the folder default.
 
 Template edits affect all photos in that event. Each event's layout reloads
-from `highlight/template.json`; other events use their saved layouts or defaults.
+from `highlight/template.json`. New events use the saved user default when present,
+otherwise the system default. Existing event layouts are not overwritten.
 Unsaved changes prompt before leaving or closing the view.
+
+## User and system defaults
+
+Within the embedded template editor:
+
+- **Save user default** immediately writes the current layout to
+  **MyUtils/Slideshow/template.json**, using atomic replacement. This contains
+  only template settings, never date/title overrides or image paths.
+- **Load user default** loads that saved project-level layout into the editor.
+  If no user default exists or it is invalid, the current edits stay unchanged
+  and an inline message explains the problem.
+- **Load system default** loads the shipped `Slideshow/default_template.json`.
+- **Reset to default** is a shortcut for loading the system default.
+
+The system default is never changed by Save user default. Loading either default
+changes only the editor until **Apply template**. Save user default is a separate,
+immediate action: cancelling event edits does not undo a deliberately saved user
+default. **Apply template** saves the event's template immediately; **Save data**
+keeps its existing CSV/template save behaviour.
 
 ## Default layout and fonts
 
