@@ -114,9 +114,14 @@ class SlideshowGuiTests(unittest.TestCase):
         self.page.table.item(0,2).setText('Saved title')
         self.assertTrue(self.page.save_data())
         import json
-        project = json.loads((self.event/'highlight/slideshow.json').read_text())
-        self.assertEqual(project['template']['title']['size_pt'],22)
-        self.assertEqual(project['images'][0]['title'],'Saved title')
+        project = json.loads((self.event/'highlight/template.json').read_text())
+        self.assertEqual(project['title']['size_pt'],22)
+        import csv
+        with (self.event/'highlight/data.txt').open(newline='',encoding='utf-8') as stream:
+            rows = list(csv.reader(stream))
+        self.assertEqual(rows[0],['Image','Date','Title'])
+        self.assertEqual(rows[1][2],'Saved title')
+        self.assertNotIn('images',project)
         self.page.template_settings['title']['size_pt'] = 15
         self.page.load()
         self.assertEqual(self.page.template_settings['title']['size_pt'],22)

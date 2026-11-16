@@ -32,15 +32,21 @@ class TemplateEditorTests(unittest.TestCase):
         return QPoint(round(rect.x()+point.x()*rect.width()/1920),
                       round(rect.y()+point.y()*rect.height()/1080))
 
-    def test_bundled_fonts_and_psd_default_geometry(self):
+    def test_default_uses_system_title_font_and_expected_anchors(self):
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
         self.assertEqual(missing_fonts(self.original),[])
+        self.assertEqual(self.original['title']['font_family'],'Segoe Script')
+        self.assertEqual(self.original['title']['font_file'],'')
         self.assertEqual(self.original['title']['size_pt'],28.8)
         self.assertEqual(self.original['date']['size_pt'],11.2)
-        bounds = text_path('Title',self.original['title']).boundingRect()
-        self.assertAlmostEqual(bounds.left(),1596,delta=2)
-        self.assertAlmostEqual(bounds.top(),30,delta=2)
-        self.assertAlmostEqual(bounds.right(),1840,delta=2)
-        self.assertAlmostEqual(bounds.bottom(),139,delta=2)
+        self.assertEqual(self.original['title']['x'],1825.5)
+        self.assertAlmostEqual(self.original['title']['y'],128.1,delta=.01)
+        self.assertEqual(self.original['title']['align'],'right')
+        self.assertFalse(list(root.glob('*LaSalle*')))
+        self.assertFalse((root/'segoesc.ttf').exists())
+        from photo_tools.fluent import QPushButton
+        self.assertIn('Reset to default',[b.text() for b in self.dialog.findChildren(QPushButton)])
 
     def test_controls_change_actual_render_and_cancel_keeps_original(self):
         before = self.dialog.canvas.rendered.copy()

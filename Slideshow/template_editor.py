@@ -211,7 +211,7 @@ class TemplateEditor(QDialog):
         body.addWidget(panel)
         outer.addLayout(body,1)
         buttons = QHBoxLayout()
-        reset = QPushButton('Reset to Photoshop layout')
+        reset = QPushButton('Reset to default')
         reset.clicked.connect(self.reset)
         buttons.addWidget(reset)
         buttons.addStretch()
@@ -256,7 +256,7 @@ class TemplateEditor(QDialog):
         self.glow.setValue(layer['glow_size'])
         del blockers
         absent = missing_fonts(self.value)
-        self.warning.setText('Missing font: '+', '.join(absent) if absent else 'Changes apply to every photo in this event. Save the slideshow to keep them in highlight/slideshow.json.')
+        self.warning.setText('Missing font: '+', '.join(absent) if absent else 'Changes apply to every photo in this event. Save the slideshow to keep them in highlight/template.json.')
         self.canvas.update()
 
     def apply_controls(self, *_):
@@ -271,7 +271,7 @@ class TemplateEditor(QDialog):
         self.canvas.schedule()
         absent = missing_fonts(self.value)
         if not absent:
-            self.warning.setText('Changes apply to every photo in this event. Save the slideshow to keep them in highlight/slideshow.json.')
+            self.warning.setText('Changes apply to every photo in this event. Save the slideshow to keep them in highlight/template.json.')
 
     def pick_color(self, key):
         layer = self.value[self.layer.currentData()]

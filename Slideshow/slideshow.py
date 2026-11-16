@@ -1,4 +1,4 @@
-"""Compatibility API for the native slideshow renderer; Photoshop is not used."""
+"""Compatibility API for the native slideshow renderer."""
 from template_render import default_template, render_file, ensure_fonts
 
 

@@ -307,7 +307,7 @@ class SlideshowWindow(QMainWindow):
         try:
             save_slides(self.loaded_folder, self.slides(), self.template_settings)
             self.dirty = False
-            self.status.setText('Saved layout and dates/titles to highlight/slideshow.json (CSV also exported).')
+            self.status.setText('Saved dates/titles to highlight/data.txt and layout to highlight/template.json.')
             return True
         except Exception as error:
             QMessageBox.warning(self, 'Could not save data', str(error))

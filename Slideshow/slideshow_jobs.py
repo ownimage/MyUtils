@@ -12,7 +12,9 @@ from pathlib import Path
 from template_render import default_template, validate_template, render_file, ensure_fonts
 
 ROOT = Path(__file__).resolve().parent
-PROJECT_FILE = 'slideshow.json'
+TEMPLATE_FILE = 'template.json'
+CSV_FILE = 'data.txt'
+LEGACY_PROJECT_FILE = 'slideshow.json'
 
 
 @dataclass
@@ -38,39 +40,57 @@ def defaults(folder):
     return date, title
 
 
-def load_project(folder):
-    folder = event_folder(folder)
-    path = folder / 'highlight' / PROJECT_FILE
+def _legacy_project(folder):
+    path = folder / 'highlight' / LEGACY_PROJECT_FILE
     if not path.exists():
-        return {'version': 1, 'template': default_template(), 'images': []}
+        return None
     try:
         project = json.loads(path.read_text(encoding='utf-8-sig'))
     except (ValueError, OSError) as error:
-        raise ValueError(f'Could not load highlight/{PROJECT_FILE}: {error}') from error
+        raise ValueError(f'Could not load older slideshow settings: {error}') from error
     if not isinstance(project, dict) or project.get('version') != 1 or not isinstance(project.get('images'), list):
-        raise ValueError('Unsupported slideshow settings format.')
-    project['template'] = validate_template(project.get('template'))
+        raise ValueError('Unsupported older slideshow settings format.')
     for row in project['images']:
         if not isinstance(row, dict) or any(not isinstance(row.get(key), str) for key in ('image','date','title')):
-            raise ValueError('Invalid image overrides in highlight/slideshow.json.')
+            raise ValueError('Invalid image overrides in older slideshow settings.')
     return project
 
 
-def load_slides(folder):
+def load_project(folder):
     folder = event_folder(folder)
-    overrides = {}
-    project_path = folder / 'highlight' / PROJECT_FILE
-    if project_path.exists():
-        overrides = {row['image'].casefold(): (row['date'], row['title']) for row in load_project(folder)['images']}
+    path = folder / 'highlight' / TEMPLATE_FILE
+    if path.exists():
+        try:
+            template = json.loads(path.read_text(encoding='utf-8-sig'))
+        except (ValueError, OSError) as error:
+            raise ValueError(f'Could not load highlight/{TEMPLATE_FILE}: {error}') from error
     else:
-        data = folder / 'slideshow' / 'data.txt'
+        legacy = _legacy_project(folder)
+        template = legacy['template'] if legacy is not None else default_template()
+    return {'version': 1, 'template': validate_template(template)}
+
+
+def _load_overrides(folder):
+    # Prefer the saved highlight CSV; old slideshow CSVs remain importable.
+    for data in (folder / 'highlight' / CSV_FILE, folder / 'slideshow' / CSV_FILE):
         if data.exists():
+            overrides = {}
             with data.open(newline='', encoding='utf-8-sig') as stream:
                 reader = csv.reader(stream)
                 next(reader, None)
                 for row in reader:
                     if row:
-                        overrides[row[0].casefold()] = (row + ['', ''])[1:3]
+                        overrides[row[0].casefold()] = tuple((row + ['', ''])[1:3])
+            return overrides
+    legacy = _legacy_project(folder)
+    if legacy is not None:
+        return {row['image'].casefold(): (row['date'], row['title']) for row in legacy['images']}
+    return {}
+
+
+def load_slides(folder):
+    folder = event_folder(folder)
+    overrides = _load_overrides(folder)
     result = []
     for image in sorted((folder / 'highlight').iterdir(), key=lambda p: p.name.casefold()):
         if image.is_file() and image.suffix.lower() in ('.jpg', '.jpeg'):
@@ -94,16 +114,15 @@ def save_slides(folder, slides, template=None):
     folder = event_folder(folder)
     slides = list(slides)
     template = validate_template(template if template is not None else load_project(folder)['template'])
-    project = {'version': 1, 'template': template,
-               'images': [dict(image=s.image, date=s.date, title=s.title) for s in slides]}
-    _atomic_text(folder / 'highlight' / PROJECT_FILE,
-                 lambda stream: json.dump(project, stream, ensure_ascii=False, indent=2))
-    # Retain a CSV export for older tools; highlight/slideshow.json is authoritative.
+    # Only layout belongs in JSON; date/title overrides remain ordinary CSV.
     def write_csv(stream):
         writer = csv.writer(stream)
         writer.writerow(['Image', 'Date', 'Title'])
         writer.writerows((slide.image, slide.date, slide.title) for slide in slides)
-    _atomic_text(folder / 'slideshow' / 'data.txt', write_csv)
+    _atomic_text(folder / 'highlight' / CSV_FILE, write_csv)
+    _atomic_text(folder / 'highlight' / TEMPLATE_FILE,
+                 lambda stream: json.dump(template, stream, ensure_ascii=False, indent=2))
+    _atomic_text(folder / 'slideshow' / CSV_FILE, write_csv)
 
 
 def render_slides(folder, slides, *, cancelled=lambda: False, progress=lambda *args: None,

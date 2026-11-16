@@ -39,8 +39,8 @@ class SlideshowTests(unittest.TestCase):
         output.mkdir()
         (output / '001.jpg').write_bytes(b'previous')
         def renderer(*args):
-            raise RuntimeError('Photoshop unavailable')
-        with self.assertRaisesRegex(RuntimeError, 'Photoshop unavailable'):
+            raise RuntimeError('Renderer unavailable')
+        with self.assertRaisesRegex(RuntimeError, 'Renderer unavailable'):
             render_slides(self.folder, [Slide('001.jpg')], renderer=renderer)
         self.assertEqual((output / '001.jpg').read_bytes(), b'previous')
         self.assertEqual([p.name for p in output.iterdir()], ['001.jpg'])
@@ -71,19 +71,50 @@ class SlideshowTests(unittest.TestCase):
         save_slides(self.folder,[Slide('001.jpg','Yesterday','Café, Cornwall')],template)
         project = load_project(self.folder)
         self.assertEqual(project['template']['title']['size_pt'],20)
-        self.assertEqual(project['images'][0]['title'],'Café, Cornwall')
+        self.assertFalse((self.folder/'highlight/slideshow.json').exists())
+        saved = json.loads((self.folder/'highlight/template.json').read_text())
+        self.assertNotIn('images',saved)
+        self.assertEqual((self.folder/'highlight/data.txt').read_bytes(),
+                         (self.folder/'slideshow/data.txt').read_bytes())
         self.assertEqual(load_slides(self.folder)[0].title,'Café, Cornwall')
 
-    def test_legacy_csv_import_and_invalid_project_are_distinct(self):
+    def test_legacy_csv_import_and_invalid_template_are_distinct(self):
         output = self.folder/'slideshow'
         output.mkdir()
         (output/'data.txt').write_text('Image,Date,Title\n001.jpg,Yesterday,Legacy title\n',encoding='utf-8-sig')
         self.assertEqual(load_slides(self.folder)[0].title,'Legacy title')
-        project = self.folder/'highlight/slideshow.json'
-        project.write_text('{broken',encoding='utf-8')
+        template = self.folder/'highlight/template.json'
+        template.write_text('{broken',encoding='utf-8')
         with self.assertRaisesRegex(ValueError,'Could not load'):
-            load_slides(self.folder)
-        self.assertEqual(project.read_text(),'{broken')
+            load_project(self.folder)
+        self.assertEqual(load_slides(self.folder)[0].title,'Legacy title')
+        self.assertEqual(template.read_text(),'{broken')
+
+    def test_csv_edits_take_priority_over_older_json(self):
+        from template_render import default_template
+        old = {'version':1,'template':default_template(),
+               'images':[{'image':'001.jpg','date':'Old date','title':'Old JSON title'}]}
+        legacy = self.folder/'highlight/slideshow.json'
+        legacy.write_text(json.dumps(old),encoding='utf-8')
+        self.assertEqual(load_slides(self.folder)[0].title,'Old JSON title')
+        save_slides(self.folder,load_slides(self.folder))
+        data = self.folder/'highlight/data.txt'
+        data.write_text('Image,Date,Title\n001.jpg,New date,CSV edited title\n',encoding='utf-8')
+        self.assertEqual(load_slides(self.folder)[0].title,'CSV edited title')
+        self.assertEqual(load_slides(self.folder)[0].date,'New date')
+        self.assertEqual(json.loads(legacy.read_text()),old)
+        # Saved template and CSV remain usable even if the abandoned JSON is bad.
+        legacy.write_text('{broken',encoding='utf-8')
+        self.assertEqual(load_project(self.folder)['template'],default_template())
+        self.assertEqual(load_slides(self.folder)[0].title,'CSV edited title')
+
+    def test_csv_quoting_newlines_unicode_and_two_column_rows(self):
+        slides = [Slide('001.jpg','Yesterday','Café, Cornwall\nSecond line')]
+        save_slides(self.folder,slides)
+        self.assertEqual(load_slides(self.folder)[0],slides[0])
+        data = self.folder/'highlight/data.txt'
+        data.write_text('Image,Date,Title\n001.jpg,Custom date\n',encoding='utf-8-sig')
+        self.assertEqual(load_slides(self.folder)[0],Slide('001.jpg','Custom date',''))
 
     def test_rejects_image_outside_highlights(self):
         with self.assertRaises(ValueError):

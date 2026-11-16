@@ -1,8 +1,9 @@
-"""Shared, Photoshop-free preview and JPEG renderer. Coordinates are canvas pixels."""
+"""Shared native preview and JPEG renderer. Coordinates are canvas pixels."""
 from __future__ import annotations
 import copy
 import json
 import math
+import os
 from pathlib import Path
 from PySide6.QtCore import Qt, QPointF, QRectF, QSize
 from PySide6.QtGui import (QColor, QFont, QFontDatabase, QImage, QImageReader,
@@ -18,7 +19,11 @@ def ensure_fonts():
     global _app
     if QApplication.instance() is None:
         _app = QApplication([])
-    for path in sorted([*ROOT.glob('*.ttf'), *ROOT.glob('*.otf')]):
+    # Register local Windows fonts for headless previews; never copy them.
+    system_fonts = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'Fonts'
+    candidates = [*ROOT.glob('*.ttf'), *ROOT.glob('*.otf')]
+    candidates += [system_fonts / 'segoesc.ttf', system_fonts / 'segoeui.ttf']
+    for path in sorted(path for path in candidates if path.is_file()):
         if str(path) not in _registered:
             if QFontDatabase.addApplicationFont(str(path)) >= 0:
                 _registered.add(str(path))
@@ -117,7 +122,7 @@ def render_image(photo, title, date, template):
                 continue
             path = text_path(text, layer)
             radius = layer['glow_size']
-            # Layered soft strokes approximate the PSD's white outer glow.
+            # Layered soft strokes produce the soft outer glow.
             if radius:
                 for step in range(12, 0, -1):
                     color = QColor(layer['glow_color'])

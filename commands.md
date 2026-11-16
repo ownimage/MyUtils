@@ -37,7 +37,7 @@ This runs the Launch, Camera Import, Yearbook and Slideshow suites in separate
 processes using the shared environment. It runs every suite even if one fails
 and returns a nonzero exit code if any suite fails. GUI tests run without
 opening visible windows. Tests use temporary sample folders and perform native
-image rendering without Photoshop. Windows must allow the temporary folder-link
+native image rendering. Windows must allow the temporary folder-link
 test in Camera Import.
 
 ## Open the launcher
@@ -55,6 +55,7 @@ test in Camera Import.
 ```
 
 Slideshow's background renderer and original `Slideshow/run.cmd` use the shared
-environment. Photoshop is not required. Save slideshow writes the layout and
-date/title overrides to the event's `highlight/slideshow.json`. For visual layout
-changes, load an event in Slideshow and select **Edit template**.
+environment. **Save slideshow** writes date/title overrides as backwards-compatible
+CSV in `highlight/data.txt` (also copied to `slideshow/data.txt`) and layout only
+in `highlight/template.json`. For visual layout changes, load an event and select
+**Edit template**. **Reset to default** restores the shipped layout.

@@ -50,10 +50,9 @@ and validation. Read it before making changes anywhere in this repository.
 | `Slideshow/slideshow_gui.py` | Date/title editor, rendered slide preview, background render worker |
 | `Slideshow/template_render.py` | Shared Qt renderer for live preview and JPEG output |
 | `Slideshow/template_editor.py` | Visual template canvas, drag/resize, fonts and controls |
-| `Slideshow/default_template.json` | Shipped layout measured from the PSD |
+| `Slideshow/default_template.json` | Shipped default layout and font choices |
 | `Slideshow/render_slide.py` | Legacy single-image native render command |
 | `Slideshow/slideshow.py` | Compatibility create_slide API for native rendering |
-| `Slideshow/template.psd` | Original layout reference, not a runtime dependency |
 
 ## Shared GUI architecture
 
@@ -99,52 +98,57 @@ and validation. Read it before making changes anywhere in this repository.
 
 ### Slideshow
 
-- Photoshop is no longer a dependency. `template_render.py` uses Qt QImage,
-  QPainter and text paths for both live previews and JPEG output. Fonts are
-  registered from TTF/OTF files in Slideshow; do this on the GUI thread before
-  starting a render worker. `ensure_fonts()` retains a QApplication for CLI use.
-- Output is 1920 x 1080 at 300 dpi with the photo centred and contained without
-  distortion on a black background. Image readers apply EXIF orientation. JPEG
-  density is set explicitly; point size becomes pixels via pt * 300 / 72.
-- Shipped default_template.json was extracted from the PSD: title Filmotype
-  LaSalle 28.8 pt, right baseline anchor (1825.5,128.10); date 7-Segment 11.2 pt,
-  left baseline anchor (36.48,1017.30). Text is black with white glow, sizes 16/7
-  pixels respectively. Font contours match the PSD within roughly two pixels
-  on its sample text; Qt anti-aliasing and the soft-stroke glow are approximations.
-- FilmotypeLaSalle.otf was copied from the user's installed Adobe font cache;
-  7segment.ttf from the user's Windows fonts. Font identity was verified from
-  metadata. See FONT-SOURCES.md for provenance/licences. Filmotype is commercial;
-  the local project copy is not a grant of redistribution rights.
-- `TemplateEditor` works on a deep copy: Apply returns changes to the view;
-  Cancel leaves its template unchanged. Choose Title/Date, drag to move, drag
-  the blue corner to resize, or edit font/size/position/alignment/visibility/
-  colours/glow controls. Font imports copy files into Slideshow with collision
-  handling. Preview and export share the same renderer.
-- Main view previews the rendered slide including current date/title overrides,
-  not just the source image. It follows mouse/keyboard selection; edits update
-  the preview. A splitter controls preview width. Missing images and changed or
-  empty folders must clear stale previews and invalidate create/save readiness.
-- Save slideshow and Create slideshow persist `event/highlight/slideshow.json`
-  with version, template and image overrides. JSON is authoritative once present.
-  Missing JSON imports legacy slideshow/data.txt; save exports the CSV as well.
-  Corrupt/unsupported JSON is reported, never silently discarded or reset.
-- Blank date/title values use the event folder's defaults; blank is not a hide
-  flag. Use each template layer's enabled setting to hide it. Settings are
-  event-specific and reload on opening that event. Font files live in the app.
-- Rendering starts from fresh highlight copies inside temporary output folders,
-  replaces each destination after success and leaves highlight images untouched.
-  Failures preserve prior slides; cancellation is between images. RenderWorker
-  runs this in a QThread with a snapshot of the template, without a subprocess.
-- Legacy param.py/run.cmd and create_slide remain native and load event settings
-  where applicable. The old CSV CLI still edits existing slideshow images in
-  place, so refresh them from highlights before rerendering. template.psd is
-  retained solely as a design reference. No psd-tools or fontTools is needed at
-  runtime (they were used only to inspect the PSD/fonts during migration).
+- `template_render.py` uses Qt QImage, QPainter and text paths for both previews
+  and JPEG output. Register fonts on the GUI thread before starting workers;
+  ensure_fonts() retains a QApplication for CLI use. There is no external editor
+  integration. Keep external product names out of the interface and docs.
+- Output is 1920 x 1080 at 300 dpi. Photo is centred and contained on black,
+  without distortion; image readers apply EXIF orientation. JPEG density is set
+  explicitly. Point size becomes pixels via pt * 300 / 72.
+- Default title uses Windows Segoe Script, 28.8 pt, right baseline anchor
+  (1825.5,128.10). Date uses bundled 7-Segment, 11.2 pt, left baseline anchor
+  (36.48,1017.30). Text is black with white soft-stroke glow, sizes 16/7 pixels.
+- Do not bundle Filmotype LaSalle: the project copy was removed for licensing.
+  Do not extract commercial fonts from other applications' caches. Segoe Script
+  and Segoe UI are used from Windows without copying them into the project.
+  7segment.ttf is included under SIL OFL; see FONT-SOURCES.md and 7segment-OFL.txt.
+  Add only font files with appropriate distribution rights. Installed fonts can
+  be selected without copying them; absent fonts are reported before export.
+- TemplateEditor works on a deep copy; Apply returns edits and Cancel preserves
+  the current template. Drag text to move; drag the blue corner to resize, or
+  change font/size/position/alignment/visibility/colours/glow controls. The reset
+  button must say **Reset to default**. Preview/export share the same renderer.
+- Main view previews the rendered slide and follows mouse/keyboard selection.
+  Date/title edits update it. Missing images and changed/empty event folders
+  must clear stale previews and invalidate create/save readiness.
+- Date/title overrides MUST remain backwards-compatible CSV: header
+  `Image,Date,Title`, UTF-8, normal CSV quoting, two-column rows accepted.
+  Save to `event/highlight/data.txt` and mirror to `event/slideshow/data.txt`.
+  Highlight CSV is authoritative; the old slideshow CSV is read when it is absent.
+  Never store per-photo overrides in new JSON files or let JSON mask CSV edits.
+- Store ONLY layout/styling in `event/highlight/template.json` using the existing
+  versioned template schema. Save slideshow and Create slideshow write CSV and
+  template separately using atomic file replacement. CSV/JSON are not a single
+  filesystem transaction; propagate errors instead of claiming a failed save worked.
+- Migration: when CSVs are both absent, read overrides from the previous combined
+  highlight/slideshow.json. When template.json is absent, its old template may
+  be read too. Never write that combined format again. Leave the old file as an
+  untouched backup; new template/CSV files take precedence. Invalid active
+  templates report errors rather than silently discarding user settings.
+- Blank CSV date/title cells use event-folder defaults; blank is not a hide flag.
+  Layer visibility controls hide text. Settings are event-specific. Opening an
+  old layout with an unavailable font requires selecting an installed font.
+- Native rendering uses fresh highlight copies in temporary output folders,
+  then replaces each destination after success. Original highlights and previous
+  outputs survive errors. Cancellation is between images. RenderWorker is a
+  QThread with a template snapshot, without a subprocess.
+- Legacy param.py/run.cmd/create_slide remain native. The CSV CLI still edits
+  existing slideshow images in place, so refresh them from highlights first.
 
 ### Yearbook
 
 - The GUI gathers existing slideshow JPGs; it does not add titles, dates, or
-  render Photoshop/PDF output. Those are already baked into the copied images.
+  generate new slides or PDF output. Those are already baked into the copied images.
 - Scan folders named `slideshow` at levels 0..3. Output is `yearbook` under the
   chosen year directory. Prefix copied names with the first eight characters of
   the slideshow's parent directory plus `_`.
@@ -173,7 +177,7 @@ py -3.11 -m venv venv
   and QApplication/shared Qt state make combined discovery unreliable.
 - GUI tests use `QT_QPA_PLATFORM=offscreen` and temporary sample data.
   Slideshow tests now exercise actual native rendering, output dimensions/DPI,
-  event settings and visual template interactions without Photoshop. Never
+  event settings and visual template interactions. Never
   exercise file-operation tests on the user's photo library.
 - Camera Import has a temporary Windows junction test. Access denied while
   creating that junction can be a test-environment permission problem; verify
@@ -184,13 +188,12 @@ py -3.11 -m venv venv
 - Offscreen Qt may expose no installed fonts in a restricted environment.
   Register Windows Segoe UI with QFontDatabase in the visual-check harness when
   necessary; missing-glyph screenshots are not automatically a production bug.
-- Latest full validation on 2026-11-16, after the native-renderer migration:
-  all 88 tests passed (Launch 18, Import 27, Yearbook 19, Slideshow 24).
-  This includes actual native JPEG rendering at 1920 x 1080 / 300 dpi and source
-  preservation, JSON round trips, font loading, drag/resize and numeric editing.
-  Photoshop Python packages were uninstalled before the full run; pip check
-  passed. Light/dark editor layouts were visually inspected. The original PSD's
-  font geometry was inspected, but Photoshop itself was not used for rendering.
+- Latest full validation on 2026-11-16: all 90 tests passed (Launch 18,
+  Import 27, Yearbook 19, Slideshow 26) after CSV/template separation and removal
+  of the bundled commercial font. Checks include CSV precedence over older JSON,
+  Unicode/quoting/newlines/two-column rows, separate template round trips,
+  native rendering, system-font defaults, reset label and visual editing.
+  Source/docs search found no removed-product wording; diff formatting passed.
 
 - Root launcher move validated on 2026-11-16: batch smoke check passed
   from a different working folder and a path containing spaces; arguments and
@@ -223,9 +226,9 @@ py -3.11 -m venv venv
 - Moved launcher.bat to the repository root so the main entry point sits beside
   commands.md, requirements.txt, and the shared environment.
 
-- Replaced Photoshop automation with a native Qt renderer and visual template
-  editor. Project settings now live in highlight/slideshow.json; legacy CSV is
-  imported only before JSON exists and is still exported on save.
+- Adopted native rendering and a visual template editor. Superseding storage
+  decision: date/title overrides stay in CSV, with separate highlight/template.json.
+  Do not return to combined project JSON. The commercial title font is excluded.
 - Qt 6.12 can collapse Fluent DoubleSpinBox's embedded line edit to one pixel.
   The shared fluent.py adapter repairs its geometry when collapsed. Preserve
   the numeric visibility/editing test; model values alone do not catch this.

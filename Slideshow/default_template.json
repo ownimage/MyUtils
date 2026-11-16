@@ -5,8 +5,8 @@
   "dpi": 300,
   "background": "#000000",
   "title": {
-    "font_family": "Filmotype LaSalle",
-    "font_file": "FilmotypeLaSalle.otf",
+    "font_family": "Segoe Script",
+    "font_file": "",
     "size_pt": 28.8,
     "x": 1825.5,
     "y": 128.09986,
