@@ -402,8 +402,8 @@ py -3.11 -m venv venv
   upstream MIT license. SOURCE.md and manifest.json record source, version,
   archive SHA-256, names, styles and tags. Only Design SVGs were extracted;
   no npm installation or runtime network dependency was added.
-- icon_library.py resolves portable `tabler:outline/name.svg` / filled refs
-  against the manifest allowlist. Original SVGs remain unchanged; currentColor
+- icon_library.py discovers assets/*/manifest.json and resolves portable
+  `<set-id>:<style>/<name>.svg` references against the combined allowlist. Original SVGs remain unchanged; currentColor
   is replaced in memory for light/dark rendering. IconPicker provides keyword
   search and preview for both fields. External image paths remain supported.
   Use the native QListWidget delegate for icon-grid labels; the Fluent list
@@ -429,3 +429,31 @@ py -3.11 -m venv venv
   icon and clears it when refreshed to an empty list. Cached configured-app icons
   appear both in the opened list and in the closed selected-app control.
 - Direct-editor refinement validation: all 12 RadialMenu tests passed. Existing interaction tests now click Edit Buttons and assert immediate editor navigation with no intermediate popup; the cache test verifies the selected control icon matches its configured-app entry. The closed selector was rendered and visually checked for icon/text spacing, and clearing the selector clears its icon.
+
+## Extensible offline icon sets (2026-11-19)
+
+- Added official @phosphor-icons/core 2.1.1: 1,512 names, 9,072 SVGs across regular,
+  thin, light, bold, fill and duotone. assets/phosphor retains upstream LICENSE,
+  unmodified SVG contents, SOURCE.md, version/source/archive-SHA-256 manifest.
+  Tabler's existing 461 SVGs and saved references remain unchanged.
+- Permanent IDs use `<set-id>:<style>/<name>.svg`; display names include library,
+  style and name, so same-name icons from different sets are always retained.
+  Version is metadata, not part of identity. Manifest discovery supports future
+  sets without runtime code changes. Style suffixes in Phosphor filenames are
+  normalised when importing (palette-bold.svg -> bold/palette.svg).
+- import_icon_set.py is a maintenance-only, offline importer for pinned package
+  archives. It validates XML/path/ID collisions before writes, replaces SVGs
+  atomically and publishes the manifest last. Missing upstream IDs are retained
+  with retired=true and their previous files, preserving old assignments. The
+  picker hides retired entries; resolver still supports them. Never pre-delete
+  an existing library folder. Restart after updates because indexes are cached.
+- IconPicker adds set/style filters with search over all 9,533 active variants.
+  Native IconDelegate renders visible thumbnails only. Catalog path validation
+  is lexical (absolute/traversal/noncanonical paths rejected), avoiding thousands
+  of filesystem resolves on opening. Cold picker construction measured 0.20s
+  after this change; the filtered palette view rendered only 13 thumbnails.
+- New tests verify overlapping names/unique IDs, all SVGs in both themes,
+  filters, selection, legacy Tabler refs, future namespace import and retaining
+  removed IDs through a simulated update. Manifest data and updater tests use
+  temporary directories. Picker layout with both sets was visually inspected.
+- Phosphor validation: all 127 tests passed (Launch 18, Import 27, Yearbook 19, Slideshow 49, RadialMenu 14). Every one of the 9,533 SVG variants rendered successfully in light and dark; collision preservation, set/style filtering, legacy references and update retention passed. The combined palette view was visually checked, and cold picker construction measured 0.20 seconds with lazy thumbnails.

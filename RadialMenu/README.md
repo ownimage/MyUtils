@@ -56,7 +56,7 @@ The configured sequence uses the same focus/modifier guard as letter delivery.
 
 ## Offline icon library and application list
 
-Both icon fields offer **Icons…** for the bundled Tabler Design library and
+Both icon fields offer **Icons…** for the bundled offline icon libraries and
 **File…** for other images. Search by name or keyword, select an icon and click
 **Use Icon** (or double-click). All 359 Design icons from Tabler Icons 3.52.0 are
 bundled: 461 SVGs including available filled variants. No internet connection is
@@ -76,3 +76,38 @@ executable is no longer accessible. The cache follows `PHOTO_TOOLS_SETTINGS`
 when that setting overrides the config location.
 
 The closed Application dropdown shows the selected app’s icon as well as its name.
+
+## Multiple icon sets and stable names
+
+The offline picker now includes Phosphor 2.1.1: 1,512 icon names in six styles
+(regular, thin, light, bold, fill and duotone), totalling 9,072 SVGs. Existing
+Tabler Design assets remain available. Both retain their upstream MIT licenses.
+Use the library/style filters and keyword search to narrow the list.
+
+Overlapping names are kept, never merged. Display names always include the set
+and style, for example **Phosphor / regular / palette** and **Tabler / outline /
+palette**. Stored IDs have the stable format `<set-id>:<style>/<icon-name>.svg`:
+`phosphor:regular/palette.svg` and `tabler:outline/palette.svg`.
+
+Set IDs are permanent lowercase namespaces, and style/name follow upstream
+identity. A release version belongs in the manifest, not in the stored ID, so
+updating a library does not rename button assignments. Existing Tabler IDs are
+unchanged. Files are grouped in `assets/<set-id>/<style>/`.
+
+### Adding or updating a set
+
+Each `assets/<set-id>/manifest.json` declares `id`, `label`, `version`, source,
+archive checksum and icon entries (`name`, `style`, `path`, optional `tags`). The
+picker discovers these manifests automatically. Keep the upstream license and
+source notice beside the manifest. New namespaces prevent cross-set collisions.
+
+`import_icon_set.py` imports pinned package archives containing SVGs under
+`package/assets/<style>/`. It validates SVGs and IDs, normalises style suffixes
+in filenames, preserves original SVG contents, and publishes the manifest last.
+`--prefix` supports a different archive SVG root. For other package layouts,
+adapt the import layout to the same manifest contract; runtime code is unchanged.
+
+Reusing a set ID updates that set in place. Removed upstream IDs stay in the
+manifest as `retired` and their files are retained: existing assignments still
+render, while the picker hides retired entries. Do not delete a set's folder
+before updating it. Restart RadialMenu after installing or updating libraries.

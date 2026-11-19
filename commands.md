@@ -99,3 +99,21 @@ Opening settings through the live popup cog selects its captured application.
 The Application dropdown lists running and configured apps, with cached icons
 for configured apps that are closed. Open it to refresh. In the button editor,
 **Icons…** opens the offline Tabler Design library; **File…** chooses another image.
+
+## Reimport or update offline icon libraries
+
+Phosphor is bundled and needs no download at runtime. To reproduce its installed
+release, run from the repository root:
+
+```powershell
+New-Item -ItemType Directory -Force work | Out-Null
+Invoke-WebRequest -Uri 'https://registry.npmjs.org/@phosphor-icons/core/-/core-2.1.1.tgz' -OutFile '.\work\phosphor-core-2.1.1.tgz'
+.\venv\Scripts\python.exe .\RadialMenu\import_icon_set.py --archive .\work\phosphor-core-2.1.1.tgz --set phosphor --label Phosphor --source 'https://registry.npmjs.org/@phosphor-icons/core/-/core-2.1.1.tgz'
+```
+
+For a later release, pin its version in both download/source URLs and the archive
+filename; retain `--set phosphor`. Restart the resident app after importing.
+Additional sets use distinct lowercase set IDs and the manifest contract in the
+RadialMenu README. Never remove existing assets before an update: retired icons
+are retained to preserve button assignments. The importer writes to the repository
+and is a maintenance command, not part of the runtime app.

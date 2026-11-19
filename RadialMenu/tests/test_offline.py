@@ -16,18 +16,25 @@ class OfflineTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_all_offline_icons_render_and_picker_searches(self):
-        self.assertEqual(len(entries()), 461)
+        self.assertEqual(len(entries()), 9533)
         self.assertTrue((ROOT/'LICENSE').is_file())
         for entry in entries():
             for dark in (False, True):
-                self.assertFalse(button_icon('tabler:'+entry['path'], dark).isNull(), entry['path'])
+                self.assertFalse(button_icon(entry['reference'], dark).isNull(), entry['path'])
         picker = IconPicker()
         picker.search.setText('palette')
         visible = [picker.grid.item(i) for i in range(picker.grid.count()) if not picker.grid.item(i).isHidden()]
         self.assertTrue(visible)
         picker.grid.setCurrentItem(visible[0])
         picker.choose()
-        self.assertTrue(picker.reference.startswith('tabler:'))
+        self.assertIn(picker.reference, {entry['reference'] for entry in entries()})
+        picker.library.setCurrentIndex(picker.library.findData('tabler'))
+        picker.style.setCurrentIndex(picker.style.findData('outline'))
+        visible = [picker.grid.item(i) for i in range(picker.grid.count()) if not picker.grid.item(i).isHidden()]
+        self.assertTrue(visible)
+        self.assertTrue(all(item.data(Qt.ItemDataRole.UserRole).startswith('tabler:outline/') for item in visible))
+        self.assertFalse(button_icon('tabler:outline/palette.svg').isNull())
+        self.assertFalse(button_icon('phosphor:regular/palette.svg').isNull())
         self.assertTrue(button_icon('tabler:../../bad.svg').isNull())
         picker.close()
 
@@ -64,3 +71,39 @@ class OfflineTests(unittest.TestCase):
                 service.stop()
                 self.app.aboutToQuit.disconnect(service.stop)
                 host.close()
+
+    def test_libraries_keep_colliding_names_and_unique_references(self):
+        from icon_library import libraries
+        self.assertEqual(set(libraries()), {'tabler','phosphor'})
+        self.assertEqual(len({e['reference'] for e in entries()}), len(entries()))
+        tabler = {e['name'] for e in entries() if e['library']=='tabler'}
+        phosphor = {e['name'] for e in entries() if e['library']=='phosphor'}
+        self.assertTrue(tabler & phosphor)
+        self.assertIn('palette', tabler & phosphor)
+
+    def test_importer_updates_stable_ids_and_retains_removed_icons(self):
+        import io, json, tarfile
+        from pathlib import Path
+        from import_icon_set import install
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0h1v1"/></svg>'
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = Path(tmp)/'icons.tgz'
+            def package(version,names):
+                with tarfile.open(archive,'w:gz') as output:
+                    files = {'package/package.json':json.dumps({'version':version}).encode(),
+                             'package/LICENSE':b'MIT test license'}
+                    files.update({'package/assets/regular/'+name+'.svg':svg for name in names})
+                    for name,data in files.items():
+                        member = tarfile.TarInfo(name)
+                        member.size = len(data)
+                        output.addfile(member,io.BytesIO(data))
+            package('1.0',['palette','old'])
+            first = install(archive,'future-set','Future Set','test',assets_root=Path(tmp)/'assets')
+            package('2.0',['palette','new'])
+            second = install(archive,'future-set','Future Set','test',assets_root=Path(tmp)/'assets')
+            self.assertEqual(first['icons'][1]['path'], 'regular/palette.svg')
+            self.assertEqual(second['version'],'2.0')
+            old = next(e for e in second['icons'] if e['name']=='old')
+            self.assertTrue(old['retired'])
+            self.assertTrue((Path(tmp)/'assets/future-set'/old['path']).exists())
+            self.assertEqual((Path(tmp)/'assets/future-set/regular/palette.svg').read_bytes(),svg)
