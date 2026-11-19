@@ -89,3 +89,13 @@ letter to return focus and send that key. Preview sends no input. Focus must
 return within five seconds; higher-privilege apps may reject Windows input.
 
 The cog at the popup’s top right opens RadialMenu settings without sending a key.
+
+To configure RadialMenu buttons for an application, choose its executable in the
+Application selector and click **Edit Buttons**. The editor opens directly; use the radial menu on the left to switch buttons. Set name, normal
+and hover icons, and a key sequence such as `Ctrl+C, Ctrl+V`. **Save Buttons**
+saves the profile for that executable; **Save and Back** returns to configuration.
+Opening settings through the live popup cog selects its captured application.
+
+The Application dropdown lists running and configured apps, with cached icons
+for configured apps that are closed. Open it to refresh. In the button editor,
+**Icons…** opens the offline Tabler Design library; **File…** chooses another image.

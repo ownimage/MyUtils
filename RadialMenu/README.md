@@ -1,7 +1,7 @@
 # RadialMenu
 
 Open RadialMenu from the Launcher to start listening for Ctrl+Alt+Space.
-The settings page offers alternative keys, 2–26 segments (default 12), and Preview.
+The settings page offers alternative keys, 2–26 segments (default 12), and application button profiles.
 Settings use the shared suite settings file; appearance and accent follow the suite.
 The activation key is global and works while another application has focus.
 Choose **Run in background** to hide the Launcher to the system tray. Closing the
@@ -25,3 +25,54 @@ dismisses it. No keyboard/mouse hook or additional dependency is installed.
 Click the cog at the top right of the popup to open RadialMenu settings. This
 closes the popup and cancels any letter delivery. Settings can also be restored
 from the tray icon.
+
+## Edit application buttons
+
+Choose an executable using **Choose application…**, or open settings from the
+popup cog to select the application captured by the hotkey. Saved applications
+appear in the Application selector. Profiles match the full executable path,
+case-insensitively, and apply to all windows of that executable.
+
+Select **Edit Buttons** to open the editor directly, with the first button selected. The button editor shows
+the application at the top, a radial selector on the left and the selected
+button's fields on the right. Clicking another segment switches buttons and
+retains the current draft. The selected segment stays highlighted. Names and
+icons update in the editor preview immediately.
+
+Configure a name, normal icon, hover icon, and button sequence. Icons reference
+image files (PNG, SVG, ICO, JPEG or BMP); keep those files available. The hover
+icon falls back to the normal icon when empty. Button sequences accept letters,
+digits, F1–F24, and Enter, Tab, Space, Escape, Backspace, Delete, Insert, Home,
+End, PageUp, PageDown and arrow keys. Use Ctrl, Alt, Shift or Win with `+` for
+shortcuts; use commas for successive keys, for example `Ctrl+A, Ctrl+C`.
+Use `Plus` or `Comma` for those literal keys. A blank sequence disables the action.
+
+**Save Buttons** persists all button drafts for this application. **Save and
+Back** saves and returns to configuration. **Cancel** returns without saving
+the pending drafts. Editing and the tray preview never send input. Profiles are
+stored in the existing shared settings file. Unconfigured applications retain
+the default letter buttons. The next hotkey activation loads the saved profile.
+The configured sequence uses the same focus/modifier guard as letter delivery.
+
+## Offline icon library and application list
+
+Both icon fields offer **Icons…** for the bundled Tabler Design library and
+**File…** for other images. Search by name or keyword, select an icon and click
+**Use Icon** (or double-click). All 359 Design icons from Tabler Icons 3.52.0 are
+bundled: 461 SVGs including available filled variants. No internet connection is
+used by the picker. Library selections store portable `tabler:` references and
+render in light/dark colours. Sources and the MIT license are in `assets/tabler`.
+
+The Application dropdown refreshes whenever it opens. It combines running apps
+with saved application profiles, grouping windows by executable. Running apps
+show their window/taskbar icon and a window title; closed configured apps are
+marked **(configured)**. Tool windows, owned utility windows and cloaked windows
+are omitted. If a window icon is unavailable, its executable icon is used.
+
+Application icons are cached as PNGs under `RadialMenu/app-icons` beside the
+shared `settings.ini`. Filenames hash the normalised executable path. Closed
+configured apps keep their cached icon across restarts, including when the
+executable is no longer accessible. The cache follows `PHOTO_TOOLS_SETTINGS`
+when that setting overrides the config location.
+
+The closed Application dropdown shows the selected app’s icon as well as its name.

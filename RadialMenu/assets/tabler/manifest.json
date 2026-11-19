@@ -1,0 +1,7682 @@
+{
+  "version": "3.52.0",
+  "category": "Design",
+  "source": "https://registry.npmjs.org/@tabler/icons/-/icons-3.52.0.tgz",
+  "sha256": "626620c7d42afd2f294fba167ce4653b5cb946336d186b4991c70b700e5616af",
+  "icons": [
+    {
+      "name": "ad-2",
+      "style": "outline",
+      "path": "outline/ad-2.svg",
+      "tags": [
+        "advertisement",
+        "advert",
+        "advertising",
+        "marketing",
+        "commercial",
+        "promotion",
+        "sponsored",
+        "ads",
+        "billboard",
+        "ad"
+      ]
+    },
+    {
+      "name": "ad-off",
+      "style": "outline",
+      "path": "outline/ad-off.svg",
+      "tags": [
+        "advertisement",
+        "advert",
+        "advertising",
+        "marketing",
+        "commercial",
+        "promotion",
+        "sponsored",
+        "ads",
+        "billboard",
+        "ad-block",
+        "adblock",
+        "disabled",
+        "no-ads",
+        "off"
+      ]
+    },
+    {
+      "name": "ad",
+      "style": "outline",
+      "path": "outline/ad.svg",
+      "tags": [
+        "advertisement",
+        "advert",
+        "advertising",
+        "marketing",
+        "commercial",
+        "promotion",
+        "sponsored",
+        "ads",
+        "billboard",
+        "ad"
+      ]
+    },
+    {
+      "name": "ad",
+      "style": "filled",
+      "path": "filled/ad.svg",
+      "tags": [
+        "advertisement",
+        "advert",
+        "advertising",
+        "marketing",
+        "commercial",
+        "promotion",
+        "sponsored",
+        "ads",
+        "billboard",
+        "ad"
+      ]
+    },
+    {
+      "name": "angle",
+      "style": "outline",
+      "path": "outline/angle.svg",
+      "tags": [
+        "geometry",
+        "degrees",
+        "protractor",
+        "corner",
+        "math",
+        "measure",
+        "triangle",
+        "angle"
+      ]
+    },
+    {
+      "name": "artboard-off",
+      "style": "outline",
+      "path": "outline/artboard-off.svg",
+      "tags": [
+        "canvas",
+        "frame",
+        "design",
+        "workspace",
+        "drawing",
+        "graphics",
+        "art-board",
+        "layout",
+        "disabled",
+        "inactive",
+        "artboard",
+        "off"
+      ]
+    },
+    {
+      "name": "artboard",
+      "style": "outline",
+      "path": "outline/artboard.svg",
+      "tags": [
+        "canvas",
+        "frame",
+        "design",
+        "workspace",
+        "drawing",
+        "graphics",
+        "art-board",
+        "layout",
+        "artboard"
+      ]
+    },
+    {
+      "name": "artboard",
+      "style": "filled",
+      "path": "filled/artboard.svg",
+      "tags": [
+        "canvas",
+        "frame",
+        "design",
+        "workspace",
+        "drawing",
+        "graphics",
+        "art-board",
+        "layout",
+        "artboard"
+      ]
+    },
+    {
+      "name": "background",
+      "style": "outline",
+      "path": "outline/background.svg",
+      "tags": [
+        "layer",
+        "backdrop",
+        "wallpaper",
+        "layers",
+        "bring-to-back",
+        "design",
+        "canvas"
+      ]
+    },
+    {
+      "name": "barrel-off",
+      "style": "outline",
+      "path": "outline/barrel-off.svg",
+      "tags": [
+        "cask",
+        "keg",
+        "wine",
+        "beer",
+        "storage",
+        "wooden",
+        "oil",
+        "disabled",
+        "barrel",
+        "off"
+      ]
+    },
+    {
+      "name": "barrel",
+      "style": "outline",
+      "path": "outline/barrel.svg",
+      "tags": [
+        "cask",
+        "keg",
+        "wine",
+        "beer",
+        "storage",
+        "wooden",
+        "oil",
+        "barrel"
+      ]
+    },
+    {
+      "name": "barrier-block-off",
+      "style": "outline",
+      "path": "outline/barrier-block-off.svg",
+      "tags": [
+        "roadblock",
+        "construction",
+        "road-closed",
+        "obstacle",
+        "blocked",
+        "roadwork",
+        "disabled",
+        "barrier",
+        "block",
+        "off"
+      ]
+    },
+    {
+      "name": "barrier-block",
+      "style": "outline",
+      "path": "outline/barrier-block.svg",
+      "tags": [
+        "roadblock",
+        "construction",
+        "road-closed",
+        "obstacle",
+        "blocked",
+        "roadwork",
+        "under-construction",
+        "roadblock-sign",
+        "barrier",
+        "block"
+      ]
+    },
+    {
+      "name": "barrier-block",
+      "style": "filled",
+      "path": "filled/barrier-block.svg",
+      "tags": [
+        "roadblock",
+        "construction",
+        "road-closed",
+        "obstacle",
+        "blocked",
+        "roadwork",
+        "under-construction",
+        "roadblock-sign",
+        "barrier",
+        "block"
+      ]
+    },
+    {
+      "name": "binoculars",
+      "style": "outline",
+      "path": "outline/binoculars.svg",
+      "tags": [
+        "search",
+        "find",
+        "explore",
+        "view",
+        "spy",
+        "sightseeing",
+        "zoom",
+        "watch",
+        "binoculars"
+      ]
+    },
+    {
+      "name": "binoculars",
+      "style": "filled",
+      "path": "filled/binoculars.svg",
+      "tags": [
+        "search",
+        "find",
+        "explore",
+        "view",
+        "spy",
+        "sightseeing",
+        "zoom",
+        "watch",
+        "binoculars"
+      ]
+    },
+    {
+      "name": "blade",
+      "style": "outline",
+      "path": "outline/blade.svg",
+      "tags": [
+        "razor",
+        "shave",
+        "shaving",
+        "barber",
+        "cut",
+        "razor-blade",
+        "grooming",
+        "beard",
+        "sharp",
+        "blade"
+      ]
+    },
+    {
+      "name": "blade",
+      "style": "filled",
+      "path": "filled/blade.svg",
+      "tags": [
+        "razor",
+        "shave",
+        "shaving",
+        "barber",
+        "cut",
+        "razor-blade",
+        "grooming",
+        "beard",
+        "sharp",
+        "blade"
+      ]
+    },
+    {
+      "name": "blend-mode",
+      "style": "outline",
+      "path": "outline/blend-mode.svg",
+      "tags": [
+        "blending",
+        "overlay",
+        "multiply",
+        "mix",
+        "layer",
+        "opacity",
+        "photoshop",
+        "design",
+        "blend"
+      ]
+    },
+    {
+      "name": "blur-off",
+      "style": "outline",
+      "path": "outline/blur-off.svg",
+      "tags": [
+        "gaussian",
+        "soft",
+        "focus",
+        "filter",
+        "effect",
+        "photo",
+        "disabled",
+        "blur",
+        "off"
+      ]
+    },
+    {
+      "name": "blur",
+      "style": "outline",
+      "path": "outline/blur.svg",
+      "tags": [
+        "gaussian",
+        "soft",
+        "focus",
+        "filter",
+        "effect",
+        "photo",
+        "blurry",
+        "defocus",
+        "blur"
+      ]
+    },
+    {
+      "name": "bolt-off",
+      "style": "outline",
+      "path": "outline/bolt-off.svg",
+      "tags": [
+        "lightning",
+        "flash",
+        "electricity",
+        "power",
+        "energy",
+        "thunder",
+        "fast",
+        "zap",
+        "disabled",
+        "no-power",
+        "bolt",
+        "off"
+      ]
+    },
+    {
+      "name": "bolt",
+      "style": "outline",
+      "path": "outline/bolt.svg",
+      "tags": [
+        "lightning",
+        "flash",
+        "electricity",
+        "power",
+        "energy",
+        "thunder",
+        "fast",
+        "zap",
+        "bolt"
+      ]
+    },
+    {
+      "name": "bolt",
+      "style": "filled",
+      "path": "filled/bolt.svg",
+      "tags": [
+        "lightning",
+        "flash",
+        "electricity",
+        "power",
+        "energy",
+        "thunder",
+        "fast",
+        "zap",
+        "bolt"
+      ]
+    },
+    {
+      "name": "bomb",
+      "style": "outline",
+      "path": "outline/bomb.svg",
+      "tags": [
+        "explosive",
+        "explosion",
+        "dynamite",
+        "danger",
+        "blast",
+        "mine",
+        "grenade",
+        "boom-explosion",
+        "bomb"
+      ]
+    },
+    {
+      "name": "bomb",
+      "style": "filled",
+      "path": "filled/bomb.svg",
+      "tags": [
+        "explosive",
+        "explosion",
+        "dynamite",
+        "danger",
+        "blast",
+        "mine",
+        "grenade",
+        "boom-explosion",
+        "bomb"
+      ]
+    },
+    {
+      "name": "bong-off",
+      "style": "outline",
+      "path": "outline/bong-off.svg",
+      "tags": [
+        "smoking",
+        "cannabis",
+        "marijuana",
+        "weed",
+        "pipe",
+        "drugs",
+        "no-smoking",
+        "disabled",
+        "bong",
+        "off"
+      ]
+    },
+    {
+      "name": "bong",
+      "style": "outline",
+      "path": "outline/bong.svg",
+      "tags": [
+        "smoking",
+        "cannabis",
+        "marijuana",
+        "weed",
+        "pipe",
+        "drugs",
+        "smoke",
+        420,
+        "bong"
+      ]
+    },
+    {
+      "name": "bong",
+      "style": "filled",
+      "path": "filled/bong.svg",
+      "tags": [
+        "smoking",
+        "cannabis",
+        "marijuana",
+        "weed",
+        "pipe",
+        "drugs",
+        "smoke",
+        420,
+        "bong"
+      ]
+    },
+    {
+      "name": "boom",
+      "style": "outline",
+      "path": "outline/boom.svg",
+      "tags": [
+        "explosion",
+        "blast",
+        "bang",
+        "burst",
+        "kaboom",
+        "comic",
+        "pow",
+        "boom"
+      ]
+    },
+    {
+      "name": "boom",
+      "style": "filled",
+      "path": "filled/boom.svg",
+      "tags": [
+        "explosion",
+        "blast",
+        "bang",
+        "burst",
+        "kaboom",
+        "comic",
+        "pow",
+        "boom"
+      ]
+    },
+    {
+      "name": "border-all",
+      "style": "outline",
+      "path": "outline/border-all.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "all-borders",
+        "grid",
+        "border",
+        "all"
+      ]
+    },
+    {
+      "name": "border-bottom-plus",
+      "style": "outline",
+      "path": "outline/border-bottom-plus.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "add",
+        "bottom"
+      ]
+    },
+    {
+      "name": "border-bottom",
+      "style": "outline",
+      "path": "outline/border-bottom.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "cell-border",
+        "outline",
+        "border",
+        "bottom"
+      ]
+    },
+    {
+      "name": "border-corner-pill",
+      "style": "outline",
+      "path": "outline/border-corner-pill.svg",
+      "tags": [
+        "border-radius",
+        "rounded",
+        "radius",
+        "css",
+        "shape",
+        "capsule",
+        "full-rounded"
+      ]
+    },
+    {
+      "name": "border-corner-rounded",
+      "style": "outline",
+      "path": "outline/border-corner-rounded.svg",
+      "tags": [
+        "border-radius",
+        "radius",
+        "css",
+        "shape",
+        "round",
+        "rounded-corner",
+        "curved",
+        "rounded"
+      ]
+    },
+    {
+      "name": "border-corner-square",
+      "style": "outline",
+      "path": "outline/border-corner-square.svg",
+      "tags": [
+        "sharp",
+        "no-radius",
+        "css",
+        "square-corner",
+        "sharp-corner",
+        "right-angle",
+        "edge"
+      ]
+    },
+    {
+      "name": "border-corners",
+      "style": "outline",
+      "path": "outline/border-corners.svg",
+      "tags": [
+        "frame",
+        "focus",
+        "viewfinder",
+        "crop",
+        "crop-marks",
+        "scan",
+        "focus-frame",
+        "qr-scan"
+      ]
+    },
+    {
+      "name": "border-horizontal",
+      "style": "outline",
+      "path": "outline/border-horizontal.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "inner",
+        "border",
+        "horizontal"
+      ]
+    },
+    {
+      "name": "border-inner",
+      "style": "outline",
+      "path": "outline/border-inner.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "inside",
+        "grid",
+        "border",
+        "inner"
+      ]
+    },
+    {
+      "name": "border-left-plus",
+      "style": "outline",
+      "path": "outline/border-left-plus.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "add",
+        "left"
+      ]
+    },
+    {
+      "name": "border-left",
+      "style": "outline",
+      "path": "outline/border-left.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "cell-border",
+        "outline",
+        "border",
+        "left"
+      ]
+    },
+    {
+      "name": "border-none",
+      "style": "outline",
+      "path": "outline/border-none.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "no-border",
+        "clear",
+        "border",
+        "none"
+      ]
+    },
+    {
+      "name": "border-outer",
+      "style": "outline",
+      "path": "outline/border-outer.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "outside",
+        "outline",
+        "border",
+        "outer"
+      ]
+    },
+    {
+      "name": "border-radius",
+      "style": "outline",
+      "path": "outline/border-radius.svg",
+      "tags": [
+        "rounded-corners",
+        "corner",
+        "css",
+        "round",
+        "rounded",
+        "css-radius",
+        "curved",
+        "corners",
+        "border",
+        "radius"
+      ]
+    },
+    {
+      "name": "border-right-plus",
+      "style": "outline",
+      "path": "outline/border-right-plus.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "add",
+        "right"
+      ]
+    },
+    {
+      "name": "border-right",
+      "style": "outline",
+      "path": "outline/border-right.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "cell-border",
+        "outline",
+        "border",
+        "right"
+      ]
+    },
+    {
+      "name": "border-sides",
+      "style": "outline",
+      "path": "outline/border-sides.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "edges"
+      ]
+    },
+    {
+      "name": "border-style-2",
+      "style": "outline",
+      "path": "outline/border-style-2.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "line-style",
+        "dashed",
+        "solid",
+        "border",
+        "style"
+      ]
+    },
+    {
+      "name": "border-style",
+      "style": "outline",
+      "path": "outline/border-style.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "line-style",
+        "dashed",
+        "solid",
+        "border",
+        "style"
+      ]
+    },
+    {
+      "name": "border-top-plus",
+      "style": "outline",
+      "path": "outline/border-top-plus.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "add",
+        "top"
+      ]
+    },
+    {
+      "name": "border-top",
+      "style": "outline",
+      "path": "outline/border-top.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "cell-border",
+        "outline",
+        "border",
+        "top"
+      ]
+    },
+    {
+      "name": "border-vertical",
+      "style": "outline",
+      "path": "outline/border-vertical.svg",
+      "tags": [
+        "table",
+        "cell",
+        "spreadsheet",
+        "excel",
+        "format",
+        "edge",
+        "inner",
+        "border",
+        "vertical"
+      ]
+    },
+    {
+      "name": "bounce-left",
+      "style": "outline",
+      "path": "outline/bounce-left.svg",
+      "tags": [
+        "jump",
+        "ball",
+        "motion",
+        "animation",
+        "bouncing",
+        "rebound",
+        "hop",
+        "trajectory",
+        "bounce",
+        "left"
+      ]
+    },
+    {
+      "name": "bounce-left",
+      "style": "filled",
+      "path": "filled/bounce-left.svg",
+      "tags": [
+        "jump",
+        "ball",
+        "motion",
+        "animation",
+        "bouncing",
+        "rebound",
+        "hop",
+        "trajectory",
+        "bounce",
+        "left"
+      ]
+    },
+    {
+      "name": "bounce-right",
+      "style": "outline",
+      "path": "outline/bounce-right.svg",
+      "tags": [
+        "jump",
+        "ball",
+        "motion",
+        "animation",
+        "bouncing",
+        "rebound",
+        "hop",
+        "trajectory",
+        "bounce",
+        "right"
+      ]
+    },
+    {
+      "name": "bounce-right",
+      "style": "filled",
+      "path": "filled/bounce-right.svg",
+      "tags": [
+        "jump",
+        "ball",
+        "motion",
+        "animation",
+        "bouncing",
+        "rebound",
+        "hop",
+        "trajectory",
+        "bounce",
+        "right"
+      ]
+    },
+    {
+      "name": "box-align-bottom-left",
+      "style": "outline",
+      "path": "outline/box-align-bottom-left.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "bottom",
+        "left"
+      ]
+    },
+    {
+      "name": "box-align-bottom-left",
+      "style": "filled",
+      "path": "filled/box-align-bottom-left.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "bottom",
+        "left"
+      ]
+    },
+    {
+      "name": "box-align-bottom-right",
+      "style": "outline",
+      "path": "outline/box-align-bottom-right.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "bottom",
+        "right"
+      ]
+    },
+    {
+      "name": "box-align-bottom-right",
+      "style": "filled",
+      "path": "filled/box-align-bottom-right.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "bottom",
+        "right"
+      ]
+    },
+    {
+      "name": "box-align-bottom",
+      "style": "outline",
+      "path": "outline/box-align-bottom.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "bottom"
+      ]
+    },
+    {
+      "name": "box-align-bottom",
+      "style": "filled",
+      "path": "filled/box-align-bottom.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "bottom"
+      ]
+    },
+    {
+      "name": "box-align-left",
+      "style": "outline",
+      "path": "outline/box-align-left.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "left"
+      ]
+    },
+    {
+      "name": "box-align-left",
+      "style": "filled",
+      "path": "filled/box-align-left.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "left"
+      ]
+    },
+    {
+      "name": "box-align-right",
+      "style": "outline",
+      "path": "outline/box-align-right.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "right"
+      ]
+    },
+    {
+      "name": "box-align-right",
+      "style": "filled",
+      "path": "filled/box-align-right.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "right"
+      ]
+    },
+    {
+      "name": "box-align-top-left",
+      "style": "outline",
+      "path": "outline/box-align-top-left.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "top",
+        "left"
+      ]
+    },
+    {
+      "name": "box-align-top-left",
+      "style": "filled",
+      "path": "filled/box-align-top-left.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "top",
+        "left"
+      ]
+    },
+    {
+      "name": "box-align-top-right",
+      "style": "outline",
+      "path": "outline/box-align-top-right.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "top",
+        "right"
+      ]
+    },
+    {
+      "name": "box-align-top-right",
+      "style": "filled",
+      "path": "filled/box-align-top-right.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "top",
+        "right"
+      ]
+    },
+    {
+      "name": "box-align-top",
+      "style": "outline",
+      "path": "outline/box-align-top.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "top"
+      ]
+    },
+    {
+      "name": "box-align-top",
+      "style": "filled",
+      "path": "filled/box-align-top.svg",
+      "tags": [
+        "alignment",
+        "position",
+        "layout",
+        "corner",
+        "align-box",
+        "flexbox",
+        "placement",
+        "anchor",
+        "box",
+        "align",
+        "top"
+      ]
+    },
+    {
+      "name": "box-margin",
+      "style": "outline",
+      "path": "outline/box-margin.svg",
+      "tags": [
+        "spacing",
+        "css",
+        "box-model",
+        "layout",
+        "outside",
+        "outer-spacing",
+        "whitespace",
+        "box"
+      ]
+    },
+    {
+      "name": "box-model-2-off",
+      "style": "outline",
+      "path": "outline/box-model-2-off.svg",
+      "tags": [
+        "box-model",
+        "css",
+        "layout",
+        "margin",
+        "padding",
+        "border",
+        "disabled",
+        "box",
+        "model",
+        "off"
+      ]
+    },
+    {
+      "name": "box-model-2",
+      "style": "outline",
+      "path": "outline/box-model-2.svg",
+      "tags": [
+        "box-model",
+        "css",
+        "layout",
+        "margin",
+        "padding",
+        "border",
+        "spacing",
+        "whitespace",
+        "box",
+        "model"
+      ]
+    },
+    {
+      "name": "box-model-off",
+      "style": "outline",
+      "path": "outline/box-model-off.svg",
+      "tags": [
+        "box-model",
+        "css",
+        "layout",
+        "margin",
+        "padding",
+        "border",
+        "disabled",
+        "box",
+        "model",
+        "off"
+      ]
+    },
+    {
+      "name": "box-model",
+      "style": "outline",
+      "path": "outline/box-model.svg",
+      "tags": [
+        "css",
+        "layout",
+        "margin",
+        "padding",
+        "border",
+        "box-sizing",
+        "spacing",
+        "whitespace",
+        "box",
+        "model"
+      ]
+    },
+    {
+      "name": "box-multiple",
+      "style": "outline",
+      "path": "outline/box-multiple.svg",
+      "tags": [
+        "stack",
+        "layers",
+        "copy",
+        "duplicate",
+        "boxes",
+        "copies",
+        "layered",
+        "box",
+        "multiple"
+      ]
+    },
+    {
+      "name": "box-multiple",
+      "style": "filled",
+      "path": "filled/box-multiple.svg",
+      "tags": [
+        "stack",
+        "layers",
+        "copy",
+        "duplicate",
+        "boxes",
+        "copies",
+        "layered",
+        "box",
+        "multiple"
+      ]
+    },
+    {
+      "name": "box-off",
+      "style": "outline",
+      "path": "outline/box-off.svg",
+      "tags": [
+        "package",
+        "parcel",
+        "delivery",
+        "shipping",
+        "3d",
+        "cube",
+        "product",
+        "disabled",
+        "box",
+        "off"
+      ]
+    },
+    {
+      "name": "box-padding",
+      "style": "outline",
+      "path": "outline/box-padding.svg",
+      "tags": [
+        "spacing",
+        "css",
+        "box-model",
+        "layout",
+        "inside",
+        "inner-spacing",
+        "whitespace"
+      ]
+    },
+    {
+      "name": "box",
+      "style": "outline",
+      "path": "outline/box.svg",
+      "tags": [
+        "package",
+        "parcel",
+        "delivery",
+        "shipping",
+        "3d",
+        "cube",
+        "product",
+        "box"
+      ]
+    },
+    {
+      "name": "brackets-angle-off",
+      "style": "outline",
+      "path": "outline/brackets-angle-off.svg",
+      "tags": [
+        "angle-brackets",
+        "code",
+        "html",
+        "xml",
+        "markup",
+        "tags",
+        "programming",
+        "syntax",
+        "chevrons",
+        "disabled",
+        "brackets"
+      ]
+    },
+    {
+      "name": "brackets-angle",
+      "style": "outline",
+      "path": "outline/brackets-angle.svg",
+      "tags": [
+        "angle-brackets",
+        "code",
+        "html",
+        "xml",
+        "markup",
+        "tags",
+        "programming",
+        "syntax",
+        "chevrons"
+      ]
+    },
+    {
+      "name": "briefcase-2",
+      "style": "outline",
+      "path": "outline/briefcase-2.svg",
+      "tags": [
+        "briefcase",
+        "business",
+        "work",
+        "job",
+        "portfolio",
+        "bag",
+        "office",
+        "suitcase",
+        "career"
+      ]
+    },
+    {
+      "name": "briefcase-2",
+      "style": "filled",
+      "path": "filled/briefcase-2.svg",
+      "tags": [
+        "briefcase",
+        "business",
+        "work",
+        "job",
+        "portfolio",
+        "bag",
+        "office",
+        "suitcase",
+        "career"
+      ]
+    },
+    {
+      "name": "briefcase-off",
+      "style": "outline",
+      "path": "outline/briefcase-off.svg",
+      "tags": [
+        "briefcase",
+        "business",
+        "work",
+        "job",
+        "portfolio",
+        "bag",
+        "office",
+        "disabled",
+        "off",
+        "unavailable",
+        "inactive",
+        "unemployed",
+        "suitcase",
+        "career"
+      ]
+    },
+    {
+      "name": "briefcase",
+      "style": "outline",
+      "path": "outline/briefcase.svg",
+      "tags": [
+        "briefcase",
+        "business",
+        "work",
+        "job",
+        "portfolio",
+        "bag",
+        "office",
+        "suitcase",
+        "career"
+      ]
+    },
+    {
+      "name": "briefcase",
+      "style": "filled",
+      "path": "filled/briefcase.svg",
+      "tags": [
+        "briefcase",
+        "business",
+        "work",
+        "job",
+        "portfolio",
+        "bag",
+        "office",
+        "suitcase",
+        "career"
+      ]
+    },
+    {
+      "name": "brush-off",
+      "style": "outline",
+      "path": "outline/brush-off.svg",
+      "tags": [
+        "brush",
+        "paintbrush",
+        "paint",
+        "art",
+        "draw",
+        "painting",
+        "disabled",
+        "off",
+        "unavailable",
+        "inactive"
+      ]
+    },
+    {
+      "name": "brush",
+      "style": "outline",
+      "path": "outline/brush.svg",
+      "tags": [
+        "brush",
+        "paintbrush",
+        "paint",
+        "art",
+        "draw",
+        "painting",
+        "theme",
+        "style",
+        "design"
+      ]
+    },
+    {
+      "name": "bucket-droplet",
+      "style": "outline",
+      "path": "outline/bucket-droplet.svg",
+      "tags": [
+        "bucket",
+        "fill",
+        "paint-bucket",
+        "color-fill",
+        "paint",
+        "drop",
+        "water",
+        "tool",
+        "droplet"
+      ]
+    },
+    {
+      "name": "bucket-off",
+      "style": "outline",
+      "path": "outline/bucket-off.svg",
+      "tags": [
+        "bucket",
+        "pail",
+        "container",
+        "water",
+        "fill",
+        "paint",
+        "disabled",
+        "off",
+        "unavailable",
+        "inactive"
+      ]
+    },
+    {
+      "name": "bucket",
+      "style": "outline",
+      "path": "outline/bucket.svg",
+      "tags": [
+        "bucket",
+        "pail",
+        "container",
+        "water",
+        "fill",
+        "paint",
+        "bin",
+        "tool"
+      ]
+    },
+    {
+      "name": "bulb-off",
+      "style": "outline",
+      "path": "outline/bulb-off.svg",
+      "tags": [
+        "bulb",
+        "lightbulb",
+        "light",
+        "idea",
+        "lamp",
+        "disabled",
+        "off",
+        "unavailable",
+        "inactive",
+        "light-off",
+        "dark"
+      ]
+    },
+    {
+      "name": "bulb",
+      "style": "outline",
+      "path": "outline/bulb.svg",
+      "tags": [
+        "bulb",
+        "lightbulb",
+        "light",
+        "idea",
+        "lamp",
+        "tip",
+        "hint",
+        "creativity",
+        "innovation"
+      ]
+    },
+    {
+      "name": "bulb",
+      "style": "filled",
+      "path": "filled/bulb.svg",
+      "tags": [
+        "bulb",
+        "lightbulb",
+        "light",
+        "idea",
+        "lamp",
+        "tip",
+        "hint",
+        "creativity",
+        "innovation"
+      ]
+    },
+    {
+      "name": "candle",
+      "style": "outline",
+      "path": "outline/candle.svg",
+      "tags": [
+        "candle",
+        "candlelight",
+        "flame",
+        "light",
+        "wax",
+        "decoration",
+        "birthday",
+        "christmas"
+      ]
+    },
+    {
+      "name": "candle",
+      "style": "filled",
+      "path": "filled/candle.svg",
+      "tags": [
+        "candle",
+        "candlelight",
+        "flame",
+        "light",
+        "wax",
+        "decoration",
+        "birthday",
+        "christmas"
+      ]
+    },
+    {
+      "name": "cap-projecting",
+      "style": "outline",
+      "path": "outline/cap-projecting.svg",
+      "tags": [
+        "cap",
+        "line-cap",
+        "stroke",
+        "stroke-cap",
+        "projecting",
+        "square-cap",
+        "line-end",
+        "vector"
+      ]
+    },
+    {
+      "name": "cap-rounded",
+      "style": "outline",
+      "path": "outline/cap-rounded.svg",
+      "tags": [
+        "cap",
+        "line-cap",
+        "stroke",
+        "stroke-cap",
+        "rounded",
+        "round-cap",
+        "line-end",
+        "vector"
+      ]
+    },
+    {
+      "name": "cap-straight",
+      "style": "outline",
+      "path": "outline/cap-straight.svg",
+      "tags": [
+        "cap",
+        "line-cap",
+        "stroke",
+        "stroke-cap",
+        "straight",
+        "butt-cap",
+        "line-end",
+        "vector"
+      ]
+    },
+    {
+      "name": "cards",
+      "style": "outline",
+      "path": "outline/cards.svg",
+      "tags": [
+        "cards",
+        "playing-cards",
+        "card-game",
+        "poker",
+        "casino",
+        "deck",
+        "game",
+        "gambling"
+      ]
+    },
+    {
+      "name": "cards",
+      "style": "filled",
+      "path": "filled/cards.svg",
+      "tags": [
+        "cards",
+        "playing-cards",
+        "card-game",
+        "poker",
+        "casino",
+        "deck",
+        "game",
+        "gambling"
+      ]
+    },
+    {
+      "name": "carousel-horizontal",
+      "style": "outline",
+      "path": "outline/carousel-horizontal.svg",
+      "tags": [
+        "carousel",
+        "slider",
+        "slideshow",
+        "gallery",
+        "horizontal",
+        "swipe",
+        "slides",
+        "images"
+      ]
+    },
+    {
+      "name": "carousel-horizontal",
+      "style": "filled",
+      "path": "filled/carousel-horizontal.svg",
+      "tags": [
+        "carousel",
+        "slider",
+        "slideshow",
+        "gallery",
+        "horizontal",
+        "swipe",
+        "slides",
+        "images"
+      ]
+    },
+    {
+      "name": "carousel-vertical",
+      "style": "outline",
+      "path": "outline/carousel-vertical.svg",
+      "tags": [
+        "carousel",
+        "slider",
+        "slideshow",
+        "gallery",
+        "vertical",
+        "scroll",
+        "slides",
+        "stories"
+      ]
+    },
+    {
+      "name": "carousel-vertical",
+      "style": "filled",
+      "path": "filled/carousel-vertical.svg",
+      "tags": [
+        "carousel",
+        "slider",
+        "slideshow",
+        "gallery",
+        "vertical",
+        "scroll",
+        "slides",
+        "stories"
+      ]
+    },
+    {
+      "name": "cell",
+      "style": "outline",
+      "path": "outline/cell.svg",
+      "tags": [
+        "cell",
+        "biology",
+        "microbiology",
+        "organism",
+        "microscope",
+        "science",
+        "laboratory",
+        "bacteria"
+      ]
+    },
+    {
+      "name": "chair-director",
+      "style": "outline",
+      "path": "outline/chair-director.svg",
+      "tags": [
+        "director-chair",
+        "chair",
+        "film",
+        "movie",
+        "cinema",
+        "director",
+        "seat",
+        "furniture"
+      ]
+    },
+    {
+      "name": "chisel",
+      "style": "outline",
+      "path": "outline/chisel.svg",
+      "tags": [
+        "tool",
+        "woodworking",
+        "carpentry",
+        "carving",
+        "craft",
+        "wood",
+        "workshop",
+        "diy",
+        "build",
+        "chisel"
+      ]
+    },
+    {
+      "name": "christmas-ball",
+      "style": "outline",
+      "path": "outline/christmas-ball.svg",
+      "tags": [
+        "bauble",
+        "ornament",
+        "xmas",
+        "christmas",
+        "holiday",
+        "decoration",
+        "festive",
+        "new-year",
+        "winter"
+      ]
+    },
+    {
+      "name": "coffin",
+      "style": "outline",
+      "path": "outline/coffin.svg",
+      "tags": [
+        "coffin",
+        "death",
+        "dead",
+        "funeral",
+        "grave",
+        "halloween",
+        "horror",
+        "vampire",
+        "casket"
+      ]
+    },
+    {
+      "name": "color-filter",
+      "style": "outline",
+      "path": "outline/color-filter.svg",
+      "tags": [
+        "color-filter",
+        "colour",
+        "filter",
+        "rgb",
+        "blend",
+        "channels",
+        "hue",
+        "overlay",
+        "effects",
+        "palette",
+        "color"
+      ]
+    },
+    {
+      "name": "color-picker-off",
+      "style": "outline",
+      "path": "outline/color-picker-off.svg",
+      "tags": [
+        "color-picker",
+        "colour",
+        "eyedropper",
+        "pipette",
+        "dropper",
+        "sample",
+        "off",
+        "disabled",
+        "color",
+        "picker"
+      ]
+    },
+    {
+      "name": "color-picker",
+      "style": "outline",
+      "path": "outline/color-picker.svg",
+      "tags": [
+        "color-picker",
+        "colour",
+        "eyedropper",
+        "pipette",
+        "dropper",
+        "picker",
+        "sample",
+        "eye-dropper",
+        "palette",
+        "paint",
+        "color"
+      ]
+    },
+    {
+      "name": "color-swatch-off",
+      "style": "outline",
+      "path": "outline/color-swatch-off.svg",
+      "tags": [
+        "color-swatch",
+        "swatches",
+        "colour",
+        "palette",
+        "theme",
+        "paint",
+        "off",
+        "disabled",
+        "color",
+        "swatch"
+      ]
+    },
+    {
+      "name": "color-swatch",
+      "style": "outline",
+      "path": "outline/color-swatch.svg",
+      "tags": [
+        "color-swatch",
+        "swatches",
+        "colour",
+        "palette",
+        "color-palette",
+        "theme",
+        "paint",
+        "samples",
+        "shades",
+        "color",
+        "swatch"
+      ]
+    },
+    {
+      "name": "components-off",
+      "style": "outline",
+      "path": "outline/components-off.svg",
+      "tags": [
+        "components",
+        "component",
+        "design-system",
+        "figma",
+        "ui-kit",
+        "detach",
+        "off",
+        "disabled"
+      ]
+    },
+    {
+      "name": "components",
+      "style": "outline",
+      "path": "outline/components.svg",
+      "tags": [
+        "components",
+        "component",
+        "design-system",
+        "figma",
+        "ui-kit",
+        "library",
+        "instance",
+        "symbols",
+        "blocks"
+      ]
+    },
+    {
+      "name": "confetti-off",
+      "style": "outline",
+      "path": "outline/confetti-off.svg",
+      "tags": [
+        "confetti",
+        "party",
+        "celebration",
+        "celebrate",
+        "party-popper",
+        "tada",
+        "off",
+        "disabled"
+      ]
+    },
+    {
+      "name": "confetti",
+      "style": "outline",
+      "path": "outline/confetti.svg",
+      "tags": [
+        "confetti",
+        "party",
+        "celebration",
+        "celebrate",
+        "party-popper",
+        "tada",
+        "congratulations",
+        "birthday",
+        "festive"
+      ]
+    },
+    {
+      "name": "confetti",
+      "style": "filled",
+      "path": "filled/confetti.svg",
+      "tags": [
+        "confetti",
+        "party",
+        "celebration",
+        "celebrate",
+        "party-popper",
+        "tada",
+        "congratulations",
+        "birthday",
+        "festive"
+      ]
+    },
+    {
+      "name": "container-off",
+      "style": "outline",
+      "path": "outline/container-off.svg",
+      "tags": [
+        "container",
+        "box",
+        "wrapper",
+        "div",
+        "block",
+        "layout",
+        "html",
+        "off",
+        "disabled"
+      ]
+    },
+    {
+      "name": "container",
+      "style": "outline",
+      "path": "outline/container.svg",
+      "tags": [
+        "container",
+        "box",
+        "wrapper",
+        "div",
+        "block",
+        "layout",
+        "html",
+        "section",
+        "frame"
+      ]
+    },
+    {
+      "name": "container",
+      "style": "filled",
+      "path": "filled/container.svg",
+      "tags": [
+        "container",
+        "box",
+        "wrapper",
+        "div",
+        "block",
+        "layout",
+        "html",
+        "section",
+        "frame"
+      ]
+    },
+    {
+      "name": "cookie-man",
+      "style": "outline",
+      "path": "outline/cookie-man.svg",
+      "tags": [
+        "cookie",
+        "gingerbread",
+        "gingerbread-man",
+        "biscuit",
+        "christmas",
+        "dessert",
+        "sweet",
+        "bakery"
+      ]
+    },
+    {
+      "name": "cookie-man",
+      "style": "filled",
+      "path": "filled/cookie-man.svg",
+      "tags": [
+        "cookie",
+        "gingerbread",
+        "gingerbread-man",
+        "biscuit",
+        "christmas",
+        "dessert",
+        "sweet",
+        "bakery"
+      ]
+    },
+    {
+      "name": "crop-1-1",
+      "style": "outline",
+      "path": "outline/crop-1-1.svg",
+      "tags": [
+        "1-1",
+        "square",
+        "1x1",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-1-1",
+      "style": "filled",
+      "path": "filled/crop-1-1.svg",
+      "tags": [
+        "1-1",
+        "square",
+        "1x1",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-16-9",
+      "style": "outline",
+      "path": "outline/crop-16-9.svg",
+      "tags": [
+        "16-9",
+        "widescreen",
+        "video",
+        "landscape",
+        "16x9",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-16-9",
+      "style": "filled",
+      "path": "filled/crop-16-9.svg",
+      "tags": [
+        "16-9",
+        "widescreen",
+        "video",
+        "landscape",
+        "16x9",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-3-2",
+      "style": "outline",
+      "path": "outline/crop-3-2.svg",
+      "tags": [
+        "3-2",
+        "photo",
+        "3x2",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-3-2",
+      "style": "filled",
+      "path": "filled/crop-3-2.svg",
+      "tags": [
+        "3-2",
+        "photo",
+        "3x2",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-5-4",
+      "style": "outline",
+      "path": "outline/crop-5-4.svg",
+      "tags": [
+        "5-4",
+        "5x4",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-5-4",
+      "style": "filled",
+      "path": "filled/crop-5-4.svg",
+      "tags": [
+        "5-4",
+        "5x4",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-7-5",
+      "style": "outline",
+      "path": "outline/crop-7-5.svg",
+      "tags": [
+        "7-5",
+        "7x5",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-7-5",
+      "style": "filled",
+      "path": "filled/crop-7-5.svg",
+      "tags": [
+        "7-5",
+        "7x5",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-landscape",
+      "style": "outline",
+      "path": "outline/crop-landscape.svg",
+      "tags": [
+        "landscape",
+        "horizontal",
+        "wide",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-landscape",
+      "style": "filled",
+      "path": "filled/crop-landscape.svg",
+      "tags": [
+        "landscape",
+        "horizontal",
+        "wide",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-portrait",
+      "style": "outline",
+      "path": "outline/crop-portrait.svg",
+      "tags": [
+        "portrait",
+        "vertical",
+        "tall",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop-portrait",
+      "style": "filled",
+      "path": "filled/crop-portrait.svg",
+      "tags": [
+        "portrait",
+        "vertical",
+        "tall",
+        "crop",
+        "aspect-ratio",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "trim",
+        "edit"
+      ]
+    },
+    {
+      "name": "crop",
+      "style": "outline",
+      "path": "outline/crop.svg",
+      "tags": [
+        "crop",
+        "trim",
+        "cut",
+        "resize",
+        "image",
+        "photo",
+        "frame",
+        "edit",
+        "aspect-ratio"
+      ]
+    },
+    {
+      "name": "crown-off",
+      "style": "outline",
+      "path": "outline/crown-off.svg",
+      "tags": [
+        "crown",
+        "king",
+        "queen",
+        "royal",
+        "premium",
+        "vip",
+        "pro",
+        "off",
+        "disabled"
+      ]
+    },
+    {
+      "name": "crown",
+      "style": "outline",
+      "path": "outline/crown.svg",
+      "tags": [
+        "crown",
+        "king",
+        "queen",
+        "royal",
+        "royalty",
+        "premium",
+        "vip",
+        "pro",
+        "winner",
+        "leader"
+      ]
+    },
+    {
+      "name": "crown",
+      "style": "filled",
+      "path": "filled/crown.svg",
+      "tags": [
+        "crown",
+        "king",
+        "queen",
+        "royal",
+        "royalty",
+        "premium",
+        "vip",
+        "pro",
+        "winner",
+        "leader"
+      ]
+    },
+    {
+      "name": "cut",
+      "style": "outline",
+      "path": "outline/cut.svg",
+      "tags": [
+        "cut",
+        "scissors",
+        "clip",
+        "trim",
+        "snip",
+        "cut-paste",
+        "clipboard",
+        "edit"
+      ]
+    },
+    {
+      "name": "decagram",
+      "style": "outline",
+      "path": "outline/decagram.svg",
+      "tags": [
+        "decagram",
+        "star",
+        "ten-pointed-star",
+        "shape",
+        "geometry",
+        "polygon",
+        "badge",
+        "seal"
+      ]
+    },
+    {
+      "name": "dimensions",
+      "style": "outline",
+      "path": "outline/dimensions.svg",
+      "tags": [
+        "dimensions",
+        "size",
+        "width",
+        "height",
+        "measure",
+        "measurement",
+        "resize",
+        "ruler",
+        "scale",
+        "depth"
+      ]
+    },
+    {
+      "name": "drag-drop-2",
+      "style": "outline",
+      "path": "outline/drag-drop-2.svg",
+      "tags": [
+        "drag-and-drop",
+        "drag",
+        "drop",
+        "move",
+        "reorder",
+        "cursor",
+        "pointer",
+        "arrange",
+        "dnd",
+        "upload"
+      ]
+    },
+    {
+      "name": "drag-drop",
+      "style": "outline",
+      "path": "outline/drag-drop.svg",
+      "tags": [
+        "drag-and-drop",
+        "drag",
+        "drop",
+        "move",
+        "reorder",
+        "cursor",
+        "pointer",
+        "arrange",
+        "dnd",
+        "upload"
+      ]
+    },
+    {
+      "name": "droplet-bolt",
+      "style": "outline",
+      "path": "outline/droplet-bolt.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "lightning",
+        "flash",
+        "energy",
+        "power",
+        "rain",
+        "ink",
+        "color",
+        "charge",
+        "electric",
+        "fast"
+      ]
+    },
+    {
+      "name": "droplet-cancel",
+      "style": "outline",
+      "path": "outline/droplet-cancel.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "cancel",
+        "stop",
+        "abort",
+        "block",
+        "rain",
+        "ink",
+        "color",
+        "denied",
+        "forbidden"
+      ]
+    },
+    {
+      "name": "droplet-check",
+      "style": "outline",
+      "path": "outline/droplet-check.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "done",
+        "success",
+        "confirmed",
+        "approved",
+        "rain",
+        "ink",
+        "color",
+        "verified",
+        "tick",
+        "checkmark",
+        "ok"
+      ]
+    },
+    {
+      "name": "droplet-code",
+      "style": "outline",
+      "path": "outline/droplet-code.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "code",
+        "programming",
+        "developer",
+        "coding",
+        "rain",
+        "ink",
+        "color",
+        "html",
+        "embed"
+      ]
+    },
+    {
+      "name": "droplet-cog",
+      "style": "outline",
+      "path": "outline/droplet-cog.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "settings",
+        "gear",
+        "config",
+        "configuration",
+        "rain",
+        "ink",
+        "color",
+        "preferences",
+        "options"
+      ]
+    },
+    {
+      "name": "droplet-dollar",
+      "style": "outline",
+      "path": "outline/droplet-dollar.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "money",
+        "price",
+        "payment",
+        "cost",
+        "rain",
+        "ink",
+        "color",
+        "currency",
+        "usd",
+        "finance"
+      ]
+    },
+    {
+      "name": "droplet-down",
+      "style": "outline",
+      "path": "outline/droplet-down.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "download",
+        "arrow-down",
+        "decrease",
+        "lower",
+        "rain",
+        "ink",
+        "color",
+        "receive"
+      ]
+    },
+    {
+      "name": "droplet-exclamation",
+      "style": "outline",
+      "path": "outline/droplet-exclamation.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "warning",
+        "alert",
+        "error",
+        "attention",
+        "rain",
+        "ink",
+        "color",
+        "important",
+        "caution"
+      ]
+    },
+    {
+      "name": "droplet-flame",
+      "style": "outline",
+      "path": "outline/droplet-flame.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "water",
+        "liquid",
+        "rain",
+        "blood",
+        "ink",
+        "color",
+        "fill",
+        "humidity",
+        "flame",
+        "fire",
+        "hot",
+        "burn",
+        "heat",
+        "trending"
+      ]
+    },
+    {
+      "name": "droplet-half-2",
+      "style": "outline",
+      "path": "outline/droplet-half-2.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "half",
+        "contrast",
+        "color",
+        "fill",
+        "opacity",
+        "ink",
+        "liquid",
+        "water"
+      ]
+    },
+    {
+      "name": "droplet-half-2",
+      "style": "filled",
+      "path": "filled/droplet-half-2.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "half",
+        "contrast",
+        "color",
+        "fill",
+        "opacity",
+        "ink",
+        "liquid",
+        "water"
+      ]
+    },
+    {
+      "name": "droplet-half",
+      "style": "outline",
+      "path": "outline/droplet-half.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "half",
+        "contrast",
+        "color",
+        "fill",
+        "opacity",
+        "ink",
+        "liquid",
+        "water"
+      ]
+    },
+    {
+      "name": "droplet-half",
+      "style": "filled",
+      "path": "filled/droplet-half.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "half",
+        "contrast",
+        "color",
+        "fill",
+        "opacity",
+        "ink",
+        "liquid",
+        "water"
+      ]
+    },
+    {
+      "name": "droplet-heart",
+      "style": "outline",
+      "path": "outline/droplet-heart.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "love",
+        "like",
+        "favorite",
+        "favourite",
+        "rain",
+        "ink",
+        "color"
+      ]
+    },
+    {
+      "name": "droplet-key",
+      "style": "outline",
+      "path": "outline/droplet-key.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "water",
+        "liquid",
+        "rain",
+        "blood",
+        "ink",
+        "color",
+        "fill",
+        "humidity",
+        "key",
+        "password",
+        "access",
+        "login",
+        "security",
+        "unlock",
+        "auth"
+      ]
+    },
+    {
+      "name": "droplet-minus",
+      "style": "outline",
+      "path": "outline/droplet-minus.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "remove",
+        "subtract",
+        "delete",
+        "reduce",
+        "rain",
+        "ink",
+        "color",
+        "less"
+      ]
+    },
+    {
+      "name": "droplet-off",
+      "style": "outline",
+      "path": "outline/droplet-off.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "rain",
+        "ink",
+        "color",
+        "disabled",
+        "inactive",
+        "unavailable",
+        "slash",
+        "turn-off",
+        "droplet",
+        "off"
+      ]
+    },
+    {
+      "name": "droplet-pause",
+      "style": "outline",
+      "path": "outline/droplet-pause.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "paused",
+        "hold",
+        "suspend",
+        "wait",
+        "rain",
+        "ink",
+        "color",
+        "break"
+      ]
+    },
+    {
+      "name": "droplet-pin",
+      "style": "outline",
+      "path": "outline/droplet-pin.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "location",
+        "map-pin",
+        "marker",
+        "place",
+        "rain",
+        "ink",
+        "color",
+        "gps",
+        "geolocation"
+      ]
+    },
+    {
+      "name": "droplet-plus",
+      "style": "outline",
+      "path": "outline/droplet-plus.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "add",
+        "new",
+        "create",
+        "insert",
+        "rain",
+        "ink",
+        "color",
+        "more"
+      ]
+    },
+    {
+      "name": "droplet-question",
+      "style": "outline",
+      "path": "outline/droplet-question.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "help",
+        "faq",
+        "support",
+        "unknown",
+        "rain",
+        "ink",
+        "color",
+        "info",
+        "ask"
+      ]
+    },
+    {
+      "name": "droplet-search",
+      "style": "outline",
+      "path": "outline/droplet-search.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "find",
+        "magnifier",
+        "magnifying-glass",
+        "lookup",
+        "rain",
+        "ink",
+        "color",
+        "zoom",
+        "query"
+      ]
+    },
+    {
+      "name": "droplet-share",
+      "style": "outline",
+      "path": "outline/droplet-share.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "send",
+        "forward",
+        "export",
+        "social",
+        "rain",
+        "ink",
+        "color",
+        "distribute"
+      ]
+    },
+    {
+      "name": "droplet-spark",
+      "style": "outline",
+      "path": "outline/droplet-spark.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "water",
+        "liquid",
+        "rain",
+        "blood",
+        "ink",
+        "color",
+        "fill",
+        "humidity",
+        "spark",
+        "sparkle",
+        "magic",
+        "shine"
+      ]
+    },
+    {
+      "name": "droplet-star",
+      "style": "outline",
+      "path": "outline/droplet-star.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "favorite",
+        "favourite",
+        "bookmark",
+        "rating",
+        "rain",
+        "ink",
+        "color",
+        "featured",
+        "starred"
+      ]
+    },
+    {
+      "name": "droplet-up",
+      "style": "outline",
+      "path": "outline/droplet-up.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "upload",
+        "arrow-up",
+        "increase",
+        "raise",
+        "rain",
+        "ink",
+        "color",
+        "send"
+      ]
+    },
+    {
+      "name": "droplet-x",
+      "style": "outline",
+      "path": "outline/droplet-x.svg",
+      "tags": [
+        "drop",
+        "water",
+        "liquid",
+        "close",
+        "delete",
+        "remove",
+        "cancel",
+        "rain",
+        "ink",
+        "color",
+        "clear",
+        "error"
+      ]
+    },
+    {
+      "name": "droplet",
+      "style": "outline",
+      "path": "outline/droplet.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "water",
+        "liquid",
+        "rain",
+        "blood",
+        "ink",
+        "color",
+        "fill",
+        "humidity"
+      ]
+    },
+    {
+      "name": "droplet",
+      "style": "filled",
+      "path": "filled/droplet.svg",
+      "tags": [
+        "droplet",
+        "drop",
+        "water",
+        "liquid",
+        "rain",
+        "blood",
+        "ink",
+        "color",
+        "fill",
+        "humidity"
+      ]
+    },
+    {
+      "name": "ease-in-control-point",
+      "style": "outline",
+      "path": "outline/ease-in-control-point.svg",
+      "tags": [
+        "ease-in",
+        "easing",
+        "bezier",
+        "control-point",
+        "animation",
+        "curve",
+        "motion",
+        "timing-function",
+        "handle",
+        "ease",
+        "in",
+        "control",
+        "point"
+      ]
+    },
+    {
+      "name": "ease-in-control-point",
+      "style": "filled",
+      "path": "filled/ease-in-control-point.svg",
+      "tags": [
+        "ease-in",
+        "easing",
+        "bezier",
+        "control-point",
+        "animation",
+        "curve",
+        "motion",
+        "timing-function",
+        "handle",
+        "ease",
+        "in",
+        "control",
+        "point"
+      ]
+    },
+    {
+      "name": "ease-in-out-control-points",
+      "style": "outline",
+      "path": "outline/ease-in-out-control-points.svg",
+      "tags": [
+        "ease-in-out",
+        "easing",
+        "bezier",
+        "control-points",
+        "animation",
+        "curve",
+        "motion",
+        "timing-function",
+        "handles",
+        "ease",
+        "out",
+        "control",
+        "points"
+      ]
+    },
+    {
+      "name": "ease-in-out-control-points",
+      "style": "filled",
+      "path": "filled/ease-in-out-control-points.svg",
+      "tags": [
+        "ease-in-out",
+        "easing",
+        "bezier",
+        "control-points",
+        "animation",
+        "curve",
+        "motion",
+        "timing-function",
+        "handles",
+        "ease",
+        "out",
+        "control",
+        "points"
+      ]
+    },
+    {
+      "name": "ease-in-out",
+      "style": "outline",
+      "path": "outline/ease-in-out.svg",
+      "tags": [
+        "ease-in-out",
+        "easing",
+        "animation",
+        "transition",
+        "curve",
+        "bezier",
+        "motion",
+        "timing-function",
+        "s-curve",
+        "ease",
+        "in",
+        "out"
+      ]
+    },
+    {
+      "name": "ease-in",
+      "style": "outline",
+      "path": "outline/ease-in.svg",
+      "tags": [
+        "ease-in",
+        "easing",
+        "animation",
+        "transition",
+        "curve",
+        "bezier",
+        "motion",
+        "timing-function",
+        "acceleration",
+        "ease",
+        "in"
+      ]
+    },
+    {
+      "name": "ease-out-control-point",
+      "style": "outline",
+      "path": "outline/ease-out-control-point.svg",
+      "tags": [
+        "ease-out",
+        "easing",
+        "bezier",
+        "control-point",
+        "animation",
+        "curve",
+        "motion",
+        "timing-function",
+        "handle",
+        "ease",
+        "out",
+        "control",
+        "point"
+      ]
+    },
+    {
+      "name": "ease-out-control-point",
+      "style": "filled",
+      "path": "filled/ease-out-control-point.svg",
+      "tags": [
+        "ease-out",
+        "easing",
+        "bezier",
+        "control-point",
+        "animation",
+        "curve",
+        "motion",
+        "timing-function",
+        "handle",
+        "ease",
+        "out",
+        "control",
+        "point"
+      ]
+    },
+    {
+      "name": "ease-out",
+      "style": "outline",
+      "path": "outline/ease-out.svg",
+      "tags": [
+        "ease-out",
+        "easing",
+        "animation",
+        "transition",
+        "curve",
+        "bezier",
+        "motion",
+        "timing-function",
+        "deceleration",
+        "ease",
+        "out"
+      ]
+    },
+    {
+      "name": "edit-bulk",
+      "style": "outline",
+      "path": "outline/edit-bulk.svg",
+      "tags": [
+        "bulk-edit",
+        "batch",
+        "multiple",
+        "edit",
+        "pencil",
+        "mass-edit",
+        "list",
+        "modify",
+        "update",
+        "bulk"
+      ]
+    },
+    {
+      "name": "edit-circle-off",
+      "style": "outline",
+      "path": "outline/edit-circle-off.svg",
+      "tags": [
+        "edit",
+        "pencil",
+        "write",
+        "modify",
+        "change",
+        "update",
+        "disabled",
+        "inactive",
+        "unavailable",
+        "slash",
+        "turn-off",
+        "circle",
+        "pen",
+        "off"
+      ]
+    },
+    {
+      "name": "edit-circle",
+      "style": "outline",
+      "path": "outline/edit-circle.svg",
+      "tags": [
+        "edit",
+        "pencil",
+        "write",
+        "modify",
+        "change",
+        "update",
+        "circle",
+        "pen",
+        "compose"
+      ]
+    },
+    {
+      "name": "edit-off",
+      "style": "outline",
+      "path": "outline/edit-off.svg",
+      "tags": [
+        "edit",
+        "pencil",
+        "write",
+        "modify",
+        "change",
+        "update",
+        "disabled",
+        "inactive",
+        "unavailable",
+        "slash",
+        "turn-off",
+        "rename",
+        "compose",
+        "off"
+      ]
+    },
+    {
+      "name": "edit",
+      "style": "outline",
+      "path": "outline/edit.svg",
+      "tags": [
+        "edit",
+        "pencil",
+        "write",
+        "modify",
+        "change",
+        "update",
+        "rename",
+        "compose",
+        "pen",
+        "draw"
+      ]
+    },
+    {
+      "name": "edit",
+      "style": "filled",
+      "path": "filled/edit.svg",
+      "tags": [
+        "edit",
+        "pencil",
+        "write",
+        "modify",
+        "change",
+        "update",
+        "rename",
+        "compose",
+        "pen",
+        "draw"
+      ]
+    },
+    {
+      "name": "favicon",
+      "style": "outline",
+      "path": "outline/favicon.svg",
+      "tags": [
+        "favicon",
+        "site-icon",
+        "browser-tab",
+        "website",
+        "web",
+        "tab",
+        "icon",
+        "bookmark",
+        "brand"
+      ]
+    },
+    {
+      "name": "favicon",
+      "style": "filled",
+      "path": "filled/favicon.svg",
+      "tags": [
+        "favicon",
+        "site-icon",
+        "browser-tab",
+        "website",
+        "web",
+        "tab",
+        "icon",
+        "bookmark",
+        "brand"
+      ]
+    },
+    {
+      "name": "flip-horizontal",
+      "style": "outline",
+      "path": "outline/flip-horizontal.svg",
+      "tags": [
+        "flip-horizontal",
+        "mirror",
+        "reflect",
+        "flip",
+        "symmetry",
+        "image-edit",
+        "transform",
+        "horizontal"
+      ]
+    },
+    {
+      "name": "flip-vertical",
+      "style": "outline",
+      "path": "outline/flip-vertical.svg",
+      "tags": [
+        "flip-vertical",
+        "mirror",
+        "reflect",
+        "flip",
+        "symmetry",
+        "image-edit",
+        "transform",
+        "vertical"
+      ]
+    },
+    {
+      "name": "frame-off",
+      "style": "outline",
+      "path": "outline/frame-off.svg",
+      "tags": [
+        "frame",
+        "no-frame",
+        "borderless",
+        "no-border",
+        "crop",
+        "canvas",
+        "disabled",
+        "remove-frame"
+      ]
+    },
+    {
+      "name": "frame",
+      "style": "outline",
+      "path": "outline/frame.svg",
+      "tags": [
+        "frame",
+        "picture-frame",
+        "border",
+        "crop",
+        "canvas",
+        "artboard",
+        "outline",
+        "figma-frame",
+        "layout"
+      ]
+    },
+    {
+      "name": "freeze-column",
+      "style": "outline",
+      "path": "outline/freeze-column.svg",
+      "tags": [
+        "freeze-column",
+        "freeze-pane",
+        "lock-column",
+        "pin-column",
+        "spreadsheet",
+        "excel",
+        "table",
+        "sticky",
+        "column"
+      ]
+    },
+    {
+      "name": "freeze-row-column",
+      "style": "outline",
+      "path": "outline/freeze-row-column.svg",
+      "tags": [
+        "freeze-panes",
+        "freeze",
+        "lock",
+        "pin",
+        "row",
+        "column",
+        "spreadsheet",
+        "excel",
+        "table",
+        "sticky"
+      ]
+    },
+    {
+      "name": "freeze-row",
+      "style": "outline",
+      "path": "outline/freeze-row.svg",
+      "tags": [
+        "freeze-row",
+        "freeze-pane",
+        "lock-row",
+        "pin-row",
+        "spreadsheet",
+        "excel",
+        "table",
+        "sticky",
+        "header-row"
+      ]
+    },
+    {
+      "name": "gizmo",
+      "style": "outline",
+      "path": "outline/gizmo.svg",
+      "tags": [
+        "gizmo",
+        "transform",
+        "3d",
+        "axis",
+        "move-tool",
+        "handles",
+        "manipulator",
+        "blender",
+        "xyz",
+        "orientation"
+      ]
+    },
+    {
+      "name": "gradienter",
+      "style": "outline",
+      "path": "outline/gradienter.svg",
+      "tags": [
+        "spirit-level",
+        "level",
+        "bubble-level",
+        "leveler",
+        "measure",
+        "align",
+        "balance",
+        "tool",
+        "construction"
+      ]
+    },
+    {
+      "name": "grain",
+      "style": "outline",
+      "path": "outline/grain.svg",
+      "tags": [
+        "grain",
+        "noise",
+        "dots",
+        "pattern",
+        "texture",
+        "dither",
+        "halftone",
+        "film-grain",
+        "stipple"
+      ]
+    },
+    {
+      "name": "grid-3x3",
+      "style": "outline",
+      "path": "outline/grid-3x3.svg",
+      "tags": [
+        "grid",
+        "layout",
+        "table",
+        "matrix",
+        "tic-tac-toe",
+        "3x3",
+        "cells",
+        "squares",
+        "gridlines",
+        "pattern",
+        "nine"
+      ]
+    },
+    {
+      "name": "grid-4x4",
+      "style": "outline",
+      "path": "outline/grid-4x4.svg",
+      "tags": [
+        "grid",
+        "layout",
+        "table",
+        "matrix",
+        "4x4",
+        "cells",
+        "squares",
+        "gridlines",
+        "pattern",
+        "sixteen"
+      ]
+    },
+    {
+      "name": "grid-goldenratio",
+      "style": "outline",
+      "path": "outline/grid-goldenratio.svg",
+      "tags": [
+        "golden-ratio",
+        "grid",
+        "composition",
+        "layout",
+        "rule-of-thirds",
+        "design",
+        "photography",
+        "proportion",
+        "fibonacci"
+      ]
+    },
+    {
+      "name": "guitar-pick",
+      "style": "outline",
+      "path": "outline/guitar-pick.svg",
+      "tags": [
+        "guitar-pick",
+        "plectrum",
+        "guitar",
+        "music",
+        "instrument",
+        "rock",
+        "band",
+        "pick"
+      ]
+    },
+    {
+      "name": "guitar-pick",
+      "style": "filled",
+      "path": "filled/guitar-pick.svg",
+      "tags": [
+        "guitar-pick",
+        "plectrum",
+        "guitar",
+        "music",
+        "instrument",
+        "rock",
+        "band",
+        "pick"
+      ]
+    },
+    {
+      "name": "hammer-off",
+      "style": "outline",
+      "path": "outline/hammer-off.svg",
+      "tags": [
+        "hammer",
+        "tool",
+        "repair",
+        "build",
+        "construction",
+        "fix",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "hammer",
+      "style": "outline",
+      "path": "outline/hammer.svg",
+      "tags": [
+        "hammer",
+        "tool",
+        "repair",
+        "build",
+        "construction",
+        "fix",
+        "diy",
+        "hardware",
+        "maintenance"
+      ]
+    },
+    {
+      "name": "hash",
+      "style": "outline",
+      "path": "outline/hash.svg",
+      "tags": [
+        "hashtag",
+        "hash",
+        "pound",
+        "number-sign",
+        "octothorpe",
+        "tag",
+        "channel",
+        "symbol"
+      ]
+    },
+    {
+      "name": "hierarchy-2",
+      "style": "outline",
+      "path": "outline/hierarchy-2.svg",
+      "tags": [
+        "hierarchy",
+        "org-chart",
+        "organization",
+        "tree",
+        "structure",
+        "diagram",
+        "network",
+        "parent-child",
+        "flowchart",
+        "sitemap"
+      ]
+    },
+    {
+      "name": "hierarchy-3",
+      "style": "outline",
+      "path": "outline/hierarchy-3.svg",
+      "tags": [
+        "hierarchy",
+        "org-chart",
+        "organization",
+        "tree",
+        "structure",
+        "diagram",
+        "network",
+        "pyramid",
+        "flowchart",
+        "sitemap"
+      ]
+    },
+    {
+      "name": "hierarchy-off",
+      "style": "outline",
+      "path": "outline/hierarchy-off.svg",
+      "tags": [
+        "hierarchy",
+        "org-chart",
+        "organization",
+        "tree",
+        "structure",
+        "diagram",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "hierarchy",
+      "style": "outline",
+      "path": "outline/hierarchy.svg",
+      "tags": [
+        "hierarchy",
+        "org-chart",
+        "organization",
+        "tree",
+        "structure",
+        "diagram",
+        "network",
+        "parent-child",
+        "flowchart",
+        "sitemap"
+      ]
+    },
+    {
+      "name": "icosahedron",
+      "style": "outline",
+      "path": "outline/icosahedron.svg",
+      "tags": [
+        "icosahedron",
+        "polyhedron",
+        "3d",
+        "shape",
+        "geometry",
+        "solid",
+        "d20",
+        "dice",
+        "twenty-sided"
+      ]
+    },
+    {
+      "name": "inner-shadow-bottom-left",
+      "style": "outline",
+      "path": "outline/inner-shadow-bottom-left.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "bottom-left",
+        "south-west",
+        "corner",
+        "inset",
+        "inner",
+        "bottom",
+        "left"
+      ]
+    },
+    {
+      "name": "inner-shadow-bottom-left",
+      "style": "filled",
+      "path": "filled/inner-shadow-bottom-left.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "bottom-left",
+        "south-west",
+        "corner",
+        "inset",
+        "inner",
+        "bottom",
+        "left"
+      ]
+    },
+    {
+      "name": "inner-shadow-bottom-right",
+      "style": "outline",
+      "path": "outline/inner-shadow-bottom-right.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "bottom-right",
+        "south-east",
+        "corner",
+        "inset",
+        "inner",
+        "bottom",
+        "right"
+      ]
+    },
+    {
+      "name": "inner-shadow-bottom-right",
+      "style": "filled",
+      "path": "filled/inner-shadow-bottom-right.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "bottom-right",
+        "south-east",
+        "corner",
+        "inset",
+        "inner",
+        "bottom",
+        "right"
+      ]
+    },
+    {
+      "name": "inner-shadow-bottom",
+      "style": "outline",
+      "path": "outline/inner-shadow-bottom.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "bottom",
+        "down",
+        "south",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "inner-shadow-bottom",
+      "style": "filled",
+      "path": "filled/inner-shadow-bottom.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "bottom",
+        "down",
+        "south",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "inner-shadow-left",
+      "style": "outline",
+      "path": "outline/inner-shadow-left.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "left",
+        "west",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "inner-shadow-left",
+      "style": "filled",
+      "path": "filled/inner-shadow-left.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "left",
+        "west",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "inner-shadow-right",
+      "style": "outline",
+      "path": "outline/inner-shadow-right.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "right",
+        "east",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "inner-shadow-right",
+      "style": "filled",
+      "path": "filled/inner-shadow-right.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "right",
+        "east",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "inner-shadow-top-left",
+      "style": "outline",
+      "path": "outline/inner-shadow-top-left.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "top-left",
+        "north-west",
+        "corner",
+        "inset",
+        "inner",
+        "top",
+        "left"
+      ]
+    },
+    {
+      "name": "inner-shadow-top-left",
+      "style": "filled",
+      "path": "filled/inner-shadow-top-left.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "top-left",
+        "north-west",
+        "corner",
+        "inset",
+        "inner",
+        "top",
+        "left"
+      ]
+    },
+    {
+      "name": "inner-shadow-top-right",
+      "style": "outline",
+      "path": "outline/inner-shadow-top-right.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "top-right",
+        "north-east",
+        "corner",
+        "inset",
+        "inner",
+        "top",
+        "right"
+      ]
+    },
+    {
+      "name": "inner-shadow-top-right",
+      "style": "filled",
+      "path": "filled/inner-shadow-top-right.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "top-right",
+        "north-east",
+        "corner",
+        "inset",
+        "inner",
+        "top",
+        "right"
+      ]
+    },
+    {
+      "name": "inner-shadow-top",
+      "style": "outline",
+      "path": "outline/inner-shadow-top.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "top",
+        "up",
+        "north",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "inner-shadow-top",
+      "style": "filled",
+      "path": "filled/inner-shadow-top.svg",
+      "tags": [
+        "shadow",
+        "inner-shadow",
+        "shade",
+        "shading",
+        "effect",
+        "circle",
+        "sphere",
+        "design",
+        "light",
+        "top",
+        "up",
+        "north",
+        "inset",
+        "inner"
+      ]
+    },
+    {
+      "name": "key-off",
+      "style": "outline",
+      "path": "outline/key-off.svg",
+      "tags": [
+        "key",
+        "password",
+        "access",
+        "authentication",
+        "security",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "key",
+      "style": "outline",
+      "path": "outline/key.svg",
+      "tags": [
+        "key",
+        "password",
+        "login",
+        "access",
+        "authentication",
+        "unlock",
+        "security",
+        "credential",
+        "api-key"
+      ]
+    },
+    {
+      "name": "key",
+      "style": "filled",
+      "path": "filled/key.svg",
+      "tags": [
+        "key",
+        "password",
+        "login",
+        "access",
+        "authentication",
+        "unlock",
+        "security",
+        "credential",
+        "api-key"
+      ]
+    },
+    {
+      "name": "ladle",
+      "style": "outline",
+      "path": "outline/ladle.svg",
+      "tags": [
+        "ladle",
+        "spoon",
+        "scoop",
+        "soup",
+        "kitchen",
+        "utensil",
+        "cooking",
+        "serve"
+      ]
+    },
+    {
+      "name": "lamp-2",
+      "style": "outline",
+      "path": "outline/lamp-2.svg",
+      "tags": [
+        "lamp",
+        "light",
+        "desk-lamp",
+        "lighting",
+        "bulb",
+        "room",
+        "furniture",
+        "decoration"
+      ]
+    },
+    {
+      "name": "lamp-off",
+      "style": "outline",
+      "path": "outline/lamp-off.svg",
+      "tags": [
+        "lamp",
+        "light",
+        "lighting",
+        "dark",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "lamp",
+      "style": "outline",
+      "path": "outline/lamp.svg",
+      "tags": [
+        "lamp",
+        "light",
+        "desk-lamp",
+        "lighting",
+        "bulb",
+        "room",
+        "furniture",
+        "decoration"
+      ]
+    },
+    {
+      "name": "lasso-off",
+      "style": "outline",
+      "path": "outline/lasso-off.svg",
+      "tags": [
+        "lasso",
+        "select",
+        "selection",
+        "tool",
+        "rope",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "lasso-polygon",
+      "style": "outline",
+      "path": "outline/lasso-polygon.svg",
+      "tags": [
+        "lasso",
+        "polygonal-lasso",
+        "polygon",
+        "select",
+        "selection",
+        "tool",
+        "photoshop",
+        "freeform"
+      ]
+    },
+    {
+      "name": "lasso-polygon",
+      "style": "filled",
+      "path": "filled/lasso-polygon.svg",
+      "tags": [
+        "lasso",
+        "polygonal-lasso",
+        "polygon",
+        "select",
+        "selection",
+        "tool",
+        "photoshop",
+        "freeform"
+      ]
+    },
+    {
+      "name": "lasso",
+      "style": "outline",
+      "path": "outline/lasso.svg",
+      "tags": [
+        "lasso",
+        "select",
+        "selection",
+        "tool",
+        "rope",
+        "cowboy",
+        "freeform-select",
+        "photoshop"
+      ]
+    },
+    {
+      "name": "laurel-wreath-1",
+      "style": "outline",
+      "path": "outline/laurel-wreath-1.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "first-place",
+        "1st",
+        "winner",
+        "award",
+        "victory",
+        "gold",
+        "champion",
+        "ranking"
+      ]
+    },
+    {
+      "name": "laurel-wreath-1",
+      "style": "filled",
+      "path": "filled/laurel-wreath-1.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "first-place",
+        "1st",
+        "winner",
+        "award",
+        "victory",
+        "gold",
+        "champion",
+        "ranking"
+      ]
+    },
+    {
+      "name": "laurel-wreath-2",
+      "style": "outline",
+      "path": "outline/laurel-wreath-2.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "second-place",
+        "2nd",
+        "runner-up",
+        "award",
+        "silver",
+        "ranking"
+      ]
+    },
+    {
+      "name": "laurel-wreath-2",
+      "style": "filled",
+      "path": "filled/laurel-wreath-2.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "second-place",
+        "2nd",
+        "runner-up",
+        "award",
+        "silver",
+        "ranking"
+      ]
+    },
+    {
+      "name": "laurel-wreath-3",
+      "style": "outline",
+      "path": "outline/laurel-wreath-3.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "third-place",
+        "3rd",
+        "award",
+        "bronze",
+        "ranking",
+        "podium"
+      ]
+    },
+    {
+      "name": "laurel-wreath-3",
+      "style": "filled",
+      "path": "filled/laurel-wreath-3.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "third-place",
+        "3rd",
+        "award",
+        "bronze",
+        "ranking",
+        "podium"
+      ]
+    },
+    {
+      "name": "laurel-wreath",
+      "style": "outline",
+      "path": "outline/laurel-wreath.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "award",
+        "winner",
+        "victory",
+        "achievement",
+        "prize",
+        "champion",
+        "honor"
+      ]
+    },
+    {
+      "name": "laurel-wreath",
+      "style": "filled",
+      "path": "filled/laurel-wreath.svg",
+      "tags": [
+        "laurel",
+        "wreath",
+        "award",
+        "winner",
+        "victory",
+        "achievement",
+        "prize",
+        "champion",
+        "honor"
+      ]
+    },
+    {
+      "name": "layers-difference",
+      "style": "outline",
+      "path": "outline/layers-difference.svg",
+      "tags": [
+        "layers",
+        "difference",
+        "exclude",
+        "boolean",
+        "pathfinder",
+        "overlap",
+        "shape",
+        "vector",
+        "design"
+      ]
+    },
+    {
+      "name": "layers-intersect-2",
+      "style": "outline",
+      "path": "outline/layers-intersect-2.svg",
+      "tags": [
+        "layers",
+        "intersect",
+        "intersection",
+        "boolean",
+        "pathfinder",
+        "overlap",
+        "shape",
+        "vector",
+        "design"
+      ]
+    },
+    {
+      "name": "layers-intersect",
+      "style": "outline",
+      "path": "outline/layers-intersect.svg",
+      "tags": [
+        "layers",
+        "intersect",
+        "intersection",
+        "boolean",
+        "pathfinder",
+        "overlap",
+        "shape",
+        "vector",
+        "design"
+      ]
+    },
+    {
+      "name": "layers-linked",
+      "style": "outline",
+      "path": "outline/layers-linked.svg",
+      "tags": [
+        "layers",
+        "linked",
+        "link",
+        "connected",
+        "stack",
+        "overlap",
+        "copy",
+        "duplicate"
+      ]
+    },
+    {
+      "name": "layers-off",
+      "style": "outline",
+      "path": "outline/layers-off.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "hide-layers",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "layers-selected-bottom",
+      "style": "outline",
+      "path": "outline/layers-selected-bottom.svg",
+      "tags": [
+        "layers",
+        "selected",
+        "bottom",
+        "stack",
+        "select",
+        "layer",
+        "arrange",
+        "send-to-back"
+      ]
+    },
+    {
+      "name": "layers-selected",
+      "style": "outline",
+      "path": "outline/layers-selected.svg",
+      "tags": [
+        "layers",
+        "selected",
+        "stack",
+        "select",
+        "layer",
+        "arrange",
+        "design"
+      ]
+    },
+    {
+      "name": "layers-subtract",
+      "style": "outline",
+      "path": "outline/layers-subtract.svg",
+      "tags": [
+        "layers",
+        "subtract",
+        "minus-front",
+        "boolean",
+        "pathfinder",
+        "remove",
+        "shape",
+        "vector",
+        "design"
+      ]
+    },
+    {
+      "name": "layers-union",
+      "style": "outline",
+      "path": "outline/layers-union.svg",
+      "tags": [
+        "layers",
+        "union",
+        "merge",
+        "combine",
+        "unite",
+        "boolean",
+        "pathfinder",
+        "shape",
+        "vector",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-2",
+      "style": "outline",
+      "path": "outline/layout-2.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "ui",
+        "wireframe",
+        "tiles",
+        "page",
+        "structure",
+        "masonry"
+      ]
+    },
+    {
+      "name": "layout-2",
+      "style": "filled",
+      "path": "filled/layout-2.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "ui",
+        "wireframe",
+        "tiles",
+        "page",
+        "structure",
+        "masonry"
+      ]
+    },
+    {
+      "name": "layout-align-bottom",
+      "style": "outline",
+      "path": "outline/layout-align-bottom.svg",
+      "tags": [
+        "align-bottom",
+        "align",
+        "bottom",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-bottom",
+      "style": "filled",
+      "path": "filled/layout-align-bottom.svg",
+      "tags": [
+        "align-bottom",
+        "align",
+        "bottom",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-center",
+      "style": "outline",
+      "path": "outline/layout-align-center.svg",
+      "tags": [
+        "align-center",
+        "align",
+        "center",
+        "horizontal-center",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-center",
+      "style": "filled",
+      "path": "filled/layout-align-center.svg",
+      "tags": [
+        "align-center",
+        "align",
+        "center",
+        "horizontal-center",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-left",
+      "style": "outline",
+      "path": "outline/layout-align-left.svg",
+      "tags": [
+        "align-left",
+        "align",
+        "left",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-left",
+      "style": "filled",
+      "path": "filled/layout-align-left.svg",
+      "tags": [
+        "align-left",
+        "align",
+        "left",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-middle",
+      "style": "outline",
+      "path": "outline/layout-align-middle.svg",
+      "tags": [
+        "align-middle",
+        "align",
+        "middle",
+        "vertical-center",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-middle",
+      "style": "filled",
+      "path": "filled/layout-align-middle.svg",
+      "tags": [
+        "align-middle",
+        "align",
+        "middle",
+        "vertical-center",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-right",
+      "style": "outline",
+      "path": "outline/layout-align-right.svg",
+      "tags": [
+        "align-right",
+        "align",
+        "right",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-right",
+      "style": "filled",
+      "path": "filled/layout-align-right.svg",
+      "tags": [
+        "align-right",
+        "align",
+        "right",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-top",
+      "style": "outline",
+      "path": "outline/layout-align-top.svg",
+      "tags": [
+        "align-top",
+        "align",
+        "top",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-align-top",
+      "style": "filled",
+      "path": "filled/layout-align-top.svg",
+      "tags": [
+        "align-top",
+        "align",
+        "top",
+        "alignment",
+        "layout",
+        "position",
+        "design"
+      ]
+    },
+    {
+      "name": "layout-board-split",
+      "style": "outline",
+      "path": "outline/layout-board-split.svg",
+      "tags": [
+        "board",
+        "split",
+        "layout",
+        "grid",
+        "dashboard",
+        "tiles",
+        "template",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-board-split",
+      "style": "filled",
+      "path": "filled/layout-board-split.svg",
+      "tags": [
+        "board",
+        "split",
+        "layout",
+        "grid",
+        "dashboard",
+        "tiles",
+        "template",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-board",
+      "style": "outline",
+      "path": "outline/layout-board.svg",
+      "tags": [
+        "board",
+        "layout",
+        "grid",
+        "dashboard",
+        "tiles",
+        "template",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-board",
+      "style": "filled",
+      "path": "filled/layout-board.svg",
+      "tags": [
+        "board",
+        "layout",
+        "grid",
+        "dashboard",
+        "tiles",
+        "template",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-bottombar-collapse",
+      "style": "outline",
+      "path": "outline/layout-bottombar-collapse.svg",
+      "tags": [
+        "bottom-bar",
+        "footer",
+        "collapse",
+        "hide",
+        "panel",
+        "layout",
+        "ui",
+        "bottombar"
+      ]
+    },
+    {
+      "name": "layout-bottombar-collapse",
+      "style": "filled",
+      "path": "filled/layout-bottombar-collapse.svg",
+      "tags": [
+        "bottom-bar",
+        "footer",
+        "collapse",
+        "hide",
+        "panel",
+        "layout",
+        "ui",
+        "bottombar"
+      ]
+    },
+    {
+      "name": "layout-bottombar-expand",
+      "style": "outline",
+      "path": "outline/layout-bottombar-expand.svg",
+      "tags": [
+        "bottom-bar",
+        "footer",
+        "expand",
+        "show",
+        "panel",
+        "layout",
+        "ui",
+        "bottombar"
+      ]
+    },
+    {
+      "name": "layout-bottombar-expand",
+      "style": "filled",
+      "path": "filled/layout-bottombar-expand.svg",
+      "tags": [
+        "bottom-bar",
+        "footer",
+        "expand",
+        "show",
+        "panel",
+        "layout",
+        "ui",
+        "bottombar"
+      ]
+    },
+    {
+      "name": "layout-bottombar",
+      "style": "outline",
+      "path": "outline/layout-bottombar.svg",
+      "tags": [
+        "bottom-bar",
+        "footer",
+        "tab-bar",
+        "layout",
+        "ui",
+        "panel",
+        "dock",
+        "bottombar"
+      ]
+    },
+    {
+      "name": "layout-bottombar",
+      "style": "filled",
+      "path": "filled/layout-bottombar.svg",
+      "tags": [
+        "bottom-bar",
+        "footer",
+        "tab-bar",
+        "layout",
+        "ui",
+        "panel",
+        "dock",
+        "bottombar"
+      ]
+    },
+    {
+      "name": "layout-cards",
+      "style": "outline",
+      "path": "outline/layout-cards.svg",
+      "tags": [
+        "cards",
+        "card-view",
+        "layout",
+        "grid",
+        "ui",
+        "tiles"
+      ]
+    },
+    {
+      "name": "layout-cards",
+      "style": "filled",
+      "path": "filled/layout-cards.svg",
+      "tags": [
+        "cards",
+        "card-view",
+        "layout",
+        "grid",
+        "ui",
+        "tiles"
+      ]
+    },
+    {
+      "name": "layout-collage",
+      "style": "outline",
+      "path": "outline/layout-collage.svg",
+      "tags": [
+        "collage",
+        "layout",
+        "grid",
+        "photo-grid",
+        "masonry",
+        "gallery",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-columns",
+      "style": "outline",
+      "path": "outline/layout-columns.svg",
+      "tags": [
+        "columns",
+        "two-columns",
+        "split-view",
+        "layout",
+        "grid",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-dashboard",
+      "style": "outline",
+      "path": "outline/layout-dashboard.svg",
+      "tags": [
+        "dashboard",
+        "layout",
+        "grid",
+        "admin",
+        "panel",
+        "overview",
+        "widgets",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-dashboard",
+      "style": "filled",
+      "path": "filled/layout-dashboard.svg",
+      "tags": [
+        "dashboard",
+        "layout",
+        "grid",
+        "admin",
+        "panel",
+        "overview",
+        "widgets",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-distribute-horizontal",
+      "style": "outline",
+      "path": "outline/layout-distribute-horizontal.svg",
+      "tags": [
+        "distribute",
+        "distribute-horizontal",
+        "spacing",
+        "align",
+        "layout",
+        "design",
+        "horizontal"
+      ]
+    },
+    {
+      "name": "layout-distribute-horizontal",
+      "style": "filled",
+      "path": "filled/layout-distribute-horizontal.svg",
+      "tags": [
+        "distribute",
+        "distribute-horizontal",
+        "spacing",
+        "align",
+        "layout",
+        "design",
+        "horizontal"
+      ]
+    },
+    {
+      "name": "layout-distribute-vertical",
+      "style": "outline",
+      "path": "outline/layout-distribute-vertical.svg",
+      "tags": [
+        "distribute",
+        "distribute-vertical",
+        "spacing",
+        "align",
+        "layout",
+        "design",
+        "vertical"
+      ]
+    },
+    {
+      "name": "layout-distribute-vertical",
+      "style": "filled",
+      "path": "filled/layout-distribute-vertical.svg",
+      "tags": [
+        "distribute",
+        "distribute-vertical",
+        "spacing",
+        "align",
+        "layout",
+        "design",
+        "vertical"
+      ]
+    },
+    {
+      "name": "layout-grid-add",
+      "style": "outline",
+      "path": "outline/layout-grid-add.svg",
+      "tags": [
+        "grid",
+        "add",
+        "widget",
+        "add-tile",
+        "new",
+        "layout",
+        "plus",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-grid-remove",
+      "style": "outline",
+      "path": "outline/layout-grid-remove.svg",
+      "tags": [
+        "grid",
+        "remove",
+        "widget",
+        "remove-tile",
+        "delete",
+        "layout",
+        "minus",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-grid",
+      "style": "outline",
+      "path": "outline/layout-grid.svg",
+      "tags": [
+        "grid",
+        "layout",
+        "apps",
+        "tiles",
+        "gallery",
+        "thumbnails",
+        "grid-view",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-grid",
+      "style": "filled",
+      "path": "filled/layout-grid.svg",
+      "tags": [
+        "grid",
+        "layout",
+        "apps",
+        "tiles",
+        "gallery",
+        "thumbnails",
+        "grid-view",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-kanban",
+      "style": "outline",
+      "path": "outline/layout-kanban.svg",
+      "tags": [
+        "kanban",
+        "board",
+        "columns",
+        "tasks",
+        "project-management",
+        "trello",
+        "agile",
+        "layout"
+      ]
+    },
+    {
+      "name": "layout-kanban",
+      "style": "filled",
+      "path": "filled/layout-kanban.svg",
+      "tags": [
+        "kanban",
+        "board",
+        "columns",
+        "tasks",
+        "project-management",
+        "trello",
+        "agile",
+        "layout"
+      ]
+    },
+    {
+      "name": "layout-list",
+      "style": "outline",
+      "path": "outline/layout-list.svg",
+      "tags": [
+        "list",
+        "list-view",
+        "layout",
+        "rows",
+        "items",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-list",
+      "style": "filled",
+      "path": "filled/layout-list.svg",
+      "tags": [
+        "list",
+        "list-view",
+        "layout",
+        "rows",
+        "items",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-navbar-collapse",
+      "style": "outline",
+      "path": "outline/layout-navbar-collapse.svg",
+      "tags": [
+        "navbar",
+        "header",
+        "top-bar",
+        "collapse",
+        "hide",
+        "navigation",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-navbar-collapse",
+      "style": "filled",
+      "path": "filled/layout-navbar-collapse.svg",
+      "tags": [
+        "navbar",
+        "header",
+        "top-bar",
+        "collapse",
+        "hide",
+        "navigation",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-navbar-expand",
+      "style": "outline",
+      "path": "outline/layout-navbar-expand.svg",
+      "tags": [
+        "navbar",
+        "header",
+        "top-bar",
+        "expand",
+        "show",
+        "navigation",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-navbar-expand",
+      "style": "filled",
+      "path": "filled/layout-navbar-expand.svg",
+      "tags": [
+        "navbar",
+        "header",
+        "top-bar",
+        "expand",
+        "show",
+        "navigation",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-navbar",
+      "style": "outline",
+      "path": "outline/layout-navbar.svg",
+      "tags": [
+        "navbar",
+        "header",
+        "top-bar",
+        "navigation",
+        "menu-bar",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-navbar",
+      "style": "filled",
+      "path": "filled/layout-navbar.svg",
+      "tags": [
+        "navbar",
+        "header",
+        "top-bar",
+        "navigation",
+        "menu-bar",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-off",
+      "style": "outline",
+      "path": "outline/layout-off.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "ui",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "layout-rows",
+      "style": "outline",
+      "path": "outline/layout-rows.svg",
+      "tags": [
+        "rows",
+        "layout",
+        "split",
+        "horizontal",
+        "grid",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-left-collapse",
+      "style": "outline",
+      "path": "outline/layout-sidebar-left-collapse.svg",
+      "tags": [
+        "sidebar",
+        "collapse",
+        "hide",
+        "close",
+        "drawer",
+        "side-panel",
+        "left",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-left-collapse",
+      "style": "filled",
+      "path": "filled/layout-sidebar-left-collapse.svg",
+      "tags": [
+        "sidebar",
+        "collapse",
+        "hide",
+        "close",
+        "drawer",
+        "side-panel",
+        "left",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-left-expand",
+      "style": "outline",
+      "path": "outline/layout-sidebar-left-expand.svg",
+      "tags": [
+        "sidebar",
+        "expand",
+        "show",
+        "open",
+        "drawer",
+        "side-panel",
+        "left",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-left-expand",
+      "style": "filled",
+      "path": "filled/layout-sidebar-left-expand.svg",
+      "tags": [
+        "sidebar",
+        "expand",
+        "show",
+        "open",
+        "drawer",
+        "side-panel",
+        "left",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-right-collapse",
+      "style": "outline",
+      "path": "outline/layout-sidebar-right-collapse.svg",
+      "tags": [
+        "sidebar",
+        "collapse",
+        "hide",
+        "close",
+        "drawer",
+        "side-panel",
+        "right",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-right-collapse",
+      "style": "filled",
+      "path": "filled/layout-sidebar-right-collapse.svg",
+      "tags": [
+        "sidebar",
+        "collapse",
+        "hide",
+        "close",
+        "drawer",
+        "side-panel",
+        "right",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-right-expand",
+      "style": "outline",
+      "path": "outline/layout-sidebar-right-expand.svg",
+      "tags": [
+        "sidebar",
+        "expand",
+        "show",
+        "open",
+        "drawer",
+        "side-panel",
+        "right",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-right-expand",
+      "style": "filled",
+      "path": "filled/layout-sidebar-right-expand.svg",
+      "tags": [
+        "sidebar",
+        "expand",
+        "show",
+        "open",
+        "drawer",
+        "side-panel",
+        "right",
+        "layout",
+        "ui"
+      ]
+    },
+    {
+      "name": "layout-sidebar-right",
+      "style": "outline",
+      "path": "outline/layout-sidebar-right.svg",
+      "tags": [
+        "sidebar",
+        "side-panel",
+        "drawer",
+        "right",
+        "layout",
+        "ui",
+        "navigation"
+      ]
+    },
+    {
+      "name": "layout-sidebar-right",
+      "style": "filled",
+      "path": "filled/layout-sidebar-right.svg",
+      "tags": [
+        "sidebar",
+        "side-panel",
+        "drawer",
+        "right",
+        "layout",
+        "ui",
+        "navigation"
+      ]
+    },
+    {
+      "name": "layout-sidebar",
+      "style": "outline",
+      "path": "outline/layout-sidebar.svg",
+      "tags": [
+        "sidebar",
+        "side-panel",
+        "drawer",
+        "left",
+        "layout",
+        "ui",
+        "navigation"
+      ]
+    },
+    {
+      "name": "layout-sidebar",
+      "style": "filled",
+      "path": "filled/layout-sidebar.svg",
+      "tags": [
+        "sidebar",
+        "side-panel",
+        "drawer",
+        "left",
+        "layout",
+        "ui",
+        "navigation"
+      ]
+    },
+    {
+      "name": "layout",
+      "style": "outline",
+      "path": "outline/layout.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "ui",
+        "wireframe",
+        "page",
+        "structure",
+        "masonry"
+      ]
+    },
+    {
+      "name": "layout",
+      "style": "filled",
+      "path": "filled/layout.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "ui",
+        "wireframe",
+        "page",
+        "structure",
+        "masonry"
+      ]
+    },
+    {
+      "name": "line-dashed",
+      "style": "outline",
+      "path": "outline/line-dashed.svg",
+      "tags": [
+        "line",
+        "dashed",
+        "dashes",
+        "stroke",
+        "border-style",
+        "segment",
+        "draw"
+      ]
+    },
+    {
+      "name": "line-dotted",
+      "style": "outline",
+      "path": "outline/line-dotted.svg",
+      "tags": [
+        "line",
+        "dotted",
+        "dots",
+        "stroke",
+        "border-style",
+        "segment",
+        "draw"
+      ]
+    },
+    {
+      "name": "line",
+      "style": "outline",
+      "path": "outline/line.svg",
+      "tags": [
+        "line",
+        "segment",
+        "stroke",
+        "straight",
+        "draw",
+        "shape",
+        "geometry"
+      ]
+    },
+    {
+      "name": "magnet-off",
+      "style": "outline",
+      "path": "outline/magnet-off.svg",
+      "tags": [
+        "magnet",
+        "magnetic",
+        "attract",
+        "snap",
+        "disabled",
+        "off-state",
+        "unavailable",
+        "off"
+      ]
+    },
+    {
+      "name": "magnet",
+      "style": "outline",
+      "path": "outline/magnet.svg",
+      "tags": [
+        "magnet",
+        "magnetic",
+        "attract",
+        "attraction",
+        "physics",
+        "pull",
+        "snap"
+      ]
+    },
+    {
+      "name": "magnet",
+      "style": "filled",
+      "path": "filled/magnet.svg",
+      "tags": [
+        "magnet",
+        "magnetic",
+        "attract",
+        "attraction",
+        "physics",
+        "pull",
+        "snap"
+      ]
+    },
+    {
+      "name": "magnetic",
+      "style": "outline",
+      "path": "outline/magnetic.svg",
+      "tags": [
+        "magnetic",
+        "magnet",
+        "snap",
+        "attract",
+        "snapping",
+        "pull",
+        "guides"
+      ]
+    },
+    {
+      "name": "mask-off",
+      "style": "outline",
+      "path": "outline/mask-off.svg",
+      "tags": [
+        "layer-mask",
+        "clipping",
+        "masking",
+        "design",
+        "layer",
+        "disabled",
+        "slash",
+        "unmask",
+        "mask",
+        "off"
+      ]
+    },
+    {
+      "name": "mask",
+      "style": "outline",
+      "path": "outline/mask.svg",
+      "tags": [
+        "layer-mask",
+        "clipping",
+        "masking",
+        "design",
+        "photoshop",
+        "edit",
+        "layer",
+        "image-editing",
+        "mask"
+      ]
+    },
+    {
+      "name": "mesh",
+      "style": "outline",
+      "path": "outline/mesh.svg",
+      "tags": [
+        "wireframe",
+        "3d",
+        "grid",
+        "polygon",
+        "lattice",
+        "net",
+        "model",
+        "topology",
+        "mesh"
+      ]
+    },
+    {
+      "name": "mickey",
+      "style": "outline",
+      "path": "outline/mickey.svg",
+      "tags": [
+        "mouse",
+        "cartoon",
+        "disney",
+        "ears",
+        "character",
+        "kids",
+        "animation",
+        "mickey"
+      ]
+    },
+    {
+      "name": "mickey",
+      "style": "filled",
+      "path": "filled/mickey.svg",
+      "tags": [
+        "mouse",
+        "cartoon",
+        "disney",
+        "ears",
+        "character",
+        "kids",
+        "animation",
+        "mickey"
+      ]
+    },
+    {
+      "name": "moustache",
+      "style": "outline",
+      "path": "outline/moustache.svg",
+      "tags": [
+        "mustache",
+        "facial-hair",
+        "beard",
+        "man",
+        "gentleman",
+        "movember",
+        "hipster",
+        "moustache"
+      ]
+    },
+    {
+      "name": "needle-thread",
+      "style": "outline",
+      "path": "outline/needle-thread.svg",
+      "tags": [
+        "sewing",
+        "thread",
+        "tailor",
+        "craft",
+        "stitch",
+        "sew",
+        "embroidery",
+        "haberdashery",
+        "needle"
+      ]
+    },
+    {
+      "name": "needle",
+      "style": "outline",
+      "path": "outline/needle.svg",
+      "tags": [
+        "sewing",
+        "pin",
+        "tailor",
+        "craft",
+        "stitch",
+        "sew",
+        "injection",
+        "needle"
+      ]
+    },
+    {
+      "name": "noise-reduction",
+      "style": "outline",
+      "path": "outline/noise-reduction.svg",
+      "tags": [
+        "denoise",
+        "noise-cancelling",
+        "audio",
+        "filter",
+        "photo-editing",
+        "clean",
+        "grain",
+        "anc",
+        "noise",
+        "reduction"
+      ]
+    },
+    {
+      "name": "opacity",
+      "style": "outline",
+      "path": "outline/opacity.svg",
+      "tags": [
+        "opacity",
+        "transparency",
+        "alpha",
+        "transparent",
+        "fade",
+        "overlap",
+        "layers",
+        "design",
+        "blend"
+      ]
+    },
+    {
+      "name": "paint-off",
+      "style": "outline",
+      "path": "outline/paint-off.svg",
+      "tags": [
+        "paint-roller",
+        "roller",
+        "painting",
+        "brush",
+        "disabled",
+        "slash",
+        "decorate",
+        "colour",
+        "color",
+        "inactive",
+        "paint",
+        "off"
+      ]
+    },
+    {
+      "name": "paint",
+      "style": "outline",
+      "path": "outline/paint.svg",
+      "tags": [
+        "paint-roller",
+        "roller",
+        "painting",
+        "decorate",
+        "wall",
+        "brush",
+        "color",
+        "colour",
+        "paint"
+      ]
+    },
+    {
+      "name": "paint",
+      "style": "filled",
+      "path": "filled/paint.svg",
+      "tags": [
+        "paint-roller",
+        "roller",
+        "painting",
+        "decorate",
+        "wall",
+        "brush",
+        "color",
+        "colour",
+        "paint"
+      ]
+    },
+    {
+      "name": "palette-off",
+      "style": "outline",
+      "path": "outline/palette-off.svg",
+      "tags": [
+        "color",
+        "colour",
+        "paint",
+        "art",
+        "theme",
+        "disabled",
+        "slash",
+        "palette",
+        "off"
+      ]
+    },
+    {
+      "name": "palette",
+      "style": "outline",
+      "path": "outline/palette.svg",
+      "tags": [
+        "color",
+        "colour",
+        "palette-colors",
+        "paint",
+        "art",
+        "painter",
+        "theme",
+        "swatch",
+        "palette"
+      ]
+    },
+    {
+      "name": "palette",
+      "style": "filled",
+      "path": "filled/palette.svg",
+      "tags": [
+        "color",
+        "colour",
+        "palette-colors",
+        "paint",
+        "art",
+        "painter",
+        "theme",
+        "swatch",
+        "palette"
+      ]
+    },
+    {
+      "name": "pencil-ai",
+      "style": "outline",
+      "path": "outline/pencil-ai.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "artificial-intelligence",
+        "ai-assistant",
+        "generative",
+        "llm",
+        "chatgpt",
+        "update",
+        "change",
+        "pencil",
+        "ai"
+      ]
+    },
+    {
+      "name": "pencil-bolt",
+      "style": "outline",
+      "path": "outline/pencil-bolt.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "lightning",
+        "flash",
+        "fast",
+        "energy",
+        "power",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-cancel",
+      "style": "outline",
+      "path": "outline/pencil-cancel.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "cancelled",
+        "stop",
+        "abort",
+        "blocked",
+        "forbidden",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-check",
+      "style": "outline",
+      "path": "outline/pencil-check.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "done",
+        "success",
+        "confirmed",
+        "approved",
+        "verified",
+        "tick",
+        "update",
+        "change",
+        "pencil"
+      ]
+    },
+    {
+      "name": "pencil-code",
+      "style": "outline",
+      "path": "outline/pencil-code.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "programming",
+        "coding",
+        "developer",
+        "embed",
+        "html",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-cog",
+      "style": "outline",
+      "path": "outline/pencil-cog.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "settings",
+        "gear",
+        "config",
+        "preferences",
+        "options",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-discount",
+      "style": "outline",
+      "path": "outline/pencil-discount.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "sale",
+        "promo",
+        "offer",
+        "percent",
+        "coupon",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-dollar",
+      "style": "outline",
+      "path": "outline/pencil-dollar.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "money",
+        "price",
+        "payment",
+        "paid",
+        "usd",
+        "cost",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-down",
+      "style": "outline",
+      "path": "outline/pencil-down.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "download",
+        "arrow-down",
+        "decrease",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-exclamation",
+      "style": "outline",
+      "path": "outline/pencil-exclamation.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "warning",
+        "alert",
+        "error",
+        "attention",
+        "important",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-flame",
+      "style": "outline",
+      "path": "outline/pencil-flame.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "update",
+        "change",
+        "rename",
+        "sketch",
+        "annotate",
+        "pencil",
+        "flame",
+        "fire",
+        "hot",
+        "burn",
+        "heat",
+        "trending"
+      ]
+    },
+    {
+      "name": "pencil-heart",
+      "style": "outline",
+      "path": "outline/pencil-heart.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "favorite",
+        "like",
+        "love",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-key",
+      "style": "outline",
+      "path": "outline/pencil-key.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "update",
+        "change",
+        "rename",
+        "sketch",
+        "annotate",
+        "pencil",
+        "key",
+        "password",
+        "access",
+        "login",
+        "security",
+        "unlock",
+        "auth"
+      ]
+    },
+    {
+      "name": "pencil-minus",
+      "style": "outline",
+      "path": "outline/pencil-minus.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "remove",
+        "delete",
+        "subtract",
+        "update",
+        "change",
+        "pencil",
+        "minus"
+      ]
+    },
+    {
+      "name": "pencil-off",
+      "style": "outline",
+      "path": "outline/pencil-off.svg",
+      "tags": [
+        "read-only",
+        "no-edit",
+        "locked",
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "disabled",
+        "inactive",
+        "slash",
+        "crossed-out",
+        "update",
+        "change",
+        "pencil",
+        "off"
+      ]
+    },
+    {
+      "name": "pencil-pause",
+      "style": "outline",
+      "path": "outline/pencil-pause.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "paused",
+        "hold",
+        "wait",
+        "suspend",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-pin",
+      "style": "outline",
+      "path": "outline/pencil-pin.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "pinned",
+        "location",
+        "map-pin",
+        "marker",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-plus",
+      "style": "outline",
+      "path": "outline/pencil-plus.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "add",
+        "new",
+        "create",
+        "insert",
+        "update",
+        "change",
+        "pencil",
+        "plus"
+      ]
+    },
+    {
+      "name": "pencil-question",
+      "style": "outline",
+      "path": "outline/pencil-question.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "help",
+        "faq",
+        "support",
+        "unknown",
+        "ask",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-ruler",
+      "style": "outline",
+      "path": "outline/pencil-ruler.svg",
+      "tags": [
+        "pencil",
+        "ruler",
+        "design",
+        "draw",
+        "sketch",
+        "draft",
+        "measure",
+        "edit",
+        "write",
+        "compose",
+        "create",
+        "tools",
+        "drafting"
+      ]
+    },
+    {
+      "name": "pencil-search",
+      "style": "outline",
+      "path": "outline/pencil-search.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "find",
+        "magnifier",
+        "lookup",
+        "zoom",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-share",
+      "style": "outline",
+      "path": "outline/pencil-share.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "send",
+        "forward",
+        "export",
+        "social",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-spark",
+      "style": "outline",
+      "path": "outline/pencil-spark.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "update",
+        "change",
+        "rename",
+        "sketch",
+        "annotate",
+        "pencil",
+        "spark",
+        "sparkle",
+        "magic",
+        "shine"
+      ]
+    },
+    {
+      "name": "pencil-star",
+      "style": "outline",
+      "path": "outline/pencil-star.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "favorite",
+        "bookmark",
+        "rating",
+        "featured",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-up",
+      "style": "outline",
+      "path": "outline/pencil-up.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "upload",
+        "arrow-up",
+        "increase",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil-x",
+      "style": "outline",
+      "path": "outline/pencil-x.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "close",
+        "delete",
+        "remove",
+        "cancel",
+        "clear",
+        "update",
+        "change"
+      ]
+    },
+    {
+      "name": "pencil",
+      "style": "outline",
+      "path": "outline/pencil.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "update",
+        "change",
+        "rename",
+        "sketch",
+        "annotate",
+        "pencil"
+      ]
+    },
+    {
+      "name": "pencil",
+      "style": "filled",
+      "path": "filled/pencil.svg",
+      "tags": [
+        "edit",
+        "write",
+        "draw",
+        "modify",
+        "pen",
+        "compose",
+        "update",
+        "change",
+        "rename",
+        "sketch",
+        "annotate",
+        "pencil"
+      ]
+    },
+    {
+      "name": "pentagram",
+      "style": "outline",
+      "path": "outline/pentagram.svg",
+      "tags": [
+        "star",
+        "five-pointed-star",
+        "pentacle",
+        "occult",
+        "witchcraft",
+        "shape",
+        "magic",
+        "pentagram"
+      ]
+    },
+    {
+      "name": "placeholder",
+      "style": "outline",
+      "path": "outline/placeholder.svg",
+      "tags": [
+        "input",
+        "form",
+        "field",
+        "text-field",
+        "textbox",
+        "hint",
+        "empty",
+        "wireframe",
+        "design",
+        "placeholder"
+      ]
+    },
+    {
+      "name": "polygon-off",
+      "style": "outline",
+      "path": "outline/polygon-off.svg",
+      "tags": [
+        "shape",
+        "vertices",
+        "nodes",
+        "geometry",
+        "vector",
+        "polygon",
+        "points",
+        "disabled",
+        "unavailable",
+        "inactive",
+        "hidden",
+        "off"
+      ]
+    },
+    {
+      "name": "polygon",
+      "style": "outline",
+      "path": "outline/polygon.svg",
+      "tags": [
+        "shape",
+        "vertices",
+        "nodes",
+        "geometry",
+        "vector",
+        "points",
+        "pen-tool",
+        "path",
+        "lasso",
+        "polygon"
+      ]
+    },
+    {
+      "name": "prong",
+      "style": "outline",
+      "path": "outline/prong.svg",
+      "tags": [
+        "fork",
+        "tine",
+        "hook",
+        "tool",
+        "connector",
+        "branch",
+        "split"
+      ]
+    },
+    {
+      "name": "radius-bottom-left",
+      "style": "outline",
+      "path": "outline/radius-bottom-left.svg",
+      "tags": [
+        "border-radius",
+        "corner",
+        "rounded",
+        "round",
+        "bottom",
+        "left",
+        "css",
+        "style",
+        "radius"
+      ]
+    },
+    {
+      "name": "radius-bottom-right",
+      "style": "outline",
+      "path": "outline/radius-bottom-right.svg",
+      "tags": [
+        "border-radius",
+        "corner",
+        "rounded",
+        "round",
+        "bottom",
+        "right",
+        "css",
+        "style",
+        "radius"
+      ]
+    },
+    {
+      "name": "radius-top-left",
+      "style": "outline",
+      "path": "outline/radius-top-left.svg",
+      "tags": [
+        "border-radius",
+        "corner",
+        "rounded",
+        "round",
+        "top",
+        "left",
+        "css",
+        "style",
+        "radius"
+      ]
+    },
+    {
+      "name": "radius-top-right",
+      "style": "outline",
+      "path": "outline/radius-top-right.svg",
+      "tags": [
+        "border-radius",
+        "corner",
+        "rounded",
+        "round",
+        "top",
+        "right",
+        "css",
+        "style",
+        "radius"
+      ]
+    },
+    {
+      "name": "reference-image",
+      "style": "outline",
+      "path": "outline/reference-image.svg",
+      "tags": [
+        "reference",
+        "image",
+        "picture",
+        "template",
+        "guide",
+        "trace",
+        "overlay",
+        "sketch"
+      ]
+    },
+    {
+      "name": "resize",
+      "style": "outline",
+      "path": "outline/resize.svg",
+      "tags": [
+        "scale",
+        "dimensions",
+        "size",
+        "width",
+        "height",
+        "transform",
+        "crop",
+        "resize"
+      ]
+    },
+    {
+      "name": "ruler-2-off",
+      "style": "outline",
+      "path": "outline/ruler-2-off.svg",
+      "tags": [
+        "measure",
+        "measurement",
+        "dimensions",
+        "size",
+        "length",
+        "width",
+        "scale",
+        "disabled",
+        "unavailable",
+        "inactive",
+        "hidden",
+        "ruler",
+        "off"
+      ]
+    },
+    {
+      "name": "ruler-2",
+      "style": "outline",
+      "path": "outline/ruler-2.svg",
+      "tags": [
+        "measure",
+        "measurement",
+        "dimensions",
+        "size",
+        "length",
+        "width",
+        "scale",
+        "ruler"
+      ]
+    },
+    {
+      "name": "ruler-3",
+      "style": "outline",
+      "path": "outline/ruler-3.svg",
+      "tags": [
+        "measure",
+        "measurement",
+        "dimensions",
+        "size",
+        "length",
+        "width",
+        "scale",
+        "ruler"
+      ]
+    },
+    {
+      "name": "ruler-measure-2",
+      "style": "outline",
+      "path": "outline/ruler-measure-2.svg",
+      "tags": [
+        "measure",
+        "measurement",
+        "dimensions",
+        "distance",
+        "size",
+        "length",
+        "width",
+        "ruler"
+      ]
+    },
+    {
+      "name": "ruler-measure",
+      "style": "outline",
+      "path": "outline/ruler-measure.svg",
+      "tags": [
+        "measure",
+        "measurement",
+        "dimensions",
+        "distance",
+        "size",
+        "length",
+        "width",
+        "ruler"
+      ]
+    },
+    {
+      "name": "ruler-off",
+      "style": "outline",
+      "path": "outline/ruler-off.svg",
+      "tags": [
+        "measure",
+        "measurement",
+        "dimensions",
+        "size",
+        "length",
+        "width",
+        "scale",
+        "disabled",
+        "unavailable",
+        "inactive",
+        "hidden",
+        "ruler",
+        "off"
+      ]
+    },
+    {
+      "name": "ruler",
+      "style": "outline",
+      "path": "outline/ruler.svg",
+      "tags": [
+        "measure",
+        "measurement",
+        "dimensions",
+        "size",
+        "length",
+        "width",
+        "scale",
+        "ruler"
+      ]
+    },
+    {
+      "name": "scissors-off",
+      "style": "outline",
+      "path": "outline/scissors-off.svg",
+      "tags": [
+        "cut",
+        "cutting",
+        "clipboard",
+        "crop",
+        "trim",
+        "tool",
+        "disabled",
+        "unavailable",
+        "inactive",
+        "hidden",
+        "scissors",
+        "off"
+      ]
+    },
+    {
+      "name": "scissors",
+      "style": "outline",
+      "path": "outline/scissors.svg",
+      "tags": [
+        "cut",
+        "clipboard",
+        "cutting",
+        "crop",
+        "trim",
+        "tool",
+        "scissors"
+      ]
+    },
+    {
+      "name": "section",
+      "style": "outline",
+      "path": "outline/section.svg",
+      "tags": [
+        "layout",
+        "section",
+        "dashed",
+        "separator",
+        "html",
+        "website",
+        "divider"
+      ]
+    },
+    {
+      "name": "section",
+      "style": "filled",
+      "path": "filled/section.svg",
+      "tags": [
+        "layout",
+        "section",
+        "dashed",
+        "separator",
+        "html",
+        "website",
+        "divider"
+      ]
+    },
+    {
+      "name": "shape-2",
+      "style": "outline",
+      "path": "outline/shape-2.svg",
+      "tags": [
+        "vector",
+        "nodes",
+        "path",
+        "bezier",
+        "pen-tool",
+        "edit-shape",
+        "anchor-points",
+        "design",
+        "shape"
+      ]
+    },
+    {
+      "name": "shape-3",
+      "style": "outline",
+      "path": "outline/shape-3.svg",
+      "tags": [
+        "vector",
+        "nodes",
+        "path",
+        "bezier",
+        "pen-tool",
+        "edit-shape",
+        "anchor-points",
+        "design",
+        "shape"
+      ]
+    },
+    {
+      "name": "shape-off",
+      "style": "outline",
+      "path": "outline/shape-off.svg",
+      "tags": [
+        "vector",
+        "nodes",
+        "path",
+        "pen-tool",
+        "bezier",
+        "edit-shape",
+        "anchor-points",
+        "disabled",
+        "unavailable",
+        "inactive",
+        "hidden",
+        "shape",
+        "off"
+      ]
+    },
+    {
+      "name": "shape",
+      "style": "outline",
+      "path": "outline/shape.svg",
+      "tags": [
+        "vector",
+        "nodes",
+        "path",
+        "bezier",
+        "pen-tool",
+        "edit-shape",
+        "anchor-points",
+        "design",
+        "shape"
+      ]
+    },
+    {
+      "name": "shovel-pitchforks",
+      "style": "outline",
+      "path": "outline/shovel-pitchforks.svg",
+      "tags": [
+        "shovel",
+        "pitchfork",
+        "farming",
+        "gardening",
+        "tools",
+        "agriculture",
+        "dig",
+        "garden"
+      ]
+    },
+    {
+      "name": "shovel",
+      "style": "outline",
+      "path": "outline/shovel.svg",
+      "tags": [
+        "spade",
+        "dig",
+        "digging",
+        "garden",
+        "gardening",
+        "tool",
+        "dirt",
+        "shovel"
+      ]
+    },
+    {
+      "name": "sketching",
+      "style": "outline",
+      "path": "outline/sketching.svg",
+      "tags": [
+        "sketch",
+        "drawing",
+        "pencil",
+        "freehand",
+        "draft",
+        "illustration",
+        "art"
+      ]
+    },
+    {
+      "name": "slice",
+      "style": "outline",
+      "path": "outline/slice.svg",
+      "tags": [
+        "cut",
+        "knife",
+        "crop",
+        "slice-tool",
+        "design",
+        "slice"
+      ]
+    },
+    {
+      "name": "sparkle-2",
+      "style": "outline",
+      "path": "outline/sparkle-2.svg",
+      "tags": [
+        "star",
+        "shine",
+        "glitter",
+        "magic",
+        "highlight",
+        "glow",
+        "ai",
+        "new",
+        "sparkle"
+      ]
+    },
+    {
+      "name": "sparkle-highlight",
+      "style": "outline",
+      "path": "outline/sparkle-highlight.svg",
+      "tags": [
+        "star",
+        "shine",
+        "glitter",
+        "magic",
+        "highlight",
+        "emphasis",
+        "glow",
+        "ai",
+        "sparkle"
+      ]
+    },
+    {
+      "name": "sparkle",
+      "style": "outline",
+      "path": "outline/sparkle.svg",
+      "tags": [
+        "star",
+        "shine",
+        "glitter",
+        "magic",
+        "highlight",
+        "glow",
+        "ai",
+        "new",
+        "sparkle"
+      ]
+    },
+    {
+      "name": "sparkles-2-off",
+      "style": "outline",
+      "path": "outline/sparkles-2-off.svg",
+      "tags": [
+        "stars",
+        "shine",
+        "glitter",
+        "magic",
+        "ai",
+        "new",
+        "disabled",
+        "unavailable",
+        "inactive",
+        "hidden",
+        "sparkles",
+        "off"
+      ]
+    },
+    {
+      "name": "sparkles-2",
+      "style": "outline",
+      "path": "outline/sparkles-2.svg",
+      "tags": [
+        "stars",
+        "shine",
+        "glitter",
+        "magic",
+        "ai",
+        "new",
+        "sparkles"
+      ]
+    },
+    {
+      "name": "sparkles-2",
+      "style": "filled",
+      "path": "filled/sparkles-2.svg",
+      "tags": [
+        "stars",
+        "shine",
+        "glitter",
+        "magic",
+        "ai",
+        "new",
+        "sparkles"
+      ]
+    },
+    {
+      "name": "square-half",
+      "style": "outline",
+      "path": "outline/square-half.svg",
+      "tags": [
+        "half",
+        "square",
+        "split",
+        "box",
+        "shape"
+      ]
+    },
+    {
+      "name": "square-toggle-horizontal",
+      "style": "outline",
+      "path": "outline/square-toggle-horizontal.svg",
+      "tags": [
+        "toggle",
+        "switch",
+        "swap",
+        "split",
+        "duplicate",
+        "clone",
+        "compare",
+        "horizontal",
+        "square",
+        "box"
+      ]
+    },
+    {
+      "name": "square-toggle",
+      "style": "outline",
+      "path": "outline/square-toggle.svg",
+      "tags": [
+        "toggle",
+        "switch",
+        "swap",
+        "split",
+        "duplicate",
+        "clone",
+        "compare",
+        "square",
+        "box"
+      ]
+    },
+    {
+      "name": "squares-diagonal",
+      "style": "outline",
+      "path": "outline/squares-diagonal.svg",
+      "tags": [
+        "squares",
+        "boxes",
+        "layers",
+        "overlap",
+        "intersect",
+        "diagonal",
+        "shapes",
+        "copy"
+      ]
+    },
+    {
+      "name": "squares",
+      "style": "outline",
+      "path": "outline/squares.svg",
+      "tags": [
+        "squares",
+        "boxes",
+        "layers",
+        "copy",
+        "duplicate",
+        "overlap",
+        "stack",
+        "shapes"
+      ]
+    },
+    {
+      "name": "squares",
+      "style": "filled",
+      "path": "filled/squares.svg",
+      "tags": [
+        "squares",
+        "boxes",
+        "layers",
+        "copy",
+        "duplicate",
+        "overlap",
+        "stack",
+        "shapes"
+      ]
+    },
+    {
+      "name": "stack-2",
+      "style": "outline",
+      "path": "outline/stack-2.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "pile",
+        "layout",
+        "elements",
+        "components",
+        "levels",
+        "z-order",
+        "stacked"
+      ]
+    },
+    {
+      "name": "stack-2",
+      "style": "filled",
+      "path": "filled/stack-2.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "pile",
+        "layout",
+        "elements",
+        "components",
+        "levels",
+        "z-order",
+        "stacked"
+      ]
+    },
+    {
+      "name": "stack-3",
+      "style": "outline",
+      "path": "outline/stack-3.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "pile",
+        "layout",
+        "elements",
+        "components",
+        "levels",
+        "z-order",
+        "stacked"
+      ]
+    },
+    {
+      "name": "stack-3",
+      "style": "filled",
+      "path": "filled/stack-3.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "pile",
+        "layout",
+        "elements",
+        "components",
+        "levels",
+        "z-order",
+        "stacked"
+      ]
+    },
+    {
+      "name": "stack-check",
+      "style": "outline",
+      "path": "outline/stack-check.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "done",
+        "success",
+        "confirmed",
+        "approved",
+        "verified",
+        "tick",
+        "check"
+      ]
+    },
+    {
+      "name": "stack-minus",
+      "style": "outline",
+      "path": "outline/stack-minus.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "remove",
+        "subtract",
+        "delete",
+        "reduce",
+        "z-order",
+        "stacked",
+        "layer",
+        "minus"
+      ]
+    },
+    {
+      "name": "stack-plus",
+      "style": "outline",
+      "path": "outline/stack-plus.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "add",
+        "create",
+        "new",
+        "insert",
+        "z-order",
+        "stacked",
+        "layer",
+        "plus"
+      ]
+    },
+    {
+      "name": "stack-pop",
+      "style": "outline",
+      "path": "outline/stack-pop.svg",
+      "tags": [
+        "stack",
+        "pop",
+        "data-structure",
+        "lifo",
+        "remove",
+        "layers",
+        "arrow-out",
+        "programming"
+      ]
+    },
+    {
+      "name": "stack-push",
+      "style": "outline",
+      "path": "outline/stack-push.svg",
+      "tags": [
+        "stack",
+        "push",
+        "data-structure",
+        "lifo",
+        "add",
+        "layers",
+        "arrow-in",
+        "programming"
+      ]
+    },
+    {
+      "name": "stack-x",
+      "style": "outline",
+      "path": "outline/stack-x.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "remove",
+        "delete",
+        "cancel",
+        "close",
+        "z-order",
+        "stacked",
+        "layer"
+      ]
+    },
+    {
+      "name": "stack",
+      "style": "outline",
+      "path": "outline/stack.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "pile",
+        "layout",
+        "elements",
+        "components",
+        "levels",
+        "z-order",
+        "stacked"
+      ]
+    },
+    {
+      "name": "stack",
+      "style": "filled",
+      "path": "filled/stack.svg",
+      "tags": [
+        "layers",
+        "stack",
+        "pile",
+        "layout",
+        "elements",
+        "components",
+        "levels",
+        "z-order",
+        "stacked"
+      ]
+    },
+    {
+      "name": "sticker-2",
+      "style": "outline",
+      "path": "outline/sticker-2.svg",
+      "tags": [
+        "sticker",
+        "label",
+        "decal",
+        "adhesive",
+        "sticky-note",
+        "post-it",
+        "peel",
+        "emoji",
+        "badge"
+      ]
+    },
+    {
+      "name": "sticker-smile",
+      "style": "outline",
+      "path": "outline/sticker-smile.svg",
+      "tags": [
+        "sticker",
+        "emoji",
+        "smiley",
+        "smile",
+        "face",
+        "decal",
+        "label",
+        "happy"
+      ]
+    },
+    {
+      "name": "sticker",
+      "style": "outline",
+      "path": "outline/sticker.svg",
+      "tags": [
+        "sticker",
+        "label",
+        "decal",
+        "adhesive",
+        "stamp",
+        "peel",
+        "emoji",
+        "badge"
+      ]
+    },
+    {
+      "name": "stroke-curved",
+      "style": "outline",
+      "path": "outline/stroke-curved.svg",
+      "tags": [
+        "stroke",
+        "line",
+        "curve",
+        "path",
+        "vector",
+        "design",
+        "pen",
+        "line-style",
+        "brush",
+        "curved"
+      ]
+    },
+    {
+      "name": "stroke-dynamic",
+      "style": "outline",
+      "path": "outline/stroke-dynamic.svg",
+      "tags": [
+        "stroke",
+        "line",
+        "variable-width",
+        "path",
+        "vector",
+        "design",
+        "pen",
+        "brush",
+        "dynamic"
+      ]
+    },
+    {
+      "name": "stroke-straight",
+      "style": "outline",
+      "path": "outline/stroke-straight.svg",
+      "tags": [
+        "stroke",
+        "line",
+        "straight",
+        "path",
+        "vector",
+        "design",
+        "pen",
+        "line-style",
+        "brush"
+      ]
+    },
+    {
+      "name": "template-off",
+      "style": "outline",
+      "path": "outline/template-off.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "masonry",
+        "collage",
+        "disabled",
+        "inactive",
+        "wireframe",
+        "off"
+      ]
+    },
+    {
+      "name": "template",
+      "style": "outline",
+      "path": "outline/template.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "masonry",
+        "collage",
+        "blocks",
+        "wireframe",
+        "dashboard"
+      ]
+    },
+    {
+      "name": "template",
+      "style": "filled",
+      "path": "filled/template.svg",
+      "tags": [
+        "layout",
+        "grid",
+        "template",
+        "masonry",
+        "collage",
+        "blocks",
+        "wireframe",
+        "dashboard"
+      ]
+    },
+    {
+      "name": "text-resize",
+      "style": "outline",
+      "path": "outline/text-resize.svg",
+      "tags": [
+        "font-size",
+        "scale",
+        "text-size",
+        "resize",
+        "typography",
+        "editor",
+        "formula",
+        "text"
+      ]
+    },
+    {
+      "name": "tools-off",
+      "style": "outline",
+      "path": "outline/tools-off.svg",
+      "tags": [
+        "tools",
+        "wrench",
+        "screwdriver",
+        "repair",
+        "settings",
+        "disabled",
+        "inactive",
+        "toolbox",
+        "off"
+      ]
+    },
+    {
+      "name": "tools",
+      "style": "outline",
+      "path": "outline/tools.svg",
+      "tags": [
+        "tools",
+        "wrench",
+        "screwdriver",
+        "repair",
+        "fix",
+        "settings",
+        "maintenance",
+        "toolbox"
+      ]
+    },
+    {
+      "name": "trident",
+      "style": "outline",
+      "path": "outline/trident.svg",
+      "tags": [
+        "trident",
+        "spear",
+        "fork",
+        "weapon",
+        "poseidon",
+        "neptune",
+        "spearhead",
+        "pitchfork"
+      ]
+    },
+    {
+      "name": "typeface",
+      "style": "outline",
+      "path": "outline/typeface.svg",
+      "tags": [
+        "typeface",
+        "font",
+        "typography",
+        "letter",
+        "text",
+        "glyph",
+        "fonts",
+        "glyphs"
+      ]
+    },
+    {
+      "name": "ux-circle",
+      "style": "outline",
+      "path": "outline/ux-circle.svg",
+      "tags": [
+        "ux",
+        "user-experience",
+        "design",
+        "circle",
+        "user",
+        "ui",
+        "user-interface",
+        "usability",
+        "design-thinking"
+      ]
+    },
+    {
+      "name": "vector-bezier-2",
+      "style": "outline",
+      "path": "outline/vector-bezier-2.svg",
+      "tags": [
+        "bezier",
+        "curve",
+        "vector",
+        "path",
+        "pen-tool",
+        "anchor",
+        "handles",
+        "design"
+      ]
+    },
+    {
+      "name": "vector-bezier-arc",
+      "style": "outline",
+      "path": "outline/vector-bezier-arc.svg",
+      "tags": [
+        "bezier",
+        "arc",
+        "curve",
+        "vector",
+        "path",
+        "pen-tool",
+        "design",
+        "vector-graphics"
+      ]
+    },
+    {
+      "name": "vector-bezier-circle",
+      "style": "outline",
+      "path": "outline/vector-bezier-circle.svg",
+      "tags": [
+        "bezier",
+        "circle",
+        "curve",
+        "vector",
+        "path",
+        "pen-tool",
+        "design",
+        "vector-graphics"
+      ]
+    },
+    {
+      "name": "vector-bezier",
+      "style": "outline",
+      "path": "outline/vector-bezier.svg",
+      "tags": [
+        "bezier",
+        "curve",
+        "vector",
+        "path",
+        "pen-tool",
+        "anchor",
+        "handles",
+        "design"
+      ]
+    },
+    {
+      "name": "vector-off",
+      "style": "outline",
+      "path": "outline/vector-off.svg",
+      "tags": [
+        "vector",
+        "graphics",
+        "design",
+        "path",
+        "disabled",
+        "inactive",
+        "vector-graphics",
+        "bezier",
+        "off"
+      ]
+    },
+    {
+      "name": "vector-spline",
+      "style": "outline",
+      "path": "outline/vector-spline.svg",
+      "tags": [
+        "spline",
+        "curve",
+        "vector",
+        "path",
+        "line",
+        "graph",
+        "design",
+        "vector-graphics"
+      ]
+    },
+    {
+      "name": "vector-triangle-off",
+      "style": "outline",
+      "path": "outline/vector-triangle-off.svg",
+      "tags": [
+        "vector",
+        "triangle",
+        "graphics",
+        "path",
+        "disabled",
+        "inactive",
+        "vector-graphics",
+        "bezier",
+        "off"
+      ]
+    },
+    {
+      "name": "vector-triangle",
+      "style": "outline",
+      "path": "outline/vector-triangle.svg",
+      "tags": [
+        "vector",
+        "triangle",
+        "graphics",
+        "path",
+        "anchor",
+        "points",
+        "design",
+        "vector-graphics"
+      ]
+    },
+    {
+      "name": "vector",
+      "style": "outline",
+      "path": "outline/vector.svg",
+      "tags": [
+        "vector",
+        "graphics",
+        "design",
+        "path",
+        "anchor",
+        "points",
+        "pen-tool",
+        "illustration"
+      ]
+    },
+    {
+      "name": "vignette",
+      "style": "outline",
+      "path": "outline/vignette.svg",
+      "tags": [
+        "vignette",
+        "photo",
+        "effect",
+        "filter",
+        "edge",
+        "darken",
+        "image",
+        "editing"
+      ]
+    },
+    {
+      "name": "wheel",
+      "style": "outline",
+      "path": "outline/wheel.svg",
+      "tags": [
+        "wheel",
+        "tire",
+        "tyre",
+        "car",
+        "rim",
+        "spin",
+        "wheels",
+        "tyres"
+      ]
+    },
+    {
+      "name": "yarn",
+      "style": "outline",
+      "path": "outline/yarn.svg",
+      "tags": [
+        "yarn",
+        "wool",
+        "knitting",
+        "crochet",
+        "thread",
+        "craft",
+        "ball",
+        "knit"
+      ]
+    }
+  ]
+}

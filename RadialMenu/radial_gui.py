@@ -2,17 +2,21 @@
 import ctypes
 from ctypes import wintypes
 import math
+import ntpath
 import time
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'Launch'))
-from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QRectF, QSettings, Qt, QTimer, Signal
+from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QRectF, QSettings, Qt, QTimer, Signal, QFileInfo
 from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QIcon, QPixmap
-from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu, QStackedWidget, QHBoxLayout, QFileDialog, QFileIconProvider
 from photo_tools import apply_theme, bind_window, run_app
 from windows_input import WindowsInput
-from photo_tools.fluent import QComboBox, QPushButton
+from application_icons import ApplicationIcons
+from icon_library import IconPicker, button_icon
+from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key
+from photo_tools.fluent import QComboBox, QPushButton, QLineEdit
 from qfluentwidgets import ToolButton, FluentIcon
 
 
@@ -26,12 +30,15 @@ class RadialPopup(QWidget):
     selected = Signal(int)
     settings_requested = Signal()
 
-    def __init__(self):
-        super().__init__(None, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint |
-                         Qt.WindowType.WindowStaysOnTopHint)
+    def __init__(self, parent=None, *, embedded=False):
+        super().__init__(parent, Qt.WindowType.Widget if embedded else (Qt.WindowType.Tool |
+                         Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint))
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.setMouseTracking(True)
+        self.embedded = embedded
+        self.active_button = -1
+        self.buttons = [default_button(i) for i in range(26)]
         self.count = 12
         self.hover = -1
         self.accent = QColor('#246b53')
@@ -42,6 +49,7 @@ class RadialPopup(QWidget):
         self.settings_button.setAccessibleName('RadialMenu settings')
         self.settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.settings_button.clicked.connect(self.request_settings)
+        self.settings_button.setVisible(not embedded)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -97,15 +105,23 @@ class RadialPopup(QWidget):
             path.lineTo(c+inner*math.cos(end), c-inner*math.sin(end))
             path.arcTo(inner_rect, start-span+2, span-2)
             path.closeSubpath()
-            color = self.accent if index == self.hover else QColor('#28322f' if self.dark else '#f2f6f4')
+            color = self.accent if index in (self.hover, self.active_button) else QColor('#28322f' if self.dark else '#f2f6f4')
             painter.setBrush(color)
             painter.setPen(QPen(self.accent, 1))
             painter.drawPath(path)
-            painter.setPen(QColor('white' if self.dark or index == self.hover else '#172d24'))
+            painter.setPen(QColor('white' if self.dark or index in (self.hover, self.active_button) else '#172d24'))
             angle = math.radians(-90+index*span)
             radius = (outer+inner)/2
-            painter.drawText(QRectF(c+radius*math.cos(angle)-18, c+radius*math.sin(angle)-14, 36, 28),
-                             Qt.AlignmentFlag.AlignCenter, chr(ord('a') + index))
+            x, y = c+radius*math.cos(angle), c+radius*math.sin(angle)
+            button = self.buttons[index]
+            icon_path = button['hover_icon'] if index == self.hover and button['hover_icon'] else button['icon']
+            icon = button_icon(icon_path, self.dark or index in (self.hover, self.active_button))
+            if not icon.isNull():
+                icon.paint(painter, round(x-10), round(y-20), 20, 20)
+            width = min(74, max(30, radius * span * math.pi / 180 - 6))
+            label = painter.fontMetrics().elidedText(button['name'], Qt.TextElideMode.ElideRight, int(width))
+            painter.drawText(QRectF(x-width/2, y if not icon.isNull() else y-14, width, 28),
+                             Qt.AlignmentFlag.AlignCenter, label)
 
     def mouseMoveEvent(self, event):
         self.hover = self.segment_at(event.position())
@@ -113,8 +129,11 @@ class RadialPopup(QWidget):
 
     def mouseReleaseEvent(self, event):
         index = self.segment_at(event.position())
-        self.hide()
+        if not self.embedded:
+            self.hide()
         if event.button() == Qt.MouseButton.LeftButton and index >= 0:
+            self.active_button = index if self.embedded else -1
+            self.update()
             self.selected.emit(index+1)
 
     def keyPressEvent(self, event):
@@ -123,7 +142,7 @@ class RadialPopup(QWidget):
 
     def event(self, event):
         from PySide6.QtCore import QEvent
-        if event.type() == QEvent.Type.WindowDeactivate:
+        if not getattr(self, 'embedded', False) and event.type() == QEvent.Type.WindowDeactivate:
             self.hide()
         return super().event(event)
 
@@ -153,6 +172,7 @@ class RadialService(QObject):
         self.popup = RadialPopup()
         self.input = WindowsInput() if sys.platform == 'win32' else None
         self.target = None
+        self.application = ''
         self.pending = None
         self.send_timer = QTimer(self)
         self.send_timer.setInterval(20)
@@ -165,6 +185,7 @@ class RadialService(QObject):
         self.hotkey_filter = HotkeyFilter(self)
         self.filter_installed = False
         self.settings = context.preferences.settings
+        self.profiles = ButtonProfiles(self.settings)
         self.popup.count = max(2, min(26, self.settings.value('radial/count', 12, type=int)))
         self.key = self.settings.value('radial/key', 'Ctrl+Alt+Space', type=str)
         self.context = context
@@ -208,11 +229,15 @@ class RadialService(QObject):
         for window in self.context.windows:
             if not window.closing:
                 window.open_app('radial-menu', force_new=False)
+                if self.application:
+                    window.pages['radial-menu'].choose_application(self.application)
                 window.showNormal()
                 window.raise_()
                 window.activateWindow()
                 return
-        self.context.create_window('radial-menu')
+        window = self.context.create_window('radial-menu')
+        if window and self.application:
+            window.pages['radial-menu'].choose_application(self.application)
 
     def exit_background(self):
         self.stop()
@@ -286,12 +311,24 @@ class RadialService(QObject):
         else:
             # Capture before showing/activating our own popup.
             self.target = self.input.capture() if self.input else None
+            application = self.input.application(self.target) if self.target and self.input else ''
+            self.application = application if isinstance(application, str) else ''
+            try:
+                self.popup.buttons = self.profiles.buttons(self.application)
+            except (ValueError, OSError) as error:
+                self.status = str(error)
+                self.changed.emit()
+                self.target = None
+                return
             self.popup.show_at_cursor()
 
     def select_letter(self, number):
         if not self.target or not 1 <= number <= 26:
             return
-        letter = chr(ord('a') + number - 1)
+        letter = self.popup.buttons[number-1]['sequence']
+        if not letter.strip():
+            self.cancel_delivery()
+            return
         self.pending = (self.target, letter, time.monotonic() + 5)
         self.status = f'Waiting for the original app to receive {letter}'
         self.changed.emit()
@@ -310,9 +347,177 @@ class RadialService(QObject):
         if not self.input.focused(target) or not self.input.keys_released():
             return
         self.cancel_delivery()  # Exactly one attempt, including failure.
-        sent = self.input.send_letter(target, letter)
+        sent = (self.input.send_letter(target, letter) if len(letter) == 1 and letter.isalpha()
+                else self.input.send_sequence(target, letter))
         self.status = f'Sent {letter}' if sent else 'Could not send letter to the original app.'
         self.changed.emit()
+
+
+class ButtonEditor(QWidget):
+    def __init__(self, owner):
+        super().__init__()
+        self.owner = owner
+        self.current = 0
+        self.loading = False
+        self.application = ''
+        self.buttons = []
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 24, 28, 24)
+        self.heading = QLabel()
+        self.heading.setObjectName('title')
+        layout.addWidget(self.heading)
+        self.path_label = QLabel()
+        self.path_label.setWordWrap(True)
+        layout.addWidget(self.path_label)
+        body = QHBoxLayout()
+        self.ring = RadialPopup(embedded=True)
+        self.ring.setFixedSize(360, 360)
+        self.ring.selected.connect(self.select_button)
+        body.addWidget(self.ring, 0, Qt.AlignmentFlag.AlignTop)
+        form = QVBoxLayout()
+        self.button_heading = QLabel()
+        form.addWidget(self.button_heading)
+        form.addWidget(QLabel('Name'))
+        self.name = QLineEdit()
+        self.name.setMaxLength(40)
+        self.name.setAccessibleName('Button name')
+        form.addWidget(self.name)
+        self.icons = []
+        for title in ('Normal icon', 'Hover icon'):
+            form.addWidget(QLabel(title))
+            row = QHBoxLayout()
+            field = QLineEdit()
+            field.setAccessibleName(title)
+            field.setPlaceholderText('Choose an image, or leave blank')
+            row.addWidget(field, 1)
+            library = QPushButton('Icons…')
+            library.clicked.connect(lambda _=False, edit=field: self.choose_library_icon(edit))
+            row.addWidget(library)
+            choose = QPushButton('File…')
+            choose.clicked.connect(lambda _=False, edit=field: self.choose_icon(edit))
+            row.addWidget(choose)
+            clear = QPushButton('Clear')
+            clear.clicked.connect(field.clear)
+            row.addWidget(clear)
+            form.addLayout(row)
+            self.icons.append(field)
+        form.addWidget(QLabel('Button sequence'))
+        self.sequence = QLineEdit()
+        self.sequence.setAccessibleName('Button sequence')
+        self.sequence.setPlaceholderText('Ctrl+C, Ctrl+V')
+        form.addWidget(self.sequence)
+        hint = QLabel('Separate keys or shortcuts with commas. Example: Ctrl+A, Delete. Blank disables the action.')
+        hint.setWordWrap(True)
+        form.addWidget(hint)
+        self.message = QLabel()
+        self.message.setWordWrap(True)
+        form.addWidget(self.message)
+        actions = QHBoxLayout()
+        save = QPushButton('Save Buttons')
+        save.clicked.connect(self.save)
+        actions.addWidget(save)
+        back = QPushButton('Save and Back')
+        back.clicked.connect(self.go_back)
+        actions.addWidget(back)
+        cancel = QPushButton('Cancel')
+        cancel.clicked.connect(lambda: self.owner.pages.setCurrentIndex(0))
+        actions.addWidget(cancel)
+        form.addLayout(actions)
+        form.addStretch()
+        body.addLayout(form, 1)
+        layout.addLayout(body)
+        layout.addStretch()
+        for field in [self.name, *self.icons, self.sequence]:
+            field.textChanged.connect(self.update_draft)
+
+    def choose_library_icon(self, field):
+        picker = IconPicker(self, dark=self.ring.dark)
+        if picker.exec():
+            field.setText(picker.reference)
+
+    def choose_icon(self, field):
+        path, _ = QFileDialog.getOpenFileName(self, 'Choose button icon', '', 'Images (*.png *.svg *.ico *.jpg *.jpeg *.bmp)')
+        if path:
+            field.setText(path)
+
+    def load_application(self, application):
+        self.application = application
+        self.buttons = self.owner.service.profiles.buttons(application)
+        self.heading.setText(f'Edit Buttons — {ntpath.basename(application)}')
+        self.path_label.setText(application)
+        self.ring.buttons = self.buttons
+        self.ring.count = self.owner.service.popup.count
+        self.ring.accent = self.owner.service.popup.accent
+        self.ring.dark = self.owner.service.popup.dark
+        self.message.clear()
+        self.select_button(1)
+
+    def select_button(self, number):
+        self.loading = True
+        self.current = number-1
+        button = self.buttons[self.current]
+        self.button_heading.setText(f'Button {number}')
+        self.name.setText(button['name'])
+        self.icons[0].setText(button['icon'])
+        self.icons[1].setText(button['hover_icon'])
+        self.sequence.setText(button['sequence'])
+        self.ring.active_button = self.current
+        self.ring.update()
+        self.loading = False
+
+    def update_draft(self):
+        if self.loading or not self.buttons:
+            return
+        self.buttons[self.current] = dict(name=self.name.text(), icon=self.icons[0].text(),
+            hover_icon=self.icons[1].text(), sequence=self.sequence.text())
+        self.ring.update()
+        self.message.setText('Unsaved changes')
+
+    def save(self):
+        try:
+            for number, button in enumerate(self.buttons, 1):
+                try:
+                    parse_sequence(button['sequence'])
+                    for path in (button['icon'], button['hover_icon']):
+                        if path and button_icon(path).isNull():
+                            raise ValueError('Choose a readable icon image or clear the icon.')
+                except ValueError as error:
+                    raise ValueError(f'Button {number}: {error}') from error
+            self.owner.service.profiles.save(self.application, self.buttons)
+        except (ValueError, OSError) as error:
+            self.message.setText(str(error))
+            return False
+        self.message.setText('Buttons saved')
+        return True
+
+    def go_back(self):
+        if self.save():
+            self.owner.pages.setCurrentIndex(0)
+
+
+class ApplicationPicker(QComboBox):
+    refreshing = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.currentIndexChanged.connect(self.sync_icon)
+
+    def sync_icon(self, *_):
+        index = self.currentIndex()
+        self.setIcon(self.items[index].icon if 0 <= index < len(self.items) else QIcon())
+
+    def clear(self):
+        super().clear()
+        self.sync_icon()
+
+    def _showComboMenu(self):
+        self.refreshing.emit()
+        super()._showComboMenu()
+
+    def add_application(self, text, path, icon):
+        # Shared combo's adapter keeps the second positional argument as userData.
+        from qfluentwidgets import ComboBox
+        ComboBox.addItem(self, text, icon=icon, userData=path)
 
 
 class RadialMenuWindow(QMainWindow):
@@ -339,8 +544,17 @@ class RadialMenuWindow(QMainWindow):
         self.status = QLabel()
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
-        preview = QPushButton('Preview at mouse')
-        layout.addWidget(preview)
+        layout.addWidget(QLabel('Application'))
+        self.application_picker = ApplicationPicker()
+        self.application_picker.setAccessibleName('Application to configure')
+        layout.addWidget(self.application_picker)
+        browse_app = QPushButton('Choose application…')
+        layout.addWidget(browse_app)
+        self.edit_buttons = QPushButton('Edit Buttons')
+        layout.addWidget(self.edit_buttons)
+        self.profile_message = QLabel('Choose a running application, or browse for another executable.')
+        self.profile_message.setWordWrap(True)
+        layout.addWidget(self.profile_message)
         self.background_button = QPushButton('Run in background')
         layout.addWidget(self.background_button)
         layout.addWidget(QLabel('The activation key works while you use other apps. Restore settings from the system tray.'))
@@ -348,21 +562,103 @@ class RadialMenuWindow(QMainWindow):
         self.selection = QLabel('Select a letter to send its keypress to the original application.')
         layout.addWidget(self.selection)
         layout.addStretch()
-        self.setCentralWidget(root)
+        self.pages = QStackedWidget()
+        self.pages.addWidget(root)
+        self.setCentralWidget(self.pages)
         self.suite_binding = bind_window(self, 'radial-menu', suite)
         context = self.suite_context
         if not hasattr(context, 'radial_service'):
             context.radial_service = RadialService(context)
         self.service = context.radial_service
+        self.app_icons = ApplicationIcons(context.preferences.settings)
         self.key.setCurrentText(self.service.key)
         self.segments.setCurrentIndex(self.segments.findData(self.service.popup.count))
         self.status.setText(self.service.status)
         self.key.currentTextChanged.connect(self.service.start)
         self.segments.currentIndexChanged.connect(self.change_count)
-        self.service.changed.connect(lambda: self.status.setText(self.service.status))
-        self.service.popup.selected.connect(lambda n: self.selection.setText(f'Selected {chr(96+n)}'))
-        preview.clicked.connect(self.service.preview)
+        self.service.changed.connect(self.refresh_status)
+        self.service.popup.selected.connect(self.selected_button)
+        self.editor = ButtonEditor(self)
+        self.pages.addWidget(self.editor)
+        self.edit_buttons.clicked.connect(self.begin_edit)
+        browse_app.clicked.connect(self.browse_application)
+        self.application_picker.refreshing.connect(self.refresh_applications)
+        self.refresh_applications()
+        if self.service.application:
+            self.choose_application(self.service.application)
         self.background_button.clicked.connect(lambda: self.service.run_in_background(self.window()))
+
+    def refresh_status(self):
+        self.status.setText(self.service.status)
+
+    def selected_button(self, number):
+        self.selection.setText(f"Selected {self.service.popup.buttons[number-1]['name']}")
+
+    def refresh_applications(self):
+        selected = self.application_picker.currentData()
+        self.application_picker.clear()
+        provider = QFileIconProvider()
+        known = set()
+        running = self.service.input.running_applications() if self.service.input else []
+        for item in running:
+            path = app_key(item['path'])
+            icon = self.service.input.window_icon(item['hwnd'])
+            if icon.isNull():
+                icon = provider.icon(QFileInfo(path))
+            if icon.isNull():
+                icon = self.app_icons.cached(path)
+            self.cache_application_icon(path, icon)
+            label = f"{ntpath.basename(path)} — {item['title']}"
+            self.application_picker.add_application(label, path, icon)
+            known.add(path)
+        for path in self.service.profiles.applications():
+            if path not in known:
+                icon = self.app_icons.cached(path)
+                if icon.isNull():
+                    icon = provider.icon(QFileInfo(path))
+                    self.cache_application_icon(path, icon)
+                self.application_picker.add_application(f'{ntpath.basename(path)} (configured)', path, icon)
+        if selected:
+            index = self.application_picker.findData(selected)
+            if index >= 0:
+                self.application_picker.setCurrentIndex(index)
+
+    def cache_application_icon(self, application, icon):
+        try:
+            self.app_icons.remember(application, icon)
+        except OSError as error:
+            self.profile_message.setText(f'Could not cache application icon: {error}')
+
+    def choose_application(self, application):
+        application = app_key(application)
+        index = self.application_picker.findData(application)
+        if index < 0:
+            icon = self.app_icons.cached(application)
+            if icon.isNull():
+                icon = QFileIconProvider().icon(QFileInfo(application))
+                self.cache_application_icon(application, icon)
+            self.application_picker.add_application(f'{ntpath.basename(application)} — {application}', application, icon)
+            index = self.application_picker.count()-1
+        self.application_picker.setCurrentIndex(index)
+
+    def browse_application(self):
+        path, _ = QFileDialog.getOpenFileName(self, 'Choose application', '', 'Applications (*.exe)')
+        if path:
+            self.choose_application(path)
+
+    def begin_edit(self):
+        application = self.application_picker.currentData()
+        if not application:
+            self.profile_message.setText('Choose an application first.')
+            return
+        self.service.cancel_delivery()
+        self.service.popup.hide()
+        try:
+            self.editor.load_application(application)
+        except (ValueError, OSError) as error:
+            self.profile_message.setText(str(error))
+            return
+        self.pages.setCurrentWidget(self.editor)
 
     def change_count(self):
         self.service.popup.count = self.segments.currentData()
@@ -373,7 +669,11 @@ class RadialMenuWindow(QMainWindow):
         self.suite_context.preferences.update(appearance=self.appearance.currentData())
 
     def _apply_theme(self):
-        apply_theme(self, self.appearance.currentData(), self.suite_context.preferences.state['accent'])
+        dark = apply_theme(self, self.appearance.currentData(), self.suite_context.preferences.state['accent'])
+        if hasattr(self, 'editor'):
+            self.editor.ring.dark = dark
+            self.editor.ring.accent = QColor(self.suite_context.preferences.state['accent'])
+            self.editor.ring.update()
 
 
 if __name__ == '__main__':

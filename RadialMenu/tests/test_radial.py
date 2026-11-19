@@ -50,6 +50,7 @@ class RadialTests(unittest.TestCase):
             from PySide6.QtTest import QTest
             from unittest.mock import Mock
             service.input = Mock()
+            service.input.running_applications.return_value = []
             service.target = (123, 456, 789)
             service.popup.show_at_cursor()
             QTest.mouseClick(service.popup.settings_button, Qt.MouseButton.LeftButton)

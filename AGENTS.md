@@ -323,7 +323,7 @@ py -3.11 -m venv venv
   reported inline. Listener remains armed after page switching and while other apps have focus;
   aboutToQuit unregisters. Multiple processes must choose distinct activation keys.
 - `radial/count` (default 12, range 2–26) and `radial/key` use the existing shared
-  settings file. Popup theme tracks shared appearance/accent. Segments are letter keys, default a–l; larger counts continue through z.
+  settings file. Popup theme tracks shared appearance/accent. Default segments are a–l (up to z); per-application profiles override names, icons and sequences.
 - Popup clamps to the cursor screen's available geometry, shrinking on tiny
   screens. Centre/outside clicks, right-click, Escape and focus loss dismiss it.
 - Root test runner now includes a fifth, isolated RadialMenu suite.
@@ -362,3 +362,70 @@ py -3.11 -m venv venv
   RadialMenu settings page. open_settings cancels target/pending letter delivery
   for both cog and tray entry points; the cog never selects a letter.
 - Cog validation: all 6 RadialMenu tests passed; the background lifecycle test clicks the cog after closing the host, verifies settings recreation and confirms no pending target or key send. Light/dark popup renders were visually checked with Segoe UI: cog remains inside the top-right bounds and outside the ring.
+
+## RadialMenu application button editor (2026-11-19)
+
+- `button_profiles.py` stores JSON under `radial/profiles` in the existing suite
+  settings file. Full normalised executable path is the application key; defaults
+  remain letter buttons. Each of 26 slots stores name, icon, hover_icon, sequence.
+  Reads refresh QSettings; malformed profiles/sequences report errors. Saves
+  validate before replacing the application profile and report settings failures.
+- `windows_input.application` queries the captured PID's executable with a typed
+  QueryFullProcessImageNameW call. Live activation loads its profile before popup
+  focus changes. The cog preselects that executable in configuration; other apps
+  can be selected with an executable file chooser or the saved-profile selector.
+- Configuration's **Edit Buttons** opens the embedded ButtonEditor page directly
+  with the first button selected: application header, left radial
+  selector, right name/normal-icon/hover-icon/sequence form. Embedded RadialPopup
+  uses Widget flags and never hides on segment selection or focus loss. It retains
+  selected-button highlighting and previews unsaved names/icons. Neither editor
+  connects to runtime input injection. Drafts persist across segment switches;
+  Save Buttons/Save and Back save all slots, Cancel discards pending drafts.
+- Icons reference files rather than copying assets. Hover falls back to normal.
+  Labels elide to segment width. Runtime reads saved profiles on each activation.
+- Sequences contain up to 32 comma-separated keys/chords. Supported modifiers are
+  Ctrl/Alt/Shift/Win; keys are ASCII alphanumeric, F1–F24, common navigation keys,
+  Plus and Comma. Blank disables a button. Unsupported input is rejected before
+  saving. SendInput builds key down/up pairs with balanced modifier releases and
+  extended flags for navigation/Win keys, after the original focus/modifier guard.
+  This is a key sequence, not a text or arbitrary-command interpreter.
+
+- Editor/profile validation: all 123 tests passed after the initial per-app editor
+  change; profile isolation/reload, switch retention, invalid-save preservation,
+  icon fields and balanced modifier input payloads are covered. Embedded editor
+  layout was rendered and inspected with Segoe UI.
+
+## Offline icons and application discovery (2026-11-19)
+
+- Bundled the official @tabler/icons 3.52.0 package's Design category in
+  RadialMenu/assets/tabler: 359 icon names, 461 SVG variants. LICENSE is the
+  upstream MIT license. SOURCE.md and manifest.json record source, version,
+  archive SHA-256, names, styles and tags. Only Design SVGs were extracted;
+  no npm installation or runtime network dependency was added.
+- icon_library.py resolves portable `tabler:outline/name.svg` / filled refs
+  against the manifest allowlist. Original SVGs remain unchanged; currentColor
+  is replaced in memory for light/dark rendering. IconPicker provides keyword
+  search and preview for both fields. External image paths remain supported.
+  Use the native QListWidget delegate for icon-grid labels; the Fluent list
+  delegate does not lay out those labels correctly in IconMode.
+- WindowsInput.running_applications enumerates visible taskbar-style windows,
+  excluding tool/owned utility/cloaked windows, then deduplicates by executable.
+  ApplicationPicker refreshes on opening, merges running apps and saved profiles,
+  retains selection when still present and marks closed profiles '(configured)'.
+  Executable browsing remains available for apps not currently running.
+- Window/taskbar HICONs use bounded SendMessageTimeout(WM_GETICON), falling back
+  to class icons then QFileIconProvider. QImage.fromHICON copies borrowed handles;
+  never destroy an icon belonging to another process. Real-desktop smoke check
+  found 10 taskbar-style applications and successfully copied 10 window icons.
+- application_icons.py stores copied 48px PNGs in settings.ini's sibling
+  RadialMenu/app-icons directory, named by SHA-256 of the normalised executable.
+  QSaveFile commits atomically. Configured closed apps use cached icons even if
+  the executable is unavailable. Tests' temporary settings isolate the cache.
+- Final offline/profile validation: all 125 tests passed (Launch 18, Import 27, Yearbook 19, Slideshow 49, RadialMenu 12). Checks render all 461 SVGs in light/dark, filter/select library icons, retain cached icons across settings reload, merge/deduplicate running and configured apps, preserve profile edits and validate runtime sequences. Offline picker and editor with assigned icons were visually inspected. Native enumeration copied 10/10 taskbar-window icons; live key injection into another application remains subject to the earlier documented foreground-test limitation.
+
+- Editor navigation refinement: removed the intermediate editor-selection popup;
+  Edit Buttons loads the selected app and switches straight to ButtonEditor.
+  ApplicationPicker synchronises its button-face icon with the selected item's
+  icon and clears it when refreshed to an empty list. Cached configured-app icons
+  appear both in the opened list and in the closed selected-app control.
+- Direct-editor refinement validation: all 12 RadialMenu tests passed. Existing interaction tests now click Edit Buttons and assert immediate editor navigation with no intermediate popup; the cache test verifies the selected control icon matches its configured-app entry. The closed selector was rendered and visually checked for icon/text spacing, and clearing the selector clears its icon.
