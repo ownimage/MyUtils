@@ -72,3 +72,20 @@ images, using the exact template snapshot for that run.
 Slideshow creation automatically uses the available logical CPUs. Text/glow
 overlays are prepared once per distinct title/date, then reused by image workers.
 Cancel stops publishing new results and waits for active temporary jobs to finish.
+
+## RadialMenu
+
+Choose RadialMenu in the Launcher, then press Ctrl+Alt+Space. Configure an alternative
+key or segment count on its page. Choose **Run in background** to hide to the
+system tray; the global key works in other apps. Double-click the tray icon for
+settings or use its **Exit RadialMenu** menu item to stop listening.
+Standalone: `.\RadialMenu\run_gui.bat`. The full test command includes RadialMenu.
+
+After updating RadialMenu, choose **Exit RadialMenu** from its tray menu and reopen
+it from the Launcher so the resident listener loads the updated code.
+
+RadialMenu defaults to letters a–l. Activate over the target app, then click a
+letter to return focus and send that key. Preview sends no input. Focus must
+return within five seconds; higher-privilege apps may reject Windows input.
+
+The cog at the popup’s top right opens RadialMenu settings without sending a key.

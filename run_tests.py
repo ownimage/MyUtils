@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent
-SUITES = ('Launch', 'Import', 'Yearbook', 'Slideshow')
+SUITES = ('Launch', 'Import', 'Yearbook', 'Slideshow', 'RadialMenu')
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
     if failed:
         print('\nFailed suites: ' + ', '.join(failed), flush=True)
         return 1
-    print('\nAll four test suites passed.', flush=True)
+    print('\nAll test suites passed.', flush=True)
     return 0
 
 

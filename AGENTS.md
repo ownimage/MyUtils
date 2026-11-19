@@ -312,3 +312,53 @@ py -3.11 -m venv venv
   Feature file content was verified unchanged; all 113 tests passed after rebase.
   The interrupted index/rebase/files were backed up under .git and the original
   tip retained in refs/backup/slideshow-before-main-rebase-20261116.
+
+## RadialMenu (2026-11-19)
+
+- Registered as `radial-menu`; `RadialMenu/radial_gui.py` follows the shared page
+  contract. The independent top-level RadialPopup is frameless and translucent.
+- One RadialService per SuiteContext owns a Windows RegisterHotKey registration
+  (default Ctrl+Alt+Space, MOD_NOREPEAT). A QAbstractNativeEventFilter receives thread WM_HOTKEY messages
+  through Qt native dispatch (windows_dispatcher_MSG/windows_generic_MSG). No hook or extra dependency. Registration conflicts are
+  reported inline. Listener remains armed after page switching and while other apps have focus;
+  aboutToQuit unregisters. Multiple processes must choose distinct activation keys.
+- `radial/count` (default 12, range 2–26) and `radial/key` use the existing shared
+  settings file. Popup theme tracks shared appearance/accent. Segments are letter keys, default a–l; larger counts continue through z.
+- Popup clamps to the cursor screen's available geometry, shrinking on tiny
+  screens. Centre/outside clicks, right-click, Escape and focus loss dismiss it.
+- Root test runner now includes a fifth, isolated RadialMenu suite.
+
+- Validation 2026-11-19: all 115 tests passed (18 Launch, 27 Import, 19 Yearbook, 49 Slideshow, 2 RadialMenu). Native hotkey registration/WM_HOTKEY dispatch, Launcher loading, Escape dismissal and segment selection passed a separate offscreen smoke check. Junction tests require unrestricted filesystem access.
+
+- Background follow-up: RadialService owns a system tray icon with settings,
+  popup and Exit RadialMenu actions. With a tray available it disables automatic
+  quit on last window close; the listener survives closing the Launcher. Run in
+  background hides the host to the tray (minimises if no tray is available).
+  Exit RadialMenu unregisters and restores normal quit behaviour, leaving visible
+  suite windows alone. Tray settings recreates the host after it has been closed.
+- Background validation: all 18 Launcher and 3 RadialMenu tests passed. Native registration/dispatch smoke check passed using the alternate shortcut when the default was occupied. Background test verifies host-close survival, tray restoration and stop without closing other visible suite windows.
+
+- Fixed background activation: timer PeekMessage polling raced Qt's Windows
+  event dispatcher, which consumed WM_HOTKEY first. Native filtering replaces
+  polling; start/stop install/remove the filter alongside hotkey registration.
+  Previous smoke checks called poll directly and did not validate Qt delivery.
+  Regression checks must post WM_HOTKEY and let the normal event loop dispatch
+  it while the host is hidden, rather than directly calling the handler.
+- Hotkey fix validation: all 4 RadialMenu and 18 Launcher tests passed. The normal-event-loop reproduction failed before the fix and passed afterwards, both offscreen and on the Windows desktop with the host hidden. Regression covers unrelated messages, show/toggle while hidden, and ignoring messages after stop. This checks posted native hotkey delivery; it does not simulate physical key presses in another app.
+
+- Letter actions: windows_input.py types HWND/pointer-sized APIs and SendInput
+  structures for 32/64-bit Windows. Hotkey capture stores HWND/PID/thread before
+  popup focus; own-process windows are excluded. Selection hides the popup,
+  requests original focus once, then polls up to 5s for matching identity,
+  foreground and released modifiers/mouse buttons. One VK letter down/up pair is
+  sent; timeout/closed window/new activation/stop cancels. Preview clears targets.
+  Windows integrity restrictions can reject SendInput; failure is reported.
+  Segment count now caps at 26 to keep one alphabetic key per segment.
+- Letter-action validation: all 119 tests passed (18 Launch, 27 Import, 19 Yearbook, 49 Slideshow, 6 RadialMenu). New checks cover focus/modifier gating, exactly-once delivery, preview, invalid target/timeout, input structure sizing and VK key down/up payload. Live external-app delivery remains unverified: the isolated receiver could not acquire Windows foreground focus in this automation session.
+
+- Popup settings cog: a Fluent ToolButton sits inside the transparent window's
+  top-right corner, outside the ring at normal size. Resize anchors it within the
+  existing screen-clamped bounds. It hides the popup and opens/recreates the
+  RadialMenu settings page. open_settings cancels target/pending letter delivery
+  for both cog and tray entry points; the cog never selects a letter.
+- Cog validation: all 6 RadialMenu tests passed; the background lifecycle test clicks the cog after closing the host, verifies settings recreation and confirms no pending target or key send. Light/dark popup renders were visually checked with Segoe UI: cog remains inside the top-right bounds and outside the ring.
