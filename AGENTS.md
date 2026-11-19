@@ -37,7 +37,7 @@ and validation. Read it before making changes anywhere in this repository.
 | `requirements.txt` | Combined GUI, import and image dependencies |
 | `venv/` | Shared Python 3.11 environment; generated, not source |
 | `commands.md` | Setup, launch, and full-test commands |
-| `run_tests.py` | Runs all four suites in separate processes |
+| `run_tests.py` | Runs all five suites in separate processes |
 | `launcher.bat` | Root launch command; delegates to `Launch/run_gui.bat` |
 | `Launch/launcher.py` | Python launcher entry point |
 | `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders |
@@ -54,13 +54,21 @@ and validation. Read it before making changes anywhere in this repository.
 | `Slideshow/template.json` | Optional user default, created by Save user default |
 | `Slideshow/render_slide.py` | Legacy single-image native render command |
 | `Slideshow/slideshow.py` | Compatibility create_slide API for native rendering |
+| `RadialMenu/radial_gui.py` | Configuration page, button editor, radial popup, tray service |
+| `RadialMenu/windows_input.py` | Windows hotkeys' target capture, app discovery/icons, key injection |
+| `RadialMenu/button_profiles.py` | Per-executable button profiles, migration, sequence validation |
+| `RadialMenu/icon_library.py` | Manifest discovery, offline icon picker and lazy SVG rendering |
+| `RadialMenu/application_icons.py` | Persistent application-icon cache beside shared settings |
+| `RadialMenu/import_icon_set.py` | Maintenance importer/updater for offline SVG libraries |
+| `RadialMenu/assets/` | Tabler, Phosphor, Lucide, Remix SVGs, manifests and licenses |
+| `RadialMenu/about_page.py` | Offline icon attributions and full license notices |
 
 ## Shared GUI architecture
 
 - `photo_tools/shell.py` owns `SuiteContext`, `SuiteWindow`, shared navigation,
   page lifetime, window placement, app switching, and closing while work is busy.
 - Apps are loaded lazily using `registry.py` and `Launch/apps.json`. Current IDs
-  are `camera-import`, `yearbook`, and `slideshow`. Adding an app updates the
+  are `camera-import`, `yearbook`, `slideshow`, and `radial-menu`. Adding an app updates the
   launcher tiles, Launch menu, and Settings > Apps through this registry.
 - A compatible view is a `QMainWindow` taking `directory=''` and keyword-only
   `suite=None`. After building its UI, call `bind_window(self, app_id, suite)`.
@@ -228,7 +236,7 @@ py -3.11 -m venv venv
 - Offscreen Qt may expose no installed fonts in a restricted environment.
   Register Windows Segoe UI with QFontDatabase in the visual-check harness when
   necessary; missing-glyph screenshots are not automatically a production bug.
-- Latest full validation on 2026-11-16: all 113 tests passed (Launch 18,
+- Pre-RadialMenu baseline validation on 2026-11-16: all 113 tests passed (Launch 18,
   Import 27, Yearbook 19, Slideshow 49) after parallel rendering and transparent
   overlay reuse. Checks prove concurrent workers, CPU-count sizing, coordinator-only
   font rendering, PNG cache reuse after memory eviction, transparent backgrounds,
@@ -313,147 +321,166 @@ py -3.11 -m venv venv
   The interrupted index/rebase/files were backed up under .git and the original
   tip retained in refs/backup/slideshow-before-main-rebase-20261116.
 
-## RadialMenu (2026-11-19)
+## RadialMenu (current behaviour, 2026-11-19)
 
-- Registered as `radial-menu`; `RadialMenu/radial_gui.py` follows the shared page
-  contract. The independent top-level RadialPopup is frameless and translucent.
-- One RadialService per SuiteContext owns a Windows RegisterHotKey registration
-  (default Ctrl+Alt+Space, MOD_NOREPEAT). A QAbstractNativeEventFilter receives thread WM_HOTKEY messages
-  through Qt native dispatch (windows_dispatcher_MSG/windows_generic_MSG). No hook or extra dependency. Registration conflicts are
-  reported inline. Listener remains armed after page switching and while other apps have focus;
-  aboutToQuit unregisters. Multiple processes must choose distinct activation keys.
-- `radial/count` (default 12, range 2–26) and `radial/key` use the existing shared
-  settings file. Popup theme tracks shared appearance/accent. Default segments are a–l (up to z); per-application profiles override names, icons and sequences.
-- Popup clamps to the cursor screen's available geometry, shrinking on tiny
-  screens. Centre/outside clicks, right-click, Escape and focus loss dismiss it.
-- Root test runner now includes a fifth, isolated RadialMenu suite.
+### Launcher, background lifetime and activation
 
-- Validation 2026-11-19: all 115 tests passed (18 Launch, 27 Import, 19 Yearbook, 49 Slideshow, 2 RadialMenu). Native hotkey registration/WM_HOTKEY dispatch, Launcher loading, Escape dismissal and segment selection passed a separate offscreen smoke check. Junction tests require unrestricted filesystem access.
+- Registered as `radial-menu` in Launch/apps.json. RadialMenuWindow follows the
+  shared QMainWindow/bind_window contract; standalone uses the shared run_app
+  shell and root environment. No extra environment or runtime dependency.
+- One RadialService per SuiteContext owns the independent top-level RadialPopup,
+  native hotkey filter, delivery timer and system-tray icon. Shared theme/accent
+  changes update the popup. Default activation is Ctrl+Alt+Space; alternatives
+  are Ctrl+Alt+R and F8. RegisterHotKey uses MOD_NOREPEAT. Registration conflicts
+  appear inline; separate processes must use distinct activation keys.
+- HotkeyFilter uses QAbstractNativeEventFilter for windows_dispatcher_MSG and
+  windows_generic_MSG. Start/stop install/remove it with the registration;
+  aboutToQuit releases the registration. Do not restore timer-based PeekMessage
+  polling: Qt consumed WM_HOTKEY before that timer, breaking background activation.
+  Tests must post native messages and let Qt dispatch them, rather than directly
+  calling the handler. Earlier direct polling smoke checks missed this bug.
+- Run in background hides the host to the system tray. With a tray available,
+  automatic quit on last window close is disabled and the listener survives host
+  closure. Tray double-click/settings recreates or restores the host. Exit
+  RadialMenu stops listening and restores normal quit behaviour, leaving visible
+  suite windows open. Without a tray, background mode minimises; closing the last
+  host exits. Restart resident code via tray Exit RadialMenu, then relaunch.
 
-- Background follow-up: RadialService owns a system tray icon with settings,
-  popup and Exit RadialMenu actions. With a tray available it disables automatic
-  quit on last window close; the listener survives closing the Launcher. Run in
-  background hides the host to the tray (minimises if no tray is available).
-  Exit RadialMenu unregisters and restores normal quit behaviour, leaving visible
-  suite windows alone. Tray settings recreates the host after it has been closed.
-- Background validation: all 18 Launcher and 3 RadialMenu tests passed. Native registration/dispatch smoke check passed using the alternate shortcut when the default was occupied. Background test verifies host-close survival, tray restoration and stop without closing other visible suite windows.
+### Popup and input delivery
 
-- Fixed background activation: timer PeekMessage polling raced Qt's Windows
-  event dispatcher, which consumed WM_HOTKEY first. Native filtering replaces
-  polling; start/stop install/remove the filter alongside hotkey registration.
-  Previous smoke checks called poll directly and did not validate Qt delivery.
-  Regression checks must post WM_HOTKEY and let the normal event loop dispatch
-  it while the host is hidden, rather than directly calling the handler.
-- Hotkey fix validation: all 4 RadialMenu and 18 Launcher tests passed. The normal-event-loop reproduction failed before the fix and passed afterwards, both offscreen and on the Windows desktop with the host hidden. Regression covers unrelated messages, show/toggle while hidden, and ignoring messages after stop. This checks posted native hotkey delivery; it does not simulate physical key presses in another app.
+- Frameless, translucent, always-on-top popup shows only the radial segments and
+  the top-right settings cog. Default segment count is 12 (a–l), configurable
+  globally from 2 to 26. Position clamps to the cursor screen's available geometry,
+  including negative monitor coordinates; diameter shrinks on tiny screens.
+- Left-click selects a segment. Escape, right-click, centre/outside click or focus
+  loss dismisses it. The cog hides the popup and opens RadialMenu configuration,
+  preselecting the captured executable. Opening settings cancels pending input.
+- Hotkey activation captures HWND/PID/thread before showing the popup, excludes
+  this process's own windows and resolves the executable via a typed
+  QueryFullProcessImageNameW call. It loads that executable's saved button profile;
+  unconfigured applications use letter defaults. Invalid active profiles report
+  an error instead of silently discarding their configuration.
+- Selecting a button hides the popup, requests original-window focus once and
+  polls every 20ms for up to five seconds. Send only when the same HWND/PID/thread
+  remains valid and foreground, with Ctrl/Alt/Shift/Windows and mouse buttons
+  released. Closed/changed target, timeout, new activation or stop cancels input.
+  A blank sequence disables the action. Tray preview and editing never send input.
+- windows_input.py uses pointer-sized Windows API types and correctly sized
+  INPUT unions. SendInput sends a single batch of key down/up pairs, balancing
+  modifiers per chord and setting extended flags for navigation/Win keys. The
+  focus/modifier guard is checked again immediately before sending. There is one
+  delivery attempt; failure is reported. Keyboard state/layout and target-app
+  shortcut handling apply. Windows integrity restrictions may reject injection
+  into applications with higher privileges.
+- Sequences support up to 32 comma-separated keys/chords, e.g. Ctrl+A, Ctrl+C.
+  Modifiers: Ctrl, Alt, Shift, Win. Keys: ASCII letters/digits, F1–F24, Enter,
+  Return, Tab, Space, Escape/Esc, Backspace, Delete, Insert, Home, End, PageUp,
+  PageDown, arrows, Plus and Comma. Unsupported syntax is rejected before saving.
+  This is key injection, not arbitrary command execution or text expansion.
 
-- Letter actions: windows_input.py types HWND/pointer-sized APIs and SendInput
-  structures for 32/64-bit Windows. Hotkey capture stores HWND/PID/thread before
-  popup focus; own-process windows are excluded. Selection hides the popup,
-  requests original focus once, then polls up to 5s for matching identity,
-  foreground and released modifiers/mouse buttons. One VK letter down/up pair is
-  sent; timeout/closed window/new activation/stop cancels. Preview clears targets.
-  Windows integrity restrictions can reject SendInput; failure is reported.
-  Segment count now caps at 26 to keep one alphabetic key per segment.
-- Letter-action validation: all 119 tests passed (18 Launch, 27 Import, 19 Yearbook, 49 Slideshow, 6 RadialMenu). New checks cover focus/modifier gating, exactly-once delivery, preview, invalid target/timeout, input structure sizing and VK key down/up payload. Live external-app delivery remains unverified: the isolated receiver could not acquire Windows foreground focus in this automation session.
+### Configuration, editor and profile storage
 
-- Popup settings cog: a Fluent ToolButton sits inside the transparent window's
-  top-right corner, outside the ring at normal size. Resize anchors it within the
-  existing screen-clamped bounds. It hides the popup and opens/recreates the
-  RadialMenu settings page. open_settings cancels target/pending letter delivery
-  for both cog and tray entry points; the cog never selects a letter.
-- Cog validation: all 6 RadialMenu tests passed; the background lifecycle test clicks the cog after closing the host, verifies settings recreation and confirms no pending target or key send. Light/dark popup renders were visually checked with Segoe UI: cog remains inside the top-right bounds and outside the ring.
+- Application dropdown combines running taskbar-style apps with configured
+  executables, deduplicated by normalised full executable path. It refreshes on
+  opening, preserves selection if still listed and marks closed saved profiles
+  '(configured)'. The selected-app control also shows its icon. File browsing
+  supports configuring another executable that is not running.
+- WindowsInput.running_applications excludes tool, owned utility and cloaked
+  windows. Icon extraction uses bounded WM_GETICON/SendMessageTimeout, then class
+  icons, then QFileIconProvider. QImage.fromHICON copies borrowed handles; never
+  destroy another application's icon handle.
+- ApplicationIcons caches 48px PNGs under the shared settings file's sibling
+  RadialMenu/app-icons directory, with SHA-256 filenames from normalised executable
+  paths and atomic QSaveFile commits. Closed configured apps retain their cached
+  icons across restarts, even if their executable becomes unavailable. Temporary
+  settings paths isolate the cache in tests.
+- Edit Buttons opens ButtonEditor directly with button 1 selected; there is no
+  intermediate radial popup. Application name/path appears at the top, embedded
+  radial selector on the left and button fields on the right. Clicking another
+  segment switches fields and retains drafts. Embedded RadialPopup uses Widget
+  flags, stays visible on segment selection/focus loss, and highlights selection.
+- Fields are Name, Icon 1, Icon 2 and Button sequence. Both icons display together
+  above the name, before and during hover; either can be empty. Both slots share
+  all four icon libraries, with Icons… for the offline picker and File… for images.
+  Labels elide to segment width. Draft names/icons update the editor ring live.
+- Save Buttons persists all drafts for the selected executable. Save and Back
+  saves then returns to configuration; Cancel returns without saving. Drafts are
+  held in the page and should be saved explicitly before closing the host. Runtime
+  activation reloads the saved profile, not unsaved editor drafts.
+- Shared QSettings keys: radial/key, radial/count and radial/profiles. Profiles
+  are JSON keyed by case-normalised full executable path, then zero-based slot
+  strings. Each of 26 slots stores name, icon, secondary_icon and sequence.
+  Existing hover_icon is migrated into secondary_icon on read and canonicalised
+  on Save. Preserve this migration: the second icon is simultaneous, not a hover
+  alternative. Validate sequences before replacing a profile; report save errors.
 
-## RadialMenu application button editor (2026-11-19)
+### Offline libraries, stable identities and updates
 
-- `button_profiles.py` stores JSON under `radial/profiles` in the existing suite
-  settings file. Full normalised executable path is the application key; defaults
-  remain letter buttons. Each of 26 slots stores name, icon, hover_icon, sequence.
-  Reads refresh QSettings; malformed profiles/sequences report errors. Saves
-  validate before replacing the application profile and report settings failures.
-- `windows_input.application` queries the captured PID's executable with a typed
-  QueryFullProcessImageNameW call. Live activation loads its profile before popup
-  focus changes. The cog preselects that executable in configuration; other apps
-  can be selected with an executable file chooser or the saved-profile selector.
-- Configuration's **Edit Buttons** opens the embedded ButtonEditor page directly
-  with the first button selected: application header, left radial
-  selector, right name/normal-icon/hover-icon/sequence form. Embedded RadialPopup
-  uses Widget flags and never hides on segment selection or focus loss. It retains
-  selected-button highlighting and previews unsaved names/icons. Neither editor
-  connects to runtime input injection. Drafts persist across segment switches;
-  Save Buttons/Save and Back save all slots, Cancel discards pending drafts.
-- Icons reference files rather than copying assets. Hover falls back to normal.
-  Labels elide to segment width. Runtime reads saved profiles on each activation.
-- Sequences contain up to 32 comma-separated keys/chords. Supported modifiers are
-  Ctrl/Alt/Shift/Win; keys are ASCII alphanumeric, F1–F24, common navigation keys,
-  Plus and Comma. Blank disables a button. Unsupported input is rejected before
-  saving. SendInput builds key down/up pairs with balanced modifier releases and
-  extended flags for navigation/Win keys, after the original focus/modifier guard.
-  This is a key sequence, not a text or arbitrary-command interpreter.
+- Bundled assets: Tabler Icons 3.52.0 Design (461 SVG variants), Phosphor 2.1.1
+  (9,072 variants), lucide-static 1.76.0 (2,404 outline SVGs, including upstream
+  aliases), and Remix Icon 4.9.1 (3,229 line/fill/regular SVGs). Total: 15,166.
+  All retain original SVG contents, source/version/archive SHA-256 and exact
+  bundled license texts. No runtime network calls or new package dependency.
+- Licenses: Tabler/Phosphor MIT; Lucide ISC plus MIT for Feather-derived icons
+  (including the original list and Cole Bemis notice); Remix Icon License v1.0,
+  not Apache 2.0. Preserve Remix's full terms and notices when distributing this
+  functional app; its icons remain separately licensed from other assets.
+- AboutPage (about_page.py), reached by About & Licenses in configuration, lists
+  all libraries with versions, attribution, links to their sites/releases and
+  every bundled license/copyright notice verbatim. A contents list jumps between
+  sets. IconPicker also opens this information in a dialog. Notices are readable
+  offline; external links open only when clicked. Manifest metadata supplies
+  website/license_label/attribution; future manifests have generic fallbacks.
+- icon_library.py discovers assets/*/manifest.json. Permanent IDs use
+  <set-id>:<style>/<name>.svg, e.g. tabler:outline/palette.svg and
+  phosphor:regular/palette.svg. Display labels include library/style/name.
+  Same-name icons are kept in both sets; version is manifest metadata, never part
+  of assignment identity. Existing Tabler references remain valid.
+- Manifests contain id/label/version/source/checksum and icons with name/style/
+  path/tags. Set IDs are permanent lowercase namespaces. New conforming manifests
+  add libraries without picker code changes. File paths are allowlisted; absolute,
+  traversal and noncanonical manifest paths are rejected lexically.
+- Picker offers set/style filters and keyword search across all 15,166 active SVG
+  variants. A native QStyledItemDelegate lazily renders visible thumbnails with
+  bounded icon caching. Replace currentColor in memory for light/dark contrast.
+  Do not use the Fluent list delegate for this IconMode grid: its labels were
+  missing. Avoid per-entry filesystem resolves: cold opening measured 0.20s after
+  replacing them with lexical validation; the palette filter drew 13 thumbnails.
+- import_icon_set.py is a maintenance-only offline importer for pinned archives.
+  It supports styles (Phosphor), flat (Lucide) and remix (category folders with
+  -line/-fill suffixes; unsuffixed icons use regular) layouts, --prefix and
+  --license-name overrides. It validates
+  XML and IDs before writes, normalises style suffixes, atomically replaces SVGs
+  and publishes the manifest last. Other archive layouts must map to the same
+  manifest contract. Setup/reimport commands are in commands.md and the README.
+- Updating under the same set ID retains missing upstream entries/files as
+  retired=true so existing assignments still resolve; the picker hides retired
+  entries. Never pre-delete a library folder before updating. Restart the resident
+  app after library updates because catalog indexes are cached. Review upstream
+  licenses on every update; update curated attribution metadata if terms change.
+  The importer preserves website/license_label/attribution across updates.
 
-- Editor/profile validation: all 123 tests passed after the initial per-app editor
-  change; profile isolation/reload, switch retention, invalid-save preservation,
-  icon fields and balanced modifier input payloads are covered. Embedded editor
-  layout was rendered and inspected with Segoe UI.
+### Validation and known limits
 
-## Offline icons and application discovery (2026-11-19)
-
-- Bundled the official @tabler/icons 3.52.0 package's Design category in
-  RadialMenu/assets/tabler: 359 icon names, 461 SVG variants. LICENSE is the
-  upstream MIT license. SOURCE.md and manifest.json record source, version,
-  archive SHA-256, names, styles and tags. Only Design SVGs were extracted;
-  no npm installation or runtime network dependency was added.
-- icon_library.py discovers assets/*/manifest.json and resolves portable
-  `<set-id>:<style>/<name>.svg` references against the combined allowlist. Original SVGs remain unchanged; currentColor
-  is replaced in memory for light/dark rendering. IconPicker provides keyword
-  search and preview for both fields. External image paths remain supported.
-  Use the native QListWidget delegate for icon-grid labels; the Fluent list
-  delegate does not lay out those labels correctly in IconMode.
-- WindowsInput.running_applications enumerates visible taskbar-style windows,
-  excluding tool/owned utility/cloaked windows, then deduplicates by executable.
-  ApplicationPicker refreshes on opening, merges running apps and saved profiles,
-  retains selection when still present and marks closed profiles '(configured)'.
-  Executable browsing remains available for apps not currently running.
-- Window/taskbar HICONs use bounded SendMessageTimeout(WM_GETICON), falling back
-  to class icons then QFileIconProvider. QImage.fromHICON copies borrowed handles;
-  never destroy an icon belonging to another process. Real-desktop smoke check
-  found 10 taskbar-style applications and successfully copied 10 window icons.
-- application_icons.py stores copied 48px PNGs in settings.ini's sibling
-  RadialMenu/app-icons directory, named by SHA-256 of the normalised executable.
-  QSaveFile commits atomically. Configured closed apps use cached icons even if
-  the executable is unavailable. Tests' temporary settings isolate the cache.
-- Final offline/profile validation: all 125 tests passed (Launch 18, Import 27, Yearbook 19, Slideshow 49, RadialMenu 12). Checks render all 461 SVGs in light/dark, filter/select library icons, retain cached icons across settings reload, merge/deduplicate running and configured apps, preserve profile edits and validate runtime sequences. Offline picker and editor with assigned icons were visually inspected. Native enumeration copied 10/10 taskbar-window icons; live key injection into another application remains subject to the earlier documented foreground-test limitation.
-
-- Editor navigation refinement: removed the intermediate editor-selection popup;
-  Edit Buttons loads the selected app and switches straight to ButtonEditor.
-  ApplicationPicker synchronises its button-face icon with the selected item's
-  icon and clears it when refreshed to an empty list. Cached configured-app icons
-  appear both in the opened list and in the closed selected-app control.
-- Direct-editor refinement validation: all 12 RadialMenu tests passed. Existing interaction tests now click Edit Buttons and assert immediate editor navigation with no intermediate popup; the cache test verifies the selected control icon matches its configured-app entry. The closed selector was rendered and visually checked for icon/text spacing, and clearing the selector clears its icon.
-
-## Extensible offline icon sets (2026-11-19)
-
-- Added official @phosphor-icons/core 2.1.1: 1,512 names, 9,072 SVGs across regular,
-  thin, light, bold, fill and duotone. assets/phosphor retains upstream LICENSE,
-  unmodified SVG contents, SOURCE.md, version/source/archive-SHA-256 manifest.
-  Tabler's existing 461 SVGs and saved references remain unchanged.
-- Permanent IDs use `<set-id>:<style>/<name>.svg`; display names include library,
-  style and name, so same-name icons from different sets are always retained.
-  Version is metadata, not part of identity. Manifest discovery supports future
-  sets without runtime code changes. Style suffixes in Phosphor filenames are
-  normalised when importing (palette-bold.svg -> bold/palette.svg).
-- import_icon_set.py is a maintenance-only, offline importer for pinned package
-  archives. It validates XML/path/ID collisions before writes, replaces SVGs
-  atomically and publishes the manifest last. Missing upstream IDs are retained
-  with retired=true and their previous files, preserving old assignments. The
-  picker hides retired entries; resolver still supports them. Never pre-delete
-  an existing library folder. Restart after updates because indexes are cached.
-- IconPicker adds set/style filters with search over all 9,533 active variants.
-  Native IconDelegate renders visible thumbnails only. Catalog path validation
-  is lexical (absolute/traversal/noncanonical paths rejected), avoiding thousands
-  of filesystem resolves on opening. Cold picker construction measured 0.20s
-  after this change; the filtered palette view rendered only 13 thumbnails.
-- New tests verify overlapping names/unique IDs, all SVGs in both themes,
-  filters, selection, legacy Tabler refs, future namespace import and retaining
-  removed IDs through a simulated update. Manifest data and updater tests use
-  temporary directories. Picker layout with both sets was visually inspected.
-- Phosphor validation: all 127 tests passed (Launch 18, Import 27, Yearbook 19, Slideshow 49, RadialMenu 14). Every one of the 9,533 SVG variants rendered successfully in light and dark; collision preservation, set/style filtering, legacy references and update retention passed. The combined palette view was visually checked, and cold picker construction measured 0.20 seconds with lazy thumbnails.
+- Latest full run on 2026-11-19: all 132 tests passed (Launch 18, Import 27,
+  Yearbook 19, Slideshow 49, RadialMenu 19). This includes all four libraries,
+  simultaneous icons and About & Licenses. All 15,166 SVG variants rendered in
+  light/dark; collision retention, filters, legacy references, importer layouts,
+  future namespace import and retired-ID preservation passed. License tests
+  compare exact upstream notices and verify About navigation. Migration and
+  pixel checks prove both assigned icons stay visible before/during hover.
+- Other regression coverage includes native message dispatch while hidden,
+  tray persistence/host recreation, target/modifier gating, one delivery attempt,
+  preview cancellation, invalid-target/timeout handling, input structure layout,
+  balanced shortcut payloads, profile isolation/reload, invalid-save preservation,
+  button-switch draft retention, cached app icons and direct editor navigation.
+- Visual checks covered light/dark popup and cog, editor layout, selected-app
+  icon/text spacing, combined library picker and two simultaneous icons. A native
+  desktop smoke check enumerated 10 taskbar-style apps and copied 10 window icons.
+- Real end-to-end key delivery into another application remains unverified:
+  Windows prevented the isolated receiver from acquiring foreground focus in the
+  automation session. Native message delivery and input payloads were tested;
+  those results do not prove physical-hotkey-to-external-app delivery.
+- About/license-page layout was rendered and inspected with Segoe UI; full
+  notices wrap without horizontal overflow. New tests compare every exact LICENSE
+  with the generated page, cover navigation and both new archive layouts.

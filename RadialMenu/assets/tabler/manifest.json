@@ -7678,5 +7678,10 @@
         "knit"
       ]
     }
-  ]
+  ],
+  "id": "tabler",
+  "label": "Tabler",
+  "website": "https://tabler.io/icons",
+  "license_label": "MIT",
+  "attribution": "Icons by Pawe\u0142 Kuna, Tabler Icons."
 }

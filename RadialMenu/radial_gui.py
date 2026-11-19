@@ -13,6 +13,7 @@ from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QIcon, 
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu, QStackedWidget, QHBoxLayout, QFileDialog, QFileIconProvider
 from photo_tools import apply_theme, bind_window, run_app
 from windows_input import WindowsInput
+from about_page import AboutPage
 from application_icons import ApplicationIcons
 from icon_library import IconPicker, button_icon
 from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key
@@ -114,13 +115,16 @@ class RadialPopup(QWidget):
             radius = (outer+inner)/2
             x, y = c+radius*math.cos(angle), c+radius*math.sin(angle)
             button = self.buttons[index]
-            icon_path = button['hover_icon'] if index == self.hover and button['hover_icon'] else button['icon']
-            icon = button_icon(icon_path, self.dark or index in (self.hover, self.active_button))
-            if not icon.isNull():
-                icon.paint(painter, round(x-10), round(y-20), 20, 20)
             width = min(74, max(30, radius * span * math.pi / 180 - 6))
+            icons = [button_icon(reference, self.dark or index in (self.hover, self.active_button))
+                     for reference in (button['icon'], button['secondary_icon']) if reference]
+            icons = [icon for icon in icons if not icon.isNull()]
+            size = min(20, int((width-4)/max(1,len(icons))))
+            total_width = len(icons)*size + max(0,len(icons)-1)*4
+            for offset, icon in enumerate(icons):
+                icon.paint(painter, round(x-total_width/2+offset*(size+4)), round(y-20), size, size)
             label = painter.fontMetrics().elidedText(button['name'], Qt.TextElideMode.ElideRight, int(width))
-            painter.drawText(QRectF(x-width/2, y if not icon.isNull() else y-14, width, 28),
+            painter.drawText(QRectF(x-width/2, y if icons else y-14, width, 28),
                              Qt.AlignmentFlag.AlignCenter, label)
 
     def mouseMoveEvent(self, event):
@@ -383,7 +387,7 @@ class ButtonEditor(QWidget):
         self.name.setAccessibleName('Button name')
         form.addWidget(self.name)
         self.icons = []
-        for title in ('Normal icon', 'Hover icon'):
+        for title in ('Icon 1', 'Icon 2'):
             form.addWidget(QLabel(title))
             row = QHBoxLayout()
             field = QLineEdit()
@@ -459,7 +463,7 @@ class ButtonEditor(QWidget):
         self.button_heading.setText(f'Button {number}')
         self.name.setText(button['name'])
         self.icons[0].setText(button['icon'])
-        self.icons[1].setText(button['hover_icon'])
+        self.icons[1].setText(button['secondary_icon'])
         self.sequence.setText(button['sequence'])
         self.ring.active_button = self.current
         self.ring.update()
@@ -469,7 +473,7 @@ class ButtonEditor(QWidget):
         if self.loading or not self.buttons:
             return
         self.buttons[self.current] = dict(name=self.name.text(), icon=self.icons[0].text(),
-            hover_icon=self.icons[1].text(), sequence=self.sequence.text())
+            secondary_icon=self.icons[1].text(), sequence=self.sequence.text())
         self.ring.update()
         self.message.setText('Unsaved changes')
 
@@ -478,7 +482,7 @@ class ButtonEditor(QWidget):
             for number, button in enumerate(self.buttons, 1):
                 try:
                     parse_sequence(button['sequence'])
-                    for path in (button['icon'], button['hover_icon']):
+                    for path in (button['icon'], button['secondary_icon']):
                         if path and button_icon(path).isNull():
                             raise ValueError('Choose a readable icon image or clear the icon.')
                 except ValueError as error:
@@ -555,6 +559,8 @@ class RadialMenuWindow(QMainWindow):
         self.profile_message = QLabel('Choose a running application, or browse for another executable.')
         self.profile_message.setWordWrap(True)
         layout.addWidget(self.profile_message)
+        self.about_button = QPushButton('About & Licenses')
+        layout.addWidget(self.about_button)
         self.background_button = QPushButton('Run in background')
         layout.addWidget(self.background_button)
         layout.addWidget(QLabel('The activation key works while you use other apps. Restore settings from the system tray.'))
@@ -580,6 +586,9 @@ class RadialMenuWindow(QMainWindow):
         self.service.popup.selected.connect(self.selected_button)
         self.editor = ButtonEditor(self)
         self.pages.addWidget(self.editor)
+        self.about = AboutPage(lambda: self.pages.setCurrentIndex(0),self)
+        self.pages.addWidget(self.about)
+        self.about_button.clicked.connect(lambda: self.pages.setCurrentWidget(self.about))
         self.edit_buttons.clicked.connect(self.begin_edit)
         browse_app.clicked.connect(self.browse_application)
         self.application_picker.refreshing.connect(self.refresh_applications)

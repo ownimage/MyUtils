@@ -91,8 +91,8 @@ return within five seconds; higher-privilege apps may reject Windows input.
 The cog at the popup’s top right opens RadialMenu settings without sending a key.
 
 To configure RadialMenu buttons for an application, choose its executable in the
-Application selector and click **Edit Buttons**. The editor opens directly; use the radial menu on the left to switch buttons. Set name, normal
-and hover icons, and a key sequence such as `Ctrl+C, Ctrl+V`. **Save Buttons**
+Application selector and click **Edit Buttons**. The editor opens directly; use the radial menu on the left to switch buttons. Set name, Icon 1
+and Icon 2, and a key sequence such as `Ctrl+C, Ctrl+V`. **Save Buttons**
 saves the profile for that executable; **Save and Back** returns to configuration.
 Opening settings through the live popup cog selects its captured application.
 
@@ -117,3 +117,21 @@ Additional sets use distinct lowercase set IDs and the manifest contract in the
 RadialMenu README. Never remove existing assets before an update: retired icons
 are retained to preserve button assignments. The importer writes to the repository
 and is a maintenance command, not part of the runtime app.
+
+## Lucide, Remix Icon and About
+
+All four icon sets are bundled offline. Open **About & Licenses** in RadialMenu
+configuration or its icon picker for attribution and the complete local notices.
+
+To reproduce the Lucide and Remix releases (from the repository root):
+
+```powershell
+New-Item -ItemType Directory -Force work | Out-Null
+Invoke-WebRequest -Uri 'https://registry.npmjs.org/lucide-static/-/lucide-static-1.76.0.tgz' -OutFile '.\work\lucide-static.tgz'
+.\venv\Scripts\python.exe .\RadialMenu\import_icon_set.py --archive .\work\lucide-static.tgz --set lucide --label Lucide --source 'https://registry.npmjs.org/lucide-static/-/lucide-static-1.76.0.tgz' --prefix package/icons/ --layout flat
+Invoke-WebRequest -Uri 'https://registry.npmjs.org/remixicon/-/remixicon-4.9.1.tgz' -OutFile '.\work\remixicon.tgz'
+.\venv\Scripts\python.exe .\RadialMenu\import_icon_set.py --archive .\work\remixicon.tgz --set remix --label 'Remix Icon' --source 'https://registry.npmjs.org/remixicon/-/remixicon-4.9.1.tgz' --prefix package/icons/ --layout remix --license-name License
+```
+
+For updates, pin the new release in each URL, keep the set ID, preserve the asset
+directory and review license/attribution changes. Restart RadialMenu afterwards.

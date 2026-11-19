@@ -6,3 +6,7 @@ Archive SHA-256: 313332be6190b724da24107addd781799b48bf76b13963f24501112ffe1baad
 
 SVG contents are unmodified. Filenames normalise style suffixes.
 See LICENSE for upstream copyright and licensing.
+
+Website: https://phosphoricons.com/
+License: MIT
+Attribution: Icons by Phosphor Icons, created by Helena Zhang and Tobias Fried.

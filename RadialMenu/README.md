@@ -39,9 +39,8 @@ button's fields on the right. Clicking another segment switches buttons and
 retains the current draft. The selected segment stays highlighted. Names and
 icons update in the editor preview immediately.
 
-Configure a name, normal icon, hover icon, and button sequence. Icons reference
-image files (PNG, SVG, ICO, JPEG or BMP); keep those files available. The hover
-icon falls back to the normal icon when empty. Button sequences accept letters,
+Configure a name, Icon 1, Icon 2, and button sequence. Icons reference
+image files (PNG, SVG, ICO, JPEG or BMP); keep those files available. Both icons display together when assigned; either slot may be left empty. Button sequences accept letters,
 digits, F1–F24, and Enter, Tab, Space, Escape, Backspace, Delete, Insert, Home,
 End, PageUp, PageDown and arrow keys. Use Ctrl, Alt, Shift or Win with `+` for
 shortcuts; use commas for successive keys, for example `Ctrl+A, Ctrl+C`.
@@ -111,3 +110,23 @@ Reusing a set ID updates that set in place. Removed upstream IDs stay in the
 manifest as `retired` and their files are retained: existing assignments still
 render, while the picker hides retired entries. Do not delete a set's folder
 before updating it. Restart RadialMenu after installing or updating libraries.
+
+## Lucide, Remix Icon and attribution
+
+The offline picker also includes Lucide (lucide-static 1.76.0, 2,404 SVGs including
+upstream aliases) and Remix Icon 4.9.1 (3,229 SVGs). All four libraries appear in
+the same picker and in both icon slots. There are 15,166 bundled variants total.
+Stable IDs use `lucide:outline/<name>.svg` and `remix:line/<name>.svg`,
+`remix:fill/<name>.svg`, or `remix:regular/<name>.svg` for unsuffixed icons.
+
+**About & Licenses** on the configuration page and in the icon picker displays
+all four sets' versions, creators/attribution, project and release links, and
+the full offline licenses. Lucide's ISC notice includes the separate MIT notices
+and icon list for Feather-derived work by Cole Bemis. Remix uses the **Remix Icon
+License v1.0**, rather than Apache 2.0. The original notices are retained beside
+each set's assets. Keep those files with distributed copies of the app.
+
+The importer uses `--layout flat --prefix package/icons/` for Lucide and
+`--layout remix --prefix package/icons/ --license-name License` for Remix. The
+default `styles` layout still supports Phosphor. Attribution metadata is retained
+on updates; review new releases' license/creator changes and update it as needed.

@@ -131,6 +131,9 @@ class IconPicker(QDialog):
         self.grid.itemDoubleClicked.connect(self.choose)
         actions = QHBoxLayout()
         actions.addWidget(QLabel('Available offline · names include library and style'))
+        about = QPushButton('About & Licenses')
+        about.clicked.connect(self.show_about)
+        actions.addWidget(about)
         actions.addStretch()
         select = QPushButton('Use Icon')
         select.clicked.connect(self.choose)
@@ -139,6 +142,10 @@ class IconPicker(QDialog):
         cancel.clicked.connect(self.reject)
         actions.addWidget(cancel)
         layout.addLayout(actions)
+
+    def show_about(self):
+        from about_page import show_about_dialog
+        show_about_dialog(self)
 
     def filter(self, *_):
         words = self.search.text().lower().split()

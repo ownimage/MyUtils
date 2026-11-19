@@ -8,7 +8,15 @@ def app_key(path):
 
 def default_button(index):
     letter = chr(97 + index)
-    return dict(name=letter, icon='', hover_icon='', sequence=letter)
+    return dict(name=letter, icon='', secondary_icon='', sequence=letter)
+
+def normalise_button(button):
+    if not isinstance(button, dict):
+        raise ValueError('Invalid button configuration.')
+    second = button.get('secondary_icon', button.get('hover_icon', ''))
+    if any(not isinstance(button.get(key), str) for key in ('name', 'icon', 'sequence')) or not isinstance(second, str):
+        raise ValueError('Invalid button configuration.')
+    return dict(name=button['name'], icon=button['icon'], secondary_icon=second, sequence=button['sequence'])
 
 def parse_sequence(text):
     named = {'enter': 13, 'return': 13, 'tab': 9, 'space': 32, 'escape': 27,
@@ -63,9 +71,7 @@ class ButtonProfiles:
         buttons = []
         for index in range(26):
             button = raw.get(str(index), default_button(index))
-            if not isinstance(button, dict) or any(not isinstance(button.get(k), str)
-                    for k in ('name', 'icon', 'hover_icon', 'sequence')):
-                raise ValueError('Invalid button configuration.')
+            button = normalise_button(button)
             parse_sequence(button['sequence'])
             buttons.append(copy.deepcopy(button))
         return buttons
@@ -73,6 +79,7 @@ class ButtonProfiles:
     def save(self, application, buttons):
         if not application:
             raise ValueError('Choose an application first.')
+        buttons = [normalise_button(button) for button in buttons]
         for button in buttons:
             parse_sequence(button['sequence'])
         profiles = self.read()

@@ -19,7 +19,7 @@ class ProfileTests(unittest.TestCase):
             settings = QSettings(tmp+'/settings.ini', QSettings.Format.IniFormat)
             profiles = ButtonProfiles(settings)
             buttons = profiles.buttons('C:/Apps/One.exe')
-            buttons[0].update(name='Copy', icon='normal.png', hover_icon='hover.png', sequence='Ctrl+C')
+            buttons[0].update(name='Copy', icon='normal.png', secondary_icon='second.png', sequence='Ctrl+C')
             profiles.save('C:/Apps/One.exe', buttons)
             again = ButtonProfiles(QSettings(tmp+'/settings.ini', QSettings.Format.IniFormat))
             self.assertEqual(again.buttons('c:/apps/ONE.exe')[0], buttons[0])
@@ -114,3 +114,36 @@ class ProfileTests(unittest.TestCase):
         backend.api.SendInput.side_effect = send
         self.assertTrue(backend.send_sequence((1,2,3), 'Ctrl+C, Ctrl+V'))
         self.assertEqual(events_seen, [(17,0),(67,0),(67,2),(17,2),(17,0),(86,0),(86,2),(17,2)])
+
+    def test_legacy_hover_assignment_becomes_second_icon(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            settings = QSettings(tmp+'/settings.ini', QSettings.Format.IniFormat)
+            old = dict(name='Both', icon='tabler:outline/palette.svg', hover_icon='phosphor:regular/palette.svg', sequence='a')
+            settings.setValue('radial/profiles', json.dumps({app_key('C:/Test.exe'):{'0':old}}))
+            profiles = ButtonProfiles(settings)
+            buttons = profiles.buttons('C:/Test.exe')
+            self.assertEqual(buttons[0]['secondary_icon'],old['hover_icon'])
+            profiles.save('C:/Test.exe',buttons)
+            saved = profiles.read()[app_key('C:/Test.exe')]['0']
+            self.assertNotIn('hover_icon',saved)
+            self.assertEqual(saved['secondary_icon'],old['hover_icon'])
+
+    def test_both_icons_remain_visible_before_and_during_hover(self):
+        from PySide6.QtGui import QPixmap,QIcon,QColor
+        from radial_gui import RadialPopup
+        red, blue = QPixmap(20,20), QPixmap(20,20)
+        red.fill(QColor('red'))
+        blue.fill(QColor('blue'))
+        popup = RadialPopup()
+        popup.resize(360,360)
+        popup.buttons[0].update(icon='first',secondary_icon='second')
+        try:
+            with patch('radial_gui.button_icon',side_effect=lambda ref,dark: QIcon(red if ref=='first' else blue)):
+                for hover in (-1,0):
+                    popup.hover = hover
+                    image = popup.grab().toImage()
+                    self.assertEqual(image.pixelColor(168,50),QColor('red'))
+                    self.assertEqual(image.pixelColor(192,50),QColor('blue'))
+        finally:
+            popup.close()
