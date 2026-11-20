@@ -689,3 +689,9 @@ py -3.11 -m venv venv
   invalid/empty/reserved keys, live availability conflict, immediate probe release,
   preserving the listener, Save/Cancel and registration-time conflict recovery.
   Light/dark renders inspected at the 760x540 host minimum; controls and footer fit.
+
+- ButtonEditor now synchronises its special-key dropdown with its key field,
+  matching HotkeyEditor: typing a letter/digit or clearing the key resets it to
+  Special keys…, while a named key selects the matching entry. Signals are blocked
+  during dropdown sync so it cannot overwrite the typed key or affect sequences.
+- Validation: the existing key-entry interaction test now checks reset after typing/clearing and reselecting the same special key. It passed with a clean exit on retry; the first run passed assertions but hit the documented Qt teardown crash. Diff formatting passed.

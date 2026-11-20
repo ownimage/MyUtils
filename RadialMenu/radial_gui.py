@@ -690,6 +690,13 @@ class ButtonEditor(QWidget):
                 field.setCursorPosition(cursor)
             finally:
                 field.blockSignals(blocked)
+        if field is self.key:
+            index = self.special_key.findData(field.text())
+            blocked = self.special_key.blockSignals(True)
+            try:
+                self.special_key.setCurrentIndex(max(0, index))
+            finally:
+                self.special_key.blockSignals(blocked)
 
     def choose_special_key(self, index):
         key = self.special_key.itemData(index)

@@ -62,6 +62,10 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(field.text(), 'F24')
             QTest.keyClicks(field, 'z')
             self.assertEqual(field.text(), 'Z')
+            self.assertEqual(editor.special_key.currentText(), 'Special keys…')
+            # Selecting the same special key again must work after typing.
+            editor.special_key.setCurrentIndex(editor.special_key.findData('F24'))
+            self.assertEqual(field.text(), 'F24')
             self.app.clipboard().setText('hello')
             QTest.keyClick(field, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
             self.assertEqual(field.text(), 'O')
@@ -69,6 +73,7 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(field.text(), 'Backspace')
             QTest.keyClick(field, Qt.Key.Key_Backspace)
             self.assertEqual(field.text(), '')
+            self.assertEqual(editor.special_key.currentText(), 'Special keys…')
             # The sequence field continues to allow multiple chords.
             QTest.keyClicks(editor.sequence, 'Ctrl+A, Tab')
             self.assertEqual(editor.sequence.text(), 'Ctrl+A, Tab')
