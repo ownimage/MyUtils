@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 from PySide6.QtCore import QSettings, QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
-from button_profiles import ButtonProfiles, parse_sequence, app_key
-from radial_gui import RadialService
+from button_profiles import ButtonProfiles, parse_sequence, app_key, normalise_sequence
+from radial_gui import RadialService, ButtonEditor
 from photo_tools.shell import SuiteContext, SuiteWindow
 
 class ProfileTests(unittest.TestCase):
@@ -23,11 +23,57 @@ class ProfileTests(unittest.TestCase):
             profiles.save('C:/Apps/One.exe', buttons)
             again = ButtonProfiles(QSettings(tmp+'/settings.ini', QSettings.Format.IniFormat))
             self.assertEqual(again.buttons('c:/apps/ONE.exe')[0], buttons[0])
-            self.assertEqual(again.buttons('C:/Apps/Two.exe')[0]['sequence'], 'a')
+            self.assertEqual(again.buttons('C:/Apps/Two.exe')[0]['sequence'], 'A')
             buttons[0]['sequence'] = 'Ctrl+NoSuchKey'
             with self.assertRaises(ValueError):
                 profiles.save('C:/Apps/One.exe', buttons)
             self.assertEqual(again.buttons('C:/Apps/One.exe')[0]['sequence'], 'Ctrl+C')
+
+    def test_letter_key_spelling_is_normalised_without_adding_shift(self):
+        source = 'Ctrl+Alt+a, Shift+b, z, F24, Return'
+        canonical = 'Ctrl+Alt+A, Shift+B, Z, F24, Return'
+        self.assertEqual(normalise_sequence(source), canonical)
+        self.assertEqual(parse_sequence(source), parse_sequence(canonical))
+        self.assertEqual(normalise_sequence('Ctrl+'), 'Ctrl+')
+        with tempfile.TemporaryDirectory() as tmp:
+            import json
+            settings = QSettings(tmp+'/settings.ini', QSettings.Format.IniFormat)
+            profiles = ButtonProfiles(settings)
+            buttons = profiles.buttons('C:/Test.exe')
+            buttons[0]['sequence'] = source
+            # Existing profiles normalise on read, and persist canonical text on save.
+            settings.setValue('radial/profiles', json.dumps({app_key('C:/Test.exe'): {'0': buttons[0]}}))
+            self.assertEqual(profiles.buttons('C:/Test.exe')[0]['sequence'], canonical)
+            profiles.save('C:/Test.exe', buttons)
+            self.assertEqual(profiles.read()[app_key('C:/Test.exe')]['0']['sequence'], canonical)
+
+    def test_key_entry_overtypes_and_special_keys_remain_single_choices(self):
+        editor = ButtonEditor(Mock())
+        editor.show()
+        try:
+            field = editor.key
+            field.setFocus()
+            QTest.keyClicks(field, 'abc')
+            self.assertEqual(field.text(), 'C')
+            field.setCursorPosition(0)
+            QTest.keyClicks(field, '7')
+            self.assertEqual(field.text(), '7')
+            editor.special_key.setCurrentIndex(editor.special_key.findData('F24'))
+            self.assertEqual(field.text(), 'F24')
+            QTest.keyClicks(field, 'z')
+            self.assertEqual(field.text(), 'Z')
+            self.app.clipboard().setText('hello')
+            QTest.keyClick(field, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
+            self.assertEqual(field.text(), 'O')
+            editor.special_key.setCurrentIndex(editor.special_key.findData('Backspace'))
+            self.assertEqual(field.text(), 'Backspace')
+            QTest.keyClick(field, Qt.Key.Key_Backspace)
+            self.assertEqual(field.text(), '')
+            # The sequence field continues to allow multiple chords.
+            QTest.keyClicks(editor.sequence, 'Ctrl+A, Tab')
+            self.assertEqual(editor.sequence.text(), 'Ctrl+A, Tab')
+        finally:
+            editor.close()
 
     def test_sequence_validation(self):
         self.assertEqual(parse_sequence('Ctrl+C, Ctrl+V, Enter'), [([17],67),([17],86),([],13)])
@@ -54,6 +100,41 @@ class ProfileTests(unittest.TestCase):
                 editor = page.editor
                 self.assertIs(page.pages.currentWidget(), editor)
                 self.assertIn('one.exe', editor.heading.text())
+                # The builder combines every modifier with typed and special keys,
+                # persists sequences, and does not overwrite drafts on bad input.
+                editor.sequence.setText('Ctrl+Alt+a')
+                self.assertEqual(editor.sequence.text(), 'Ctrl+Alt+A')
+                self.assertEqual(editor.buttons[0]['sequence'], 'Ctrl+Alt+A')
+                editor.key.setText('k')
+                self.assertEqual(editor.key.text(), 'K')
+                for check in editor.modifiers.values():
+                    check.setChecked(True)
+                QTest.mouseClick(editor.use_key, Qt.MouseButton.LeftButton)
+                self.assertEqual(editor.sequence.text(), 'Ctrl+Alt+Shift+Win+K')
+                for check in editor.modifiers.values():
+                    check.setChecked(False)
+                for key in [f'F{i}' for i in range(1, 25)] + [
+                        'Tab', 'Space', 'Backspace', 'Return', 'Enter', 'Escape',
+                        'Delete', 'Insert', 'Home', 'End', 'PageUp', 'PageDown',
+                        'Left', 'Right', 'Up', 'Down', 'Plus', 'Comma']:
+                    editor.special_key.setCurrentIndex(editor.special_key.findData(key))
+                    editor.modifiers['Shift'].setChecked(True)
+                    QTest.mouseClick(editor.use_key, Qt.MouseButton.LeftButton)
+                    self.assertEqual(editor.sequence.text(), 'Shift+' + key)
+                    self.assertTrue(parse_sequence(editor.sequence.text()))
+                editor.special_key.setCurrentIndex(editor.special_key.findData('Tab'))
+                QTest.mouseClick(editor.append_key, Qt.MouseButton.LeftButton)
+                self.assertEqual(editor.sequence.text(), 'Shift+Comma, Shift+Tab')
+                self.assertTrue(editor.save())
+                self.assertEqual(service.profiles.buttons('C:/Apps/One.exe')[0]['sequence'],
+                                 'Shift+Comma, Shift+Tab')
+                editor.key.clear()
+                QTest.mouseClick(editor.use_key, Qt.MouseButton.LeftButton)
+                self.assertEqual(editor.sequence.text(), 'Shift+Comma, Shift+Tab')
+                editor.select_button(2)
+                self.assertFalse(any(check.isChecked() for check in editor.modifiers.values()))
+                self.assertEqual(editor.key.text(), 'B')
+                editor.select_button(1)
                 editor.name.setText('Copy')
                 editor.sequence.setText('Ctrl+C')
                 from PySide6.QtGui import QImage, QColor

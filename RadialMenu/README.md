@@ -1,6 +1,6 @@
 # RadialMenu
 
-Open RadialMenu from the Launcher to start listening for Ctrl+Alt+Space.
+Run `RadialMenu.cmd` from the repository root, or open RadialMenu from the Launcher to start listening for Ctrl+Alt+Space.
 The settings page offers alternative keys, 2–26 segments (default 12), and application button profiles.
 Settings use the shared suite settings file; appearance and accent follow the suite.
 The activation key is global and works while another application has focus.
@@ -44,6 +44,13 @@ image files (PNG, SVG, ICO, JPEG or BMP); keep those files available. Both icons
 digits, F1–F24, and Enter, Tab, Space, Escape, Backspace, Delete, Insert, Home,
 End, PageUp, PageDown and arrow keys. Use Ctrl, Alt, Shift or Win with `+` for
 shortcuts; use commas for successive keys, for example `Ctrl+A, Ctrl+C`.
+Use the Ctrl, Alt, Shift and Win checkboxes with a typed key or the special-key
+dropdown (F1–F24, Tab, Space, Backspace, Return and navigation keys).
+The key entry holds one key: each typed key replaces the previous one, and
+pasting retains only the last inserted character. Backspace or Delete clears it. **Use key**
+replaces the sequence; **Append key** adds another shortcut. You can also edit
+the sequence directly. Letter keys are always shown and saved in uppercase (including existing profiles
+when loaded); uppercase does not imply Shift. Choose Shift explicitly when needed.
 Use `Plus` or `Comma` for those literal keys. A blank sequence disables the action.
 
 **Save Buttons** persists all button drafts for this application. **Save and

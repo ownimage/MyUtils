@@ -142,7 +142,7 @@ class RadialTests(unittest.TestCase):
                 backend.keys_released.return_value = True
                 service.deliver_letter()
                 service.deliver_letter()
-                backend.send_letter.assert_called_once_with(target, 'l')
+                backend.send_letter.assert_called_once_with(target, 'L')
                 service.preview()
                 service.select_letter(1)
                 self.assertIsNone(service.pending)

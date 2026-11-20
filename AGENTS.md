@@ -38,7 +38,8 @@ and validation. Read it before making changes anywhere in this repository.
 | `venv/` | Shared Python 3.11 environment; generated, not source |
 | `commands.md` | Setup, launch, and full-test commands |
 | `run_tests.py` | Runs all five suites in separate processes |
-| `launcher.bat` | Root launch command; delegates to `Launch/run_gui.bat` |
+| `RadialMenu.cmd` | Root RadialMenu command; delegates to `RadialMenu/run_gui.bat` |
+| `Launch.cmd` | Root launch command; delegates to `Launch/run_gui.bat` |
 | `Launch/launcher.py` | Python launcher entry point |
 | `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders |
 | `Launch/photo_tools/` | Shared shell, navigation, settings, Fluent controls, theme |
@@ -215,7 +216,7 @@ py -3.11 -m venv venv
 .\venv\Scripts\python.exe -m pip install -r requirements.txt
 .\venv\Scripts\python.exe .\run_tests.py
 .\venv\Scripts\python.exe -m pip check
-.\launcher.bat
+.\Launch.cmd
 ```
 
 - `run_tests.py` uses its own interpreter for each suite, with each app directory
@@ -273,7 +274,7 @@ py -3.11 -m venv venv
 - Added a root test runner and commands.md; this file is the ongoing architecture,
   decision, and gotcha record and must be maintained with future changes.
 
-- Moved launcher.bat to the repository root so the main entry point sits beside
+- Moved launcher.bat (now Launch.cmd) to the repository root so the main entry point sits beside
   commands.md, requirements.txt, and the shared environment.
 
 - Adopted native rendering and a visual template editor. Superseding storage
@@ -484,3 +485,38 @@ py -3.11 -m venv venv
 - About/license-page layout was rendered and inspected with Segoe UI; full
   notices wrap without horizontal overflow. New tests compare every exact LICENSE
   with the generated page, cover navigation and both new archive layouts.
+
+## Changes on 2026-11-20
+
+- Renamed the root launcher to Launch.cmd to match Launch/; RadialMenu.cmd
+  delegates to RadialMenu/run_gui.bat. Both forward arguments and exit codes.
+- ButtonEditor offers Ctrl/Alt/Shift/Win checkboxes, typed keys and a special-key
+  dropdown including F1–F24 and all supported named keys. Use key replaces the
+  sequence; Append key adds a comma-separated chord. Both validate before editing.
+  The editable sequence and profile schema remain compatible. Selecting a button
+  resets the builder and reflects its existing single chord.
+- Validation: all 19 RadialMenu and 18 Launch tests passed on 2026-11-20.
+  Editor coverage exercises all special-key options, combined modifiers,
+  append/replace, profile persistence and empty-key protection. Isolated batch
+  stubs verified both root wrappers from a different working directory and paths
+  containing spaces, including argument and exit-code forwarding. Rendered editor
+  layout inspected at the default host size; no clipping. External-app input
+  delivery was not retested; the existing limitation above still applies.
+- Standardised both root entry points on .cmd (Launch.cmd and RadialMenu.cmd).
+  These wrappers run under cmd.exe; neither needs legacy DOS .bat compatibility.
+  Repeated isolated wrapper checks passed after the extension change.
+- Letter key tokens now normalise to uppercase in both editor key fields,
+  profile loading/saving and default sequences. Button names retain their case.
+  normalise_sequence preserves incomplete edits and spacing; validation remains
+  authoritative at save. Uppercase never adds an implicit Shift modifier.
+- Uppercase normalization validation: 7 profile/editor tests and 6 radial/input
+  tests passed. Coverage verifies old-profile loading, canonical persisted text,
+  immediate editor conversion and unchanged virtual keys/modifier payloads.
+- SingleKeyEdit now overtypes each typed key and keeps only the last inserted
+  character on paste, independent of cursor position. Backspace/Delete clear the
+  whole key. Named keys from the dropdown or profile loading remain intact;
+  sequence text still supports multiple chords. Space/plus/comma map to names.
+- TDD: added an interaction regression first and observed failure (typing abc
+  produced Abc rather than C), then implemented SingleKeyEdit. All 8 profile/editor
+  tests pass, covering overtyping, cursor position, uppercase, paste, clearing,
+  special-key selection and preservation of the multi-chord sequence editor.

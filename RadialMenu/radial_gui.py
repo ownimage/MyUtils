@@ -16,8 +16,8 @@ from windows_input import WindowsInput
 from about_page import AboutPage
 from application_icons import ApplicationIcons
 from icon_library import IconPicker, button_icon
-from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key
-from photo_tools.fluent import QComboBox, QPushButton, QLineEdit
+from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key, normalise_sequence
+from photo_tools.fluent import QComboBox, QPushButton, QLineEdit, QCheckBox
 from qfluentwidgets import ToolButton, FluentIcon
 
 
@@ -357,6 +357,35 @@ class RadialService(QObject):
         self.changed.emit()
 
 
+class SingleKeyEdit(QLineEdit):
+    """One typed key, or a named key supplied by the special-key selector."""
+    def __init__(self):
+        super().__init__()
+        self.textEdited.connect(self.replace_typed_key)
+
+    def replace_typed_key(self, text):
+        if not text:
+            return
+        # Also handles paste: retain the last inserted character, wherever the
+        # cursor was placed, rather than accumulating a string of keys.
+        character = text[max(0, self.cursorPosition() - 1)]
+        if character.isascii() and character.isalnum():
+            key = character.upper()
+        else:
+            key = {' ': 'Space', '+': 'Plus', ',': 'Comma'}.get(character, '')
+        self.setText(key)
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete):
+            self.clear()
+            event.accept()
+            return
+        if event.text() and not (event.modifiers() & (
+                Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier)):
+            self.selectAll()
+        super().keyPressEvent(event)
+
+
 class ButtonEditor(QWidget):
     def __init__(self, owner):
         super().__init__()
@@ -405,6 +434,41 @@ class ButtonEditor(QWidget):
             row.addWidget(clear)
             form.addLayout(row)
             self.icons.append(field)
+        form.addWidget(QLabel('Build a key or shortcut'))
+        modifiers = QHBoxLayout()
+        self.modifiers = {}
+        for name in ('Ctrl', 'Alt', 'Shift', 'Win'):
+            check = QCheckBox(name)
+            check.setAccessibleName(f'{name} modifier')
+            self.modifiers[name] = check
+            modifiers.addWidget(check)
+        modifiers.addStretch()
+        form.addLayout(modifiers)
+        keys = QHBoxLayout()
+        self.key = SingleKeyEdit()
+        self.key.setAccessibleName('Shortcut key')
+        self.key.setPlaceholderText('Type one key, or choose a special key')
+        keys.addWidget(self.key, 1)
+        self.special_key = QComboBox()
+        self.special_key.setAccessibleName('Special key')
+        self.special_key.addItem('Special keys…', '')
+        for name in ([f'F{i}' for i in range(1, 25)] + [
+                'Tab', 'Space', 'Backspace', 'Return', 'Enter', 'Escape',
+                'Delete', 'Insert', 'Home', 'End', 'PageUp', 'PageDown',
+                'Left', 'Right', 'Up', 'Down', 'Plus', 'Comma']):
+            self.special_key.addItem(name, name)
+        self.special_key.currentIndexChanged.connect(self.choose_special_key)
+        keys.addWidget(self.special_key, 1)
+        form.addLayout(keys)
+        key_actions = QHBoxLayout()
+        self.use_key = QPushButton('Use key')
+        self.use_key.clicked.connect(lambda: self.apply_key(append=False))
+        key_actions.addWidget(self.use_key)
+        self.append_key = QPushButton('Append key')
+        self.append_key.clicked.connect(lambda: self.apply_key(append=True))
+        key_actions.addWidget(self.append_key)
+        key_actions.addStretch()
+        form.addLayout(key_actions)
         form.addWidget(QLabel('Button sequence'))
         self.sequence = QLineEdit()
         self.sequence.setAccessibleName('Button sequence')
@@ -431,8 +495,40 @@ class ButtonEditor(QWidget):
         body.addLayout(form, 1)
         layout.addLayout(body)
         layout.addStretch()
+        for field in (self.key, self.sequence):
+            field.textChanged.connect(lambda _text, edit=field: self.normalise_key_field(edit))
         for field in [self.name, *self.icons, self.sequence]:
             field.textChanged.connect(self.update_draft)
+
+    def normalise_key_field(self, field):
+        text = normalise_sequence(field.text())
+        if text != field.text():
+            cursor = field.cursorPosition()
+            blocked = field.blockSignals(True)
+            try:
+                field.setText(text)
+                field.setCursorPosition(cursor)
+            finally:
+                field.blockSignals(blocked)
+
+    def choose_special_key(self, index):
+        key = self.special_key.itemData(index)
+        if key:
+            self.key.setText(key)
+
+    def apply_key(self, *, append):
+        chord = '+'.join([name for name, check in self.modifiers.items()
+                          if check.isChecked()] + [self.key.text().strip()])
+        sequence = self.sequence.text().strip()
+        candidate = f'{sequence}, {chord}' if append and sequence else chord
+        try:
+            if not self.key.text().strip():
+                raise ValueError('Enter a key or choose a special key first.')
+            parse_sequence(candidate)
+        except ValueError as error:
+            self.message.setText(str(error))
+            return
+        self.sequence.setText(candidate)
 
     def choose_library_icon(self, field):
         picker = IconPicker(self, dark=self.ring.dark)
@@ -465,6 +561,17 @@ class ButtonEditor(QWidget):
         self.icons[0].setText(button['icon'])
         self.icons[1].setText(button['secondary_icon'])
         self.sequence.setText(button['sequence'])
+        for check in self.modifiers.values():
+            check.setChecked(False)
+        self.special_key.setCurrentIndex(0)
+        self.key.clear()
+        # Reflect an existing single shortcut without rewriting its stored text.
+        if button['sequence'].strip() and ',' not in button['sequence']:
+            parts = [part.strip() for part in button['sequence'].split('+')]
+            for name, check in self.modifiers.items():
+                check.setChecked(name.lower() in [part.lower() for part in parts[:-1]])
+            self.key.setText(parts[-1])
+
         self.ring.active_button = self.current
         self.ring.update()
         self.loading = False

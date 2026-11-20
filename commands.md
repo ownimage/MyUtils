@@ -43,7 +43,7 @@ test in Camera Import.
 ## Open the launcher
 
 ```powershell
-.\launcher.bat
+.\Launch.cmd
 ```
 
 ## Open individual applications
@@ -79,7 +79,7 @@ Choose RadialMenu in the Launcher, then press Ctrl+Alt+Space. Configure an alter
 key or segment count on its page. Choose **Run in background** to hide to the
 system tray; the global key works in other apps. Double-click the tray icon for
 settings or use its **Exit RadialMenu** menu item to stop listening.
-Standalone: `.\RadialMenu\run_gui.bat`. The full test command includes RadialMenu.
+Standalone: `.\RadialMenu.cmd` (or `.\RadialMenu\run_gui.bat`). The full test command includes RadialMenu.
 
 After updating RadialMenu, choose **Exit RadialMenu** from its tray menu and reopen
 it from the Launcher so the resident listener loads the updated code.

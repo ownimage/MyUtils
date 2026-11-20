@@ -8,7 +8,19 @@ def app_key(path):
 
 def default_button(index):
     letter = chr(97 + index)
-    return dict(name=letter, icon='', secondary_icon='', sequence=letter)
+    return dict(name=letter, icon='', secondary_icon='', sequence=letter.upper())
+
+def normalise_sequence(text):
+    """Uppercase single letter keys, preserving spacing and incomplete edits."""
+    chords = []
+    for chord in text.split(','):
+        parts = chord.split('+')
+        key = parts[-1].strip()
+        if len(key) == 1 and key.isascii() and key.isalpha():
+            parts[-1] = parts[-1].replace(key, key.upper())
+        chords.append('+'.join(parts))
+    return ','.join(chords)
+
 
 def normalise_button(button):
     if not isinstance(button, dict):
@@ -16,7 +28,7 @@ def normalise_button(button):
     second = button.get('secondary_icon', button.get('hover_icon', ''))
     if any(not isinstance(button.get(key), str) for key in ('name', 'icon', 'sequence')) or not isinstance(second, str):
         raise ValueError('Invalid button configuration.')
-    return dict(name=button['name'], icon=button['icon'], secondary_icon=second, sequence=button['sequence'])
+    return dict(name=button['name'], icon=button['icon'], secondary_icon=second, sequence=normalise_sequence(button['sequence']))
 
 def parse_sequence(text):
     named = {'enter': 13, 'return': 13, 'tab': 9, 'space': 32, 'escape': 27,
