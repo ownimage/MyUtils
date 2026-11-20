@@ -95,6 +95,14 @@ Application selector and click **Edit Buttons**. The editor opens directly; use 
 and Icon 2, and a key sequence such as `Ctrl+C, Ctrl+V`. **Save Buttons**
 saves the profile for that executable; **Save and Back** returns to configuration.
 Opening settings through the live popup cog selects its captured application.
+Choose a per-button **Behaviour**: Normal (`.`) sends once; Hold (`-`) holds one
+combo; Repeat (`...`) repeats the sequence up to 10 times per second. Hold/Repeat
+selection arms the action: the next hotkey press starts it (Ctrl/Alt may stay
+held while selecting; release and re-press only the main key). Press again to stop, leaving the menu hidden. For both modes, the next
+press after stopping opens the menu. Escape cancels.
+Select **Modifiers only** to send just Ctrl/Alt/Shift/Win. The editor title is in
+the window title bar; its top-aligned form scrolls on smaller screens while the
+Save/Cancel actions remain visible.
 
 The Application dropdown lists running and configured apps, with cached icons
 for configured apps that are closed. Open it to refresh. In the button editor,
@@ -135,3 +143,16 @@ Invoke-WebRequest -Uri 'https://registry.npmjs.org/remixicon/-/remixicon-4.9.1.t
 
 For updates, pin the new release in each URL, keep the set ID, preserve the asset
 directory and review license/attribution changes. Restart RadialMenu afterwards.
+
+Native input integration check (opens an isolated receiver; injects only while
+that receiver has foreground focus):
+
+```powershell
+$env:QT_QPA_PLATFORM = 'windows'
+$env:PYTHONPATH = "$PWD\Launch;$PWD\RadialMenu"
+$env:RADIALMENU_NATIVE_INPUT_TEST = '1'
+.\venv\Scripts\python.exe -m unittest discover -s RadialMenu\tests -p test_native_activation.py -v
+Remove-Item Env:RADIALMENU_NATIVE_INPUT_TEST
+Remove-Item Env:QT_QPA_PLATFORM
+Remove-Item Env:PYTHONPATH
+```

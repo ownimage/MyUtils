@@ -3,12 +3,14 @@ import copy
 import json
 import ntpath
 
+BEHAVIOURS = {'normal': '.', 'hold': '-', 'repeat': '...'}
+
 def app_key(path):
     return ntpath.normcase(ntpath.normpath(path)) if path else ''
 
 def default_button(index):
     letter = chr(97 + index)
-    return dict(name=letter, icon='', secondary_icon='', sequence=letter.upper())
+    return dict(name=letter, icon='', secondary_icon='', sequence=letter.upper(), behaviour='normal')
 
 def normalise_sequence(text):
     """Uppercase single letter keys, preserving spacing and incomplete edits."""
@@ -28,7 +30,15 @@ def normalise_button(button):
     second = button.get('secondary_icon', button.get('hover_icon', ''))
     if any(not isinstance(button.get(key), str) for key in ('name', 'icon', 'sequence')) or not isinstance(second, str):
         raise ValueError('Invalid button configuration.')
-    return dict(name=button['name'], icon=button['icon'], secondary_icon=second, sequence=normalise_sequence(button['sequence']))
+    behaviour = button.get('behaviour', 'normal')
+    if not isinstance(behaviour, str) or behaviour not in BEHAVIOURS:
+        raise ValueError('Behaviour must be Normal, Hold or Repeat.')
+    sequence = normalise_sequence(button['sequence'])
+    chords = parse_sequence(sequence)
+    if behaviour == 'hold' and len(chords) > 1:
+        raise ValueError('Hold requires one key or shortcut, not a sequence.')
+    return dict(name=button['name'], icon=button['icon'], secondary_icon=second,
+                sequence=sequence, behaviour=behaviour)
 
 def parse_sequence(text):
     named = {'enter': 13, 'return': 13, 'tab': 9, 'space': 32, 'escape': 27,
@@ -44,12 +54,15 @@ def parse_sequence(text):
         if not parts or not parts[-1]:
             raise ValueError('Use comma-separated keys, e.g. Ctrl+C, Ctrl+V. Use Plus for +.')
         mods = []
-        for token in parts[:-1]:
+        modifier_only = all(token in modifiers for token in parts)
+        for token in (parts if modifier_only else parts[:-1]):
             if token not in modifiers or modifiers[token] in mods:
                 raise ValueError('Modifiers are Ctrl, Alt, Shift and Win; each appears once.')
             mods.append(modifiers[token])
         key = parts[-1]
-        if len(key) == 1 and key.isascii() and key.isalnum():
+        if modifier_only:
+            vk = None
+        elif len(key) == 1 and key.isascii() and key.isalnum():
             vk = ord(key.upper())
         elif key in named:
             vk = named[key]

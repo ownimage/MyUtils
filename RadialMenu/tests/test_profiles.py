@@ -2,9 +2,9 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
-from PySide6.QtCore import QSettings, QPoint, Qt
+from PySide6.QtCore import QSettings, QPoint, QRect, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel
 from button_profiles import ButtonProfiles, parse_sequence, app_key, normalise_sequence
 from radial_gui import RadialService, ButtonEditor
 from photo_tools.shell import SuiteContext, SuiteWindow
@@ -75,6 +75,99 @@ class ProfileTests(unittest.TestCase):
         finally:
             editor.close()
 
+    def test_behaviour_migration_validation_and_editor_round_trip(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            service = RadialService(context)
+            owner = Mock(service=service)
+            editor = ButtonEditor(owner)
+            try:
+                old = dict(name='Old', icon='', secondary_icon='', sequence='A')
+                service.settings.setValue('radial/profiles', json.dumps({app_key('C:/Test.exe'): {'0': old}}))
+                self.assertEqual(service.profiles.buttons('C:/Test.exe')[0]['behaviour'], 'normal')
+                editor.load_application('C:/Test.exe')
+                for mode in ('hold', 'repeat', 'normal'):
+                    editor.behaviour.setCurrentIndex(editor.behaviour.findData(mode))
+                    self.assertEqual(editor.buttons[0]['behaviour'], mode)
+                    editor.select_button(2)
+                    editor.select_button(1)
+                    self.assertEqual(editor.behaviour.currentData(), mode)
+                    self.assertTrue(editor.save())
+                    self.assertEqual(service.profiles.buttons('C:/Test.exe')[0]['behaviour'], mode)
+                editor.behaviour.setCurrentIndex(editor.behaviour.findData('hold'))
+                editor.sequence.setText('Ctrl+A, B')
+                self.assertFalse(editor.save())
+                self.assertIn('one', editor.message.text().lower())
+                self.assertEqual(service.profiles.buttons('C:/Test.exe')[0]['behaviour'], 'normal')
+                buttons = service.profiles.buttons('C:/Test.exe')
+                buttons[0]['behaviour'] = 'invalid'
+                with self.assertRaises(ValueError):
+                    service.profiles.save('C:/Test.exe', buttons)
+            finally:
+                editor.close()
+                service.stop()
+                self.app.aboutToQuit.disconnect(service.stop)
+
+    def test_modifier_only_builder_round_trip_and_short_screen_layout(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            host = SuiteWindow(context)
+            try:
+                host.open_app('radial-menu', force_new=False)
+                page = host.pages['radial-menu']
+                page.choose_application('C:/Apps/One.exe')
+                with patch.object(host, 'screen') as screen:
+                    screen.return_value.availableGeometry.return_value = QRect(0, 0, 1024, 700)
+                    host.resize(1160, 940)
+                    host.open_app('radial-menu', force_new=False)
+                    self.assertLessEqual(host.width(), 1024)
+                    self.assertLessEqual(host.height(), 660)
+                page.begin_edit()
+                host.resize(900, 620)
+                host.show()
+                self.app.processEvents()
+                editor = page.editor
+                self.assertEqual(host.windowTitle(), 'Edit Buttons — one.exe')
+                self.assertFalse(any(label.isVisible() and label.text().startswith('Edit Buttons')
+                                     for label in editor.findChildren(QLabel)))
+                self.assertLessEqual(host.height(), 620)
+                self.assertLessEqual(host.width(), 900)
+                self.assertLess(editor.button_heading.mapTo(editor, QPoint()).y(), 32)
+                self.assertTrue(editor.rect().contains(editor.actions.geometry()))
+                self.assertTrue(editor.form_scroll.verticalScrollBar().maximum() > 0)
+                editor.modifiers_only.setChecked(True)
+                editor.apply_key(append=False)
+                self.assertIn('at least one modifier', editor.message.text())
+                editor.modifiers['Ctrl'].setChecked(True)
+                editor.modifiers['Alt'].setChecked(True)
+                self.assertFalse(editor.key.isEnabled())
+                self.assertFalse(editor.special_key.isEnabled())
+                editor.apply_key(append=False)
+                self.assertEqual(editor.sequence.text(), 'Ctrl+Alt')
+                self.assertTrue(editor.save())
+                editor.select_button(2)
+                editor.select_button(1)
+                self.assertTrue(editor.modifiers_only.isChecked())
+                self.assertTrue(editor.modifiers['Ctrl'].isChecked())
+                self.assertTrue(editor.modifiers['Alt'].isChecked())
+                self.assertEqual(editor.key.text(), '')
+                self.assertEqual(page.service.profiles.buttons('C:/Apps/One.exe')[0]['sequence'], 'Ctrl+Alt')
+                editor.go_back()
+                self.assertEqual(host.windowTitle(), 'RadialMenu')
+            finally:
+                page.service.stop()
+                self.app.aboutToQuit.disconnect(page.service.stop)
+                host.close()
+
+    def test_modifier_only_sequences_validate_without_duplicate_modifiers(self):
+        self.assertEqual(parse_sequence('Ctrl'), [([17], None)])
+        self.assertEqual(parse_sequence('Ctrl+Alt+Shift+Win'), [([17,18,16,91], None)])
+        self.assertEqual(parse_sequence('Shift, Ctrl+A'), [([16],None),([17],65)])
+        for invalid in ('Ctrl+Ctrl', 'Alt+Shift+Alt', 'Ctrl+', '+Shift'):
+            with self.assertRaises(ValueError):
+                parse_sequence(invalid)
+
     def test_sequence_validation(self):
         self.assertEqual(parse_sequence('Ctrl+C, Ctrl+V, Enter'), [([17],67),([17],86),([],13)])
         self.assertEqual(parse_sequence('Shift+F12, Win+Left'), [([16],123),([91],37)])
@@ -99,7 +192,7 @@ class ProfileTests(unittest.TestCase):
                 self.assertFalse(hasattr(page, 'edit_popup'))
                 editor = page.editor
                 self.assertIs(page.pages.currentWidget(), editor)
-                self.assertIn('one.exe', editor.heading.text())
+                self.assertIn('one.exe', host.windowTitle())
                 # The builder combines every modifier with typed and special keys,
                 # persists sequences, and does not overwrite drafts on bad input.
                 editor.sequence.setText('Ctrl+Alt+a')
@@ -147,7 +240,7 @@ class ProfileTests(unittest.TestCase):
                 self.assertTrue(image.save(hover))
                 editor.icons[0].setText(normal)
                 editor.icons[1].setText(hover)
-                QTest.mouseClick(editor.ring, Qt.MouseButton.LeftButton, pos=QPoint(180,310))
+                QTest.mouseClick(editor.ring, Qt.MouseButton.LeftButton, pos=QPoint(editor.ring.width()//2, round(editor.ring.height()*.86)))
                 self.assertTrue(editor.ring.isVisible())
                 self.assertEqual(editor.current, 6)
                 editor.name.setText('Paste')

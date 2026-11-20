@@ -56,6 +56,7 @@ and validation. Read it before making changes anywhere in this repository.
 | `Slideshow/render_slide.py` | Legacy single-image native render command |
 | `Slideshow/slideshow.py` | Compatibility create_slide API for native rendering |
 | `RadialMenu/radial_gui.py` | Configuration page, button editor, radial popup, tray service |
+| `RadialMenu/activation_monitor.py` | Temporary physical activation capture for Hold/Repeat |
 | `RadialMenu/windows_input.py` | Windows hotkeys' target capture, app discovery/icons, key injection |
 | `RadialMenu/button_profiles.py` | Per-executable button profiles, migration, sequence validation |
 | `RadialMenu/icon_library.py` | Manifest discovery, offline icon picker and lazy SVG rendering |
@@ -361,7 +362,7 @@ py -3.11 -m venv venv
   QueryFullProcessImageNameW call. It loads that executable's saved button profile;
   unconfigured applications use letter defaults. Invalid active profiles report
   an error instead of silently discarding their configuration.
-- Selecting a button hides the popup, requests original-window focus once and
+- Selecting a Normal button hides the popup, requests original-window focus once and
   polls every 20ms for up to five seconds. Send only when the same HWND/PID/thread
   remains valid and foreground, with Ctrl/Alt/Shift/Windows and mouse buttons
   released. Closed/changed target, timeout, new activation or stop cancels input.
@@ -400,7 +401,7 @@ py -3.11 -m venv venv
   radial selector on the left and button fields on the right. Clicking another
   segment switches fields and retains drafts. Embedded RadialPopup uses Widget
   flags, stays visible on segment selection/focus loss, and highlights selection.
-- Fields are Name, Icon 1, Icon 2 and Button sequence. Both icons display together
+- Fields are Name, Icon 1, Icon 2, Behaviour and Button sequence. Both icons display together
   above the name, before and during hover; either can be empty. Both slots share
   all four icon libraries, with Icons… for the offline picker and File… for images.
   Labels elide to segment width. Draft names/icons update the editor ring live.
@@ -410,7 +411,9 @@ py -3.11 -m venv venv
   activation reloads the saved profile, not unsaved editor drafts.
 - Shared QSettings keys: radial/key, radial/count and radial/profiles. Profiles
   are JSON keyed by case-normalised full executable path, then zero-based slot
-  strings. Each of 26 slots stores name, icon, secondary_icon and sequence.
+  strings. Each of 26 slots stores name, icon, secondary_icon, sequence and behaviour.
+  Missing behaviour migrates to normal; unknown values fail validation. Hold
+  permits one chord only (or blank to disable), while Repeat permits sequences.
   Existing hover_icon is migrated into secondary_icon on read and canonicalised
   on Save. Preserve this migration: the second icon is simultaneous, not a hover
   alternative. Validate sequences before replacing a profile; report save errors.
@@ -520,3 +523,126 @@ py -3.11 -m venv venv
   produced Abc rather than C), then implemented SingleKeyEdit. All 8 profile/editor
   tests pass, covering overtyping, cursor position, uppercase, paste, clearing,
   special-key selection and preservation of the multi-chord sequence editor.
+
+## Button behaviours (2026-11-20)
+
+- Per-button Behaviour dropdown: normal (.), hold (-), repeat (...). RadialPopup
+  draws a marker near each segment's outer edge without replacing its name/icons.
+- Normal retains one-shot guarded delivery. Hold/Repeat selection hides the menu
+  and restores the captured HWND/PID/thread, with a five-second initial focus
+  timeout. Release the menu-opening main key, then tap to start and tap again
+  to stop; Ctrl/Alt may remain held across selection. Hold injects one chord's downs once. Repeat sends balanced sequences
+  immediately and at most every 100ms. Release does not stop either mode. Both modes leave the menu hidden on
+  the stopping press; the next press opens it, per the user's updated instructions.
+- activation_monitor.py installs WH_KEYBOARD_LL only for the armed action, tracks
+  physical/remapped key downs/ups (including left/right modifiers), and ignores
+  only our own tagged injected events. The initial opening press releases normally; the subsequent activation
+  components are swallowed so hotkey Ctrl/Alt do not contaminate output. Escape
+  cancels. RegisterHotKey is suspended during capture and restored on completion
+  to prevent configured output from generating recursive WM_HOTKEY messages.
+- WindowsInput gesture methods check original-target focus, physical trigger and
+  unrelated modifiers/mouse buttons immediately before injection (active Hold
+  permits mouse use so modifier-only holds support modified dragging). Cancel on focus
+  loss, invalid target, Escape, settings/preview, stop or delivery failure. Track
+  actually inserted downs after partial SendInput, release in reverse order even
+  after focus loss, and retry a failed cleanup batch once. Retain failed cleanup
+  state for another attempt on stop/next cancellation. Hook and registration
+  failures report errors. No new dependency; Normal needs no keyboard hook.
+- Added profile/editor and runtime tests before implementation and observed their
+  failures. New coverage exercises migration, persisted behaviours, Hold chord
+  validation, initial-release/fresh-press arming, hold/repeat/release, cancellation,
+  repeat timing, registration restoration, hook failure, real native hook install
+  and removal, exact injected payloads and partial-send cleanup. End-to-end
+  physical keyboard delivery to an external application remains unverified.
+- Validation: the full 31-test RadialMenu run passed; after adding three extra
+  lifecycle/marker/cleanup tests and strengthening cleanup, all 27 runtime,
+  profile/editor and radial tests passed again (34 total with the 7 unchanged
+  offline tests from the full run). All 18 Launch tests passed. Light/dark editor
+  renders inspected at default host size: mode markers and dropdown are visible,
+  both icon slots remain intact and Save actions fit. Diff formatting passed.
+
+## Modifier-only actions and compact editor (2026-11-20)
+
+- Modifiers only in the button builder sends one or more checked modifiers with
+  no ordinary key. Sequence syntax accepts Ctrl, Ctrl+Alt, Shift+Win etc. Parser
+  represents these as (modifiers, None); all three injection paths omit the absent
+  key and balance actual modifier downs/ups. Duplicate modifiers and empty chords
+  remain invalid. Hold permits mouse use once active, retaining target/modifier
+  guards and release/cancel cleanup, so held modifiers can be used when dragging.
+- Edit Buttons — executable is the actual window title, restored to RadialMenu
+  on leaving the editor. No large heading occupies the content area. The app name
+  remains above the left selector with the full path in its tooltip; the form
+  starts at the top right. The selector scales from 240 to 360px. A native Qt scroll
+  area hosts the form; status and Save/Back/Cancel stay outside it and visible.
+  Scroll surfaces are transparent to preserve light/dark theme contrast.
+- CurrentPageStack in shell.py computes size hints from the active page only;
+  hidden launcher/app pages no longer force the RadialMenu editor beyond the
+  screen. RadialMenu allows a 760x540 minimum host size; the launcher and other
+  apps retain their 980x860 minimum. Configuration also scrolls. Other app page
+  instances and edits remain retained when switching pages.
+- TDD: observed failing modifier parsing/payload and title/layout tests first.
+  Coverage includes modifier-only save/load and builder restoration, no empty
+  modifier actions, exact Normal/Hold/Repeat payloads, mouse use during Hold,
+  title-bar state and form/footer geometry in a 900x620 host.
+- Opening RadialMenu clamps a non-maximized host's size and position to the
+  available screen with room for its native frame/title bar. The short-screen
+  regression verifies this against a simulated 1024x700 available area.
+- Validation: all 31 affected RadialMenu runtime/editor/input tests and all 18
+  Launch tests passed with exit code 0. Renders checked at 1000x720, 900x620 and
+  760x540 in light/dark. Native Qt scroll areas use scoped scrollbar styling.
+  Combined offscreen modules have intermittently crashed during native Qt teardown,
+  even with native scroll areas; this is not proven to be caused by Fluent scroll
+  wrappers. Isolating test modules in separate processes gives clean exits.
+
+## Toggle Hold/Repeat and remapped activation fix (2026-11-20)
+
+- Updated user requirement: both Hold and Repeat start on the first fresh hotkey
+  press after selection and stop on the next press. Hotkey release does not stop
+  either mode. Both stop and leave the following press to open the menu.
+- ActivationMonitor counts rising complete-chord edges, not key auto-repeat, so
+  quick taps completed between timer ticks still start/stop actions. Tag every
+  SendInput KEYBDINPUT with process-specific INPUT_TAG. Ignore only that tagged
+  output; previously ignoring every LLKHF_INJECTED event prevented activation
+  from mouse software/remappers. Foreign injected hotkeys now work without our
+  configured output changing activation state or triggering recursion.
+- Tests first reproduced ignored remapper activation and failed quick-tap Hold;
+  after clarification, added failing Repeat-toggle and separate menu-opening coverage.
+  Native opt-in test (test_native_activation.py; command in commands.md) acquired
+  a real foreground receiver, injected untagged Ctrl+Alt+Space remapper input,
+  verified repeated balanced F24 presses with no leaked Ctrl/Alt, release
+  persistence, stopping with the menu hidden and quick-tap Hold down/up across two taps.
+  This verifies native hook/SendInput/Qt delivery to our own isolated receiver;
+  real hardware and other applications still need hands-on verification.
+- Validation: all 32 affected RadialMenu runtime/editor/radial regression tests
+  passed with exit code 0; native receiver integration also passed with the final
+  toggle logic. Active toggled actions allow mouse use while retaining target
+  focus and unrelated-modifier guards; Repeat no longer stops just on a click.
+
+- Repeat stopping behaviour revised per user: the stop press leaves the menu
+  hidden, exactly like Hold. The following fresh hotkey press opens the menu.
+  Updated the regression first and observed it fail, then removed immediate
+  reopening and updated runtime hints, status, README and commands.
+
+## First Hold activation press (2026-11-20)
+
+- TDD reproduced the extra-press bug in both unit and native receiver tests:
+  selecting Hold with Ctrl/Alt still held left ActivationMonitor waiting for all
+  hotkey components to release, so the next Space tap was discarded. Readiness
+  now depends only on releasing the main activation key (Space/R/F8). The first
+  post-selection hotkey press starts Hold, even when modifiers stay held.
+- begin_gesture clears logical downs for physically held activation modifiers
+  using tagged key-ups while retaining their captured physical state. This
+  prevents Ctrl/Alt leaking into the configured combo and does not count as a new
+  activation. Right Ctrl/Alt releases carry extended flags. Selection still sends
+  no configured key; the second subsequent press stops, leaving the menu hidden.
+- Native integration now seeds Ctrl+Alt across selection, taps Space exactly
+  once, asserts one unmodified F24 down, and asserts key-up on the second tap.
+  It first failed with zero F24 events, then passed after the fix. The receiver
+  may briefly join the foreground input queue to activate its own test window;
+  it detaches before injection and still checks focus before sending any downs.
+- Final validation: 17 behaviour/input, 11 profile/editor and 6 radial tests all
+  passed in isolated processes with clean exits. The native receiver test also
+  passed (35 tests total). Diff formatting passed. A combined offscreen run passed
+  all assertions but hit the intermittent Qt teardown crash noted above; module
+  isolation was used for the final verification rather than treating that crash
+  as a successful run.

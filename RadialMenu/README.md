@@ -20,7 +20,8 @@ It sends one letter key down/up pair, once. If focus does not return or the wind
 closes, the selection is cancelled. Preview never sends keys. Windows can block
 input to an application running with higher privileges; delivery failure is shown
 on the settings page. Key behaviour follows the target app and keyboard state. Escape, right-click, the centre, or losing focus
-dismisses it. No keyboard/mouse hook or additional dependency is installed.
+dismisses it. Normal uses the Windows hotkey registration. Hold and Repeat temporarily capture
+the physical activation keys for one armed action; no additional dependency is needed.
 
 Click the cog at the top right of the popup to open RadialMenu settings. This
 closes the popup and cancels any letter delivery. Settings can also be restored
@@ -34,8 +35,9 @@ appear in the Application selector. Profiles match the full executable path,
 case-insensitively, and apply to all windows of that executable.
 
 Select **Edit Buttons** to open the editor directly, with the first button selected. The button editor shows
-the application at the top, a radial selector on the left and the selected
-button's fields on the right. Clicking another segment switches buttons and
+**Edit Buttons — application** in the window title bar, a radial selector on the
+left and the selected button's fields starting at the top on the right. The form
+scrolls in smaller windows; Save and Cancel stay visible beneath it. Clicking another segment switches buttons and
 retains the current draft. The selected segment stays highlighted. Names and
 icons update in the editor preview immediately.
 
@@ -51,7 +53,10 @@ pasting retains only the last inserted character. Backspace or Delete clears it.
 replaces the sequence; **Append key** adds another shortcut. You can also edit
 the sequence directly. Letter keys are always shown and saved in uppercase (including existing profiles
 when loaded); uppercase does not imply Shift. Choose Shift explicitly when needed.
-Use `Plus` or `Comma` for those literal keys. A blank sequence disables the action.
+Select **Modifiers only** to send Ctrl, Alt, Shift or Win without another key
+(for example `Ctrl+Shift`). This works with Normal, Hold and Repeat. Hold keeps
+the modifiers down for mouse actions such as modified dragging, until the hotkey
+is pressed again. Use `Plus` or `Comma` for those literal keys. A blank sequence disables the action.
 
 **Save Buttons** persists all button drafts for this application. **Save and
 Back** saves and returns to configuration. **Cancel** returns without saving
@@ -59,6 +64,31 @@ the pending drafts. Editing and the tray preview never send input. Profiles are
 stored in the existing shared settings file. Unconfigured applications retain
 the default letter buttons. The next hotkey activation loads the saved profile.
 The configured sequence uses the same focus/modifier guard as letter delivery.
+
+## Button behaviour
+
+The **Behaviour** dropdown applies to each button. A marker near the outer edge
+of its radial segment shows the selected behaviour in both the editor and live menu:
+
+- **Normal (`.`)**: select a button to send its sequence once, as before.
+- **Hold (`-`)**: select a button, then press the activation hotkey once.
+  That first press holds the configured key/combo down; press it again to release.
+  Releasing the hotkey itself does not end the Hold. Hold accepts one combo.
+  After stopping, the next hotkey press opens the menu again.
+- **Repeat (`...`)**: select a button, then press the activation hotkey once.
+  That first press starts repeating the configured sequence at up to 10 times per
+  second. Press it again to stop. The following hotkey press opens the radial menu.
+
+Quick taps work; you do not need to keep the hotkey held. Release the main key
+(Space, R or F8) from the menu-opening press before pressing it again; Ctrl/Alt
+may remain held across selecting a button. No extra activation press is needed. Nothing is sent just
+by selecting a Hold or Repeat button. Escape, opening settings/preview, stopping
+RadialMenu, losing the original window or pressing an unrelated modifier cancels
+the armed action and releases keys inserted by Hold. Focus must return within
+five seconds of selection. The app captures physical or mouse/remapper-generated activation keys only
+while armed so Ctrl/Alt from the hotkey do not alter the configured output combo.
+Its own injected output is tagged and ignored by the activation monitor, so
+output cannot trigger itself. Existing profiles default to Normal. Blank sequences disable all three modes.
 
 ## Offline icon library and application list
 

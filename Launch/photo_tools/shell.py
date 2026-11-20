@@ -192,6 +192,21 @@ class AppTile(QPushButton):
         self.launch_label.setText('Open in a new window  ↗' if new_window else 'Open in this window  →')
 
 
+class CurrentPageStack(QStackedWidget):
+    """Only the visible page constrains the host window's minimum size."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.currentChanged.connect(lambda _: self.updateGeometry())
+
+    def minimumSizeHint(self):
+        page = self.currentWidget()
+        return page.minimumSizeHint().expandedTo(page.minimumSize()) if page else super().minimumSizeHint()
+
+    def sizeHint(self):
+        page = self.currentWidget()
+        return page.sizeHint() if page else super().sizeHint()
+
+
 class SuiteWindow(QMainWindow):
     def __init__(self, context=None):
         super().__init__()
@@ -224,7 +239,7 @@ class SuiteWindow(QMainWindow):
         hint.setObjectName('muted')
         bar.addWidget(hint)
         layout.addWidget(self.breadcrumb)
-        self.stack = QStackedWidget()
+        self.stack = CurrentPageStack()
         layout.addWidget(self.stack, 1)
         self.setCentralWidget(root)
         self.home = QWidget()
@@ -309,10 +324,26 @@ class SuiteWindow(QMainWindow):
 
     def _select_app(self, app_id):
         self.current_app = app_id
+        if app_id == 'radial-menu':
+            self.setMinimumSize(760, 540)
+        else:
+            self.setMinimumSize(980, 860)
         self.stack.setCurrentWidget(self.pages[app_id])
         self.breadcrumb.show()
         self.page_name.setText(self.context.apps[app_id].name)
         self.setWindowTitle(self.pages[app_id].windowTitle())
+        if app_id == 'radial-menu' and not self.isMaximized():
+            available = self.screen().availableGeometry()
+            # Reserve the native frame/title bar even before the first show.
+            frame_width = max(16, self.frameGeometry().width() - self.width())
+            frame_height = max(40, self.frameGeometry().height() - self.height())
+            self.resize(min(self.width(), available.width() - frame_width),
+                        min(self.height(), available.height() - frame_height))
+            frame = self.frameGeometry()
+            x = max(available.left(), min(frame.left(), available.right()-frame.width()+1))
+            y = max(available.top(), min(frame.top(), available.bottom()-frame.height()+1))
+            self.move(self.pos() + QPoint(x-frame.left(), y-frame.top()))
+
 
     def open_app(self, app_id, *, force_new=None, directory=''):
         if self.closing:
@@ -341,6 +372,7 @@ class SuiteWindow(QMainWindow):
         if self.closing:
             return
         self.current_app = None
+        self.setMinimumSize(980, 860)
         self.stack.setCurrentWidget(self.home)
         self.breadcrumb.hide()
         self.setWindowTitle('Photo Tools · Launcher')

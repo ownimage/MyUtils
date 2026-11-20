@@ -10,13 +10,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'Launch'))
 from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QRectF, QSettings, Qt, QTimer, Signal, QFileInfo
 from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QIcon, QPixmap
-from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu, QStackedWidget, QHBoxLayout, QFileDialog, QFileIconProvider
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu, QHBoxLayout, QFileDialog, QFileIconProvider, QFrame, QScrollArea
 from photo_tools import apply_theme, bind_window, run_app
+from photo_tools.shell import CurrentPageStack
 from windows_input import WindowsInput
+from activation_monitor import HOTKEYS
 from about_page import AboutPage
 from application_icons import ApplicationIcons
 from icon_library import IconPicker, button_icon
-from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key, normalise_sequence
+from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key, normalise_sequence, normalise_button, BEHAVIOURS
 from photo_tools.fluent import QComboBox, QPushButton, QLineEdit, QCheckBox
 from qfluentwidgets import ToolButton, FluentIcon
 
@@ -126,6 +128,12 @@ class RadialPopup(QWidget):
             label = painter.fontMetrics().elidedText(button['name'], Qt.TextElideMode.ElideRight, int(width))
             painter.drawText(QRectF(x-width/2, y if icons else y-14, width, 28),
                              Qt.AlignmentFlag.AlignCenter, label)
+            marker = BEHAVIOURS[button.get('behaviour', 'normal')]
+            # Keep the mode separate from names and both icon slots.
+            marker_radius = outer - 12
+            mx, my = c+marker_radius*math.cos(angle), c+marker_radius*math.sin(angle)
+            painter.drawText(QRectF(mx-12, my-10, 24, 20),
+                             Qt.AlignmentFlag.AlignCenter, marker)
 
     def mouseMoveEvent(self, event):
         self.hover = self.segment_at(event.position())
@@ -178,6 +186,9 @@ class RadialService(QObject):
         self.target = None
         self.application = ''
         self.pending = None
+        self.armed = None
+        self.gesture_registration = False
+        self.gesture_cleanup_needed = False
         self.send_timer = QTimer(self)
         self.send_timer.setInterval(20)
         self.send_timer.timeout.connect(self.deliver_letter)
@@ -272,7 +283,7 @@ class RadialService(QObject):
         self.popup.update()
 
     def stop(self, *_):
-        self.cancel_delivery()
+        self.cancel_delivery(resume=False)
         if self.filter_installed:
             QApplication.instance().removeNativeEventFilter(self.hotkey_filter)
             self.filter_installed = False
@@ -283,7 +294,7 @@ class RadialService(QObject):
 
     def start(self, key):
         self.stop()
-        keys = {'Ctrl+Alt+Space': (3, 0x20), 'Ctrl+Alt+R': (3, 0x52), 'F8': (0, 0x77)}
+        keys = HOTKEYS
         self.key = key if key in keys else 'Ctrl+Alt+Space'
         if sys.platform == 'win32':
             modifiers, vk = keys[self.key]
@@ -299,16 +310,114 @@ class RadialService(QObject):
             QApplication.instance().setQuitOnLastWindowClosed(False)
         self.changed.emit()
 
-    def cancel_delivery(self):
+    def cancel_delivery(self, *, resume=True):
         self.send_timer.stop()
         self.pending = None
         self.target = None
+        cleaned = True
+        if self.armed is not None or self.gesture_cleanup_needed:
+            self.armed = None
+            cleaned = self.input.end_gesture()
+            self.gesture_cleanup_needed = not cleaned
+        if self.gesture_registration:
+            self.gesture_registration = False
+            if resume:
+                modifiers, vk = HOTKEYS[self.key]
+                self.registered = bool(ctypes.windll.user32.RegisterHotKey(
+                    None, self.HOTKEY_ID, modifiers | 0x4000, vk))
+                cleaned = self.registered and cleaned
+        return cleaned
+
+    def finish_gesture(self, message):
+        cleaned = self.cancel_delivery()
+        self.status = message if cleaned else message + ' Input cleanup or hotkey restart failed; restart RadialMenu.'
+        if self.tray is not None:
+            self.tray.setToolTip('RadialMenu - ' + self.status)
+        self.changed.emit()
+
+    def arm_gesture(self, target, button):
+        if not self.input.begin_gesture(self.key):
+            self.status = 'Could not capture the hotkey for Hold / Repeat.'
+            self.target = None
+            self.changed.emit()
+            return
+        self.armed = dict(target=target, sequence=button['sequence'],
+                          behaviour=button['behaviour'], phase='focus',
+                          deadline=time.monotonic()+5, active=False, next_repeat=0,
+                          presses=self.input.gesture_presses())
+        # Suspend RegisterHotKey while the temporary hook owns activation, so
+        # injected sequences cannot create WM_HOTKEY messages of their own.
+        if self.registered:
+            if not ctypes.windll.user32.UnregisterHotKey(None, self.HOTKEY_ID):
+                self.finish_gesture('Could not transfer activation to Hold / Repeat.')
+                return
+            self.registered = False
+            self.gesture_registration = True
+        instruction = 'press to start, press again to stop'
+        self.status = f"Armed {button['behaviour'].title()}: {self.key} — {instruction}. Escape cancels."
+        self.changed.emit()
+        self.input.restore(target)
+        self.send_timer.start()
+
+    def deliver_gesture(self):
+        action = self.armed
+        target, sequence = action['target'], action['sequence']
+        now = time.monotonic()
+        state = self.input.gesture_state()
+        if state == 'cancelled' or not self.input.valid(target):
+            self.finish_gesture('Action cancelled.')
+            return
+        if action['phase'] == 'focus':
+            if now >= action['deadline']:
+                self.finish_gesture('Action cancelled: focus timed out.')
+                return
+            if state == 'waiting' or not self.input.focused(target) or not self.input.gesture_safe(target):
+                return
+            action['phase'] = 'ready'
+        allow_mouse = action['active']
+        if not self.input.focused(target) or not self.input.gesture_safe(target, allow_mouse=allow_mouse):
+            self.finish_gesture('Action cancelled: original app lost focus or another modifier was pressed.')
+            return
+        presses = self.input.gesture_presses()
+        fresh_press = presses > action['presses']
+        if fresh_press and (action['active'] or presses - action['presses'] > 1):
+            self.finish_gesture('Action stopped. The next hotkey press opens the menu.')
+            return
+        if not action['active'] and not fresh_press:
+            return
+        if action['behaviour'] == 'hold':
+            if not action['active']:
+                if not self.input.begin_hold(target, sequence, toggle=True):
+                    self.finish_gesture('Could not hold the configured key.')
+                    return
+                action['active'] = True
+                action['presses'] = presses
+                self.status = f'Holding {sequence}. Press {self.key} again to release. Escape cancels.'
+                if self.tray is not None:
+                    self.tray.setToolTip('RadialMenu - ' + self.status)
+                self.changed.emit()
+            return
+        if not action['active'] or now >= action['next_repeat']:
+            if not self.input.repeat_sequence(target, sequence, toggle=True):
+                self.finish_gesture('Could not repeat the configured sequence.')
+                return
+            first = not action['active']
+            action['active'] = True
+            action['presses'] = presses
+            action['next_repeat'] = now + 0.1
+            if first:
+                self.status = f'Repeating {sequence}. Press {self.key} again to stop. The following press opens the menu. Escape cancels.'
+                if self.tray is not None:
+                    self.tray.setToolTip('RadialMenu - ' + self.status)
+                self.changed.emit()
 
     def preview(self):
         self.cancel_delivery()
         self.popup.show_at_cursor()
 
     def toggle_popup(self):
+        if self.armed is not None:
+            return  # The physical-key monitor owns the next press.
         self.cancel_delivery()
         if self.popup.isVisible():
             self.popup.hide()
@@ -329,9 +438,14 @@ class RadialService(QObject):
     def select_letter(self, number):
         if not self.target or not 1 <= number <= 26:
             return
-        letter = self.popup.buttons[number-1]['sequence']
+        self.popup.hide()
+        button = self.popup.buttons[number-1]
+        letter = button['sequence']
         if not letter.strip():
             self.cancel_delivery()
+            return
+        if button.get('behaviour', 'normal') != 'normal':
+            self.arm_gesture(self.target, button)
             return
         self.pending = (self.target, letter, time.monotonic() + 5)
         self.status = f'Waiting for the original app to receive {letter}'
@@ -340,6 +454,9 @@ class RadialService(QObject):
         self.send_timer.start()
 
     def deliver_letter(self):
+        if self.armed is not None:
+            self.deliver_gesture()
+            return
         if self.pending is None:
             return
         target, letter, deadline = self.pending
@@ -394,20 +511,31 @@ class ButtonEditor(QWidget):
         self.loading = False
         self.application = ''
         self.buttons = []
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 24, 28, 24)
-        self.heading = QLabel()
-        self.heading.setObjectName('title')
-        layout.addWidget(self.heading)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(20, 12, 20, 12)
+        layout.setSpacing(16)
+        self.selector_column = QWidget()
+        self.selector_column.setFixedWidth(360)
+        left = QVBoxLayout(self.selector_column)
+        left.setContentsMargins(0, 0, 0, 0)
         self.path_label = QLabel()
         self.path_label.setWordWrap(True)
-        layout.addWidget(self.path_label)
-        body = QHBoxLayout()
+        left.addWidget(self.path_label)
         self.ring = RadialPopup(embedded=True)
         self.ring.setFixedSize(360, 360)
         self.ring.selected.connect(self.select_button)
-        body.addWidget(self.ring, 0, Qt.AlignmentFlag.AlignTop)
-        form = QVBoxLayout()
+        left.addWidget(self.ring)
+        left.addStretch()
+        layout.addWidget(self.selector_column)
+        right = QVBoxLayout()
+        right.setContentsMargins(0, 0, 0, 0)
+        self.form_scroll = QScrollArea()
+        self.form_scroll.setWidgetResizable(True)
+        self.form_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        form_widget = QWidget()
+        form = QVBoxLayout(form_widget)
+        form.setContentsMargins(0, 0, 14, 0)
+        form.setSpacing(4)
         self.button_heading = QLabel()
         form.addWidget(self.button_heading)
         form.addWidget(QLabel('Name'))
@@ -434,6 +562,15 @@ class ButtonEditor(QWidget):
             row.addWidget(clear)
             form.addLayout(row)
             self.icons.append(field)
+        form.addWidget(QLabel('Behaviour'))
+        self.behaviour = QComboBox()
+        self.behaviour.setAccessibleName('Button behaviour')
+        for mode, marker in BEHAVIOURS.items():
+            self.behaviour.addItem(f'{mode.title()} ({marker})', mode)
+        form.addWidget(self.behaviour)
+        behaviour_hint = QLabel('Press the hotkey to start Hold / Repeat; press again to stop. The following press opens the menu.')
+        behaviour_hint.setWordWrap(True)
+        form.addWidget(behaviour_hint)
         form.addWidget(QLabel('Build a key or shortcut'))
         modifiers = QHBoxLayout()
         self.modifiers = {}
@@ -443,6 +580,9 @@ class ButtonEditor(QWidget):
             self.modifiers[name] = check
             modifiers.addWidget(check)
         modifiers.addStretch()
+        self.modifiers_only = QCheckBox('Modifiers only')
+        self.modifiers_only.toggled.connect(self.modifier_only_changed)
+        modifiers.addWidget(self.modifiers_only)
         form.addLayout(modifiers)
         keys = QHBoxLayout()
         self.key = SingleKeyEdit()
@@ -479,8 +619,10 @@ class ButtonEditor(QWidget):
         form.addWidget(hint)
         self.message = QLabel()
         self.message.setWordWrap(True)
-        form.addWidget(self.message)
-        actions = QHBoxLayout()
+        right.addWidget(self.message)
+        self.actions = QWidget()
+        actions = QHBoxLayout(self.actions)
+        actions.setContentsMargins(0, 0, 0, 0)
         save = QPushButton('Save Buttons')
         save.clicked.connect(self.save)
         actions.addWidget(save)
@@ -490,15 +632,33 @@ class ButtonEditor(QWidget):
         cancel = QPushButton('Cancel')
         cancel.clicked.connect(lambda: self.owner.pages.setCurrentIndex(0))
         actions.addWidget(cancel)
-        form.addLayout(actions)
         form.addStretch()
-        body.addLayout(form, 1)
-        layout.addLayout(body)
-        layout.addStretch()
+        self.form_scroll.setWidget(form_widget)
+        self.form_scroll.setStyleSheet("""QScrollArea { background: transparent; border: none; }
+            QScrollBar:vertical { background: transparent; width: 10px; }
+            QScrollBar::handle:vertical { background: #888888; min-height: 20px; border-radius: 4px; }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }""")
+        self.form_scroll.viewport().setAutoFillBackground(False)
+        form_widget.setAutoFillBackground(False)
+        right.insertWidget(0, self.form_scroll, 1)
+        right.addWidget(self.actions)
+        layout.addLayout(right, 1)
+        self.behaviour.currentIndexChanged.connect(self.update_draft)
         for field in (self.key, self.sequence):
             field.textChanged.connect(lambda _text, edit=field: self.normalise_key_field(edit))
         for field in [self.name, *self.icons, self.sequence]:
             field.textChanged.connect(self.update_draft)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        size = min(360, max(240, int(self.width() * .34)))
+        self.selector_column.setFixedWidth(size)
+        self.ring.setFixedSize(size, size)
+
+    def modifier_only_changed(self, checked):
+        self.key.setEnabled(not checked)
+        self.special_key.setEnabled(not checked)
 
     def normalise_key_field(self, field):
         text = normalise_sequence(field.text())
@@ -517,12 +677,17 @@ class ButtonEditor(QWidget):
             self.key.setText(key)
 
     def apply_key(self, *, append):
-        chord = '+'.join([name for name, check in self.modifiers.items()
-                          if check.isChecked()] + [self.key.text().strip()])
+        parts = [name for name, check in self.modifiers.items() if check.isChecked()]
+        if not self.modifiers_only.isChecked():
+            parts.append(self.key.text().strip())
+        chord = '+'.join(parts)
         sequence = self.sequence.text().strip()
         candidate = f'{sequence}, {chord}' if append and sequence else chord
         try:
-            if not self.key.text().strip():
+            if self.modifiers_only.isChecked():
+                if not parts:
+                    raise ValueError('Choose at least one modifier.')
+            elif not self.key.text().strip():
                 raise ValueError('Enter a key or choose a special key first.')
             parse_sequence(candidate)
         except ValueError as error:
@@ -543,8 +708,8 @@ class ButtonEditor(QWidget):
     def load_application(self, application):
         self.application = application
         self.buttons = self.owner.service.profiles.buttons(application)
-        self.heading.setText(f'Edit Buttons — {ntpath.basename(application)}')
-        self.path_label.setText(application)
+        self.path_label.setText(ntpath.basename(application))
+        self.path_label.setToolTip(application)
         self.ring.buttons = self.buttons
         self.ring.count = self.owner.service.popup.count
         self.ring.accent = self.owner.service.popup.accent
@@ -561,16 +726,21 @@ class ButtonEditor(QWidget):
         self.icons[0].setText(button['icon'])
         self.icons[1].setText(button['secondary_icon'])
         self.sequence.setText(button['sequence'])
+        self.behaviour.setCurrentIndex(self.behaviour.findData(button.get('behaviour', 'normal')))
         for check in self.modifiers.values():
             check.setChecked(False)
         self.special_key.setCurrentIndex(0)
+        self.modifiers_only.setChecked(False)
         self.key.clear()
         # Reflect an existing single shortcut without rewriting its stored text.
         if button['sequence'].strip() and ',' not in button['sequence']:
             parts = [part.strip() for part in button['sequence'].split('+')]
-            for name, check in self.modifiers.items():
-                check.setChecked(name.lower() in [part.lower() for part in parts[:-1]])
-            self.key.setText(parts[-1])
+            modifiers, key = parse_sequence(button['sequence'])[0]
+            for name, vk in (('Ctrl', 17), ('Alt', 18), ('Shift', 16), ('Win', 91)):
+                self.modifiers[name].setChecked(vk in modifiers)
+            self.modifiers_only.setChecked(key is None)
+            if key is not None:
+                self.key.setText(parts[-1])
 
         self.ring.active_button = self.current
         self.ring.update()
@@ -580,7 +750,8 @@ class ButtonEditor(QWidget):
         if self.loading or not self.buttons:
             return
         self.buttons[self.current] = dict(name=self.name.text(), icon=self.icons[0].text(),
-            secondary_icon=self.icons[1].text(), sequence=self.sequence.text())
+            secondary_icon=self.icons[1].text(), sequence=self.sequence.text(),
+            behaviour=self.behaviour.currentData())
         self.ring.update()
         self.message.setText('Unsaved changes')
 
@@ -588,7 +759,7 @@ class ButtonEditor(QWidget):
         try:
             for number, button in enumerate(self.buttons, 1):
                 try:
-                    parse_sequence(button['sequence'])
+                    normalise_button(button)
                     for path in (button['icon'], button['secondary_icon']):
                         if path and button_icon(path).isNull():
                             raise ValueError('Choose a readable icon image or clear the icon.')
@@ -675,8 +846,19 @@ class RadialMenuWindow(QMainWindow):
         self.selection = QLabel('Select a letter to send its keypress to the original application.')
         layout.addWidget(self.selection)
         layout.addStretch()
-        self.pages = QStackedWidget()
-        self.pages.addWidget(root)
+        self.pages = CurrentPageStack()
+        config_scroll = QScrollArea()
+        config_scroll.setWidgetResizable(True)
+        config_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        config_scroll.setWidget(root)
+        config_scroll.setStyleSheet("""QScrollArea { background: transparent; border: none; }
+            QScrollBar:vertical { background: transparent; width: 10px; }
+            QScrollBar::handle:vertical { background: #888888; min-height: 20px; border-radius: 4px; }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }""")
+        config_scroll.viewport().setAutoFillBackground(False)
+        root.setAutoFillBackground(False)
+        self.pages.addWidget(config_scroll)
         self.setCentralWidget(self.pages)
         self.suite_binding = bind_window(self, 'radial-menu', suite)
         context = self.suite_context
@@ -695,6 +877,7 @@ class RadialMenuWindow(QMainWindow):
         self.pages.addWidget(self.editor)
         self.about = AboutPage(lambda: self.pages.setCurrentIndex(0),self)
         self.pages.addWidget(self.about)
+        self.pages.currentChanged.connect(self.update_page_title)
         self.about_button.clicked.connect(lambda: self.pages.setCurrentWidget(self.about))
         self.edit_buttons.clicked.connect(self.begin_edit)
         browse_app.clicked.connect(self.browse_application)
@@ -703,6 +886,14 @@ class RadialMenuWindow(QMainWindow):
         if self.service.application:
             self.choose_application(self.service.application)
         self.background_button.clicked.connect(lambda: self.service.run_in_background(self.window()))
+
+    def update_page_title(self, *_):
+        title = (f'Edit Buttons — {ntpath.basename(self.editor.application)}'
+                 if self.pages.currentWidget() is self.editor else 'RadialMenu')
+        self.setWindowTitle(title)
+        host = self.window()
+        if host is self or getattr(host, 'current_app', None) == 'radial-menu':
+            host.setWindowTitle(title)
 
     def refresh_status(self):
         self.status.setText(self.service.status)
