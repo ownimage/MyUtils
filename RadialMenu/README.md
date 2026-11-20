@@ -174,3 +174,8 @@ The importer uses `--layout flat --prefix package/icons/` for Lucide and
 `--layout remix --prefix package/icons/ --license-name License` for Remix. The
 default `styles` layout still supports Phosphor. Attribution metadata is retained
 on updates; review new releases' license/creator changes and update it as needed.
+
+When **Hold** is selected, **Append key** is hidden and the sequence field accepts
+only one key or shortcut. Switching a multi-entry sequence to Hold keeps its first
+entry and shows a notice; save explicitly to persist the change. Normal and Repeat
+retain the Append key option and multi-entry sequences.

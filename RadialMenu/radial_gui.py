@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'Launch'))
-from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QRectF, QSettings, Qt, QTimer, Signal, QFileInfo
-from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QIcon, QPixmap
+from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QRectF, QSettings, Qt, QTimer, Signal, QFileInfo, QRegularExpression
+from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QIcon, QPixmap, QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu, QHBoxLayout, QFileDialog, QFileIconProvider, QFrame, QScrollArea
 from photo_tools import apply_theme, bind_window, run_app
 from photo_tools.shell import CurrentPageStack
@@ -634,9 +634,10 @@ class ButtonEditor(QWidget):
         self.sequence.setAccessibleName('Button sequence')
         self.sequence.setPlaceholderText('Ctrl+C, Ctrl+V')
         form.addWidget(self.sequence)
-        hint = QLabel('Separate keys or shortcuts with commas. Example: Ctrl+A, Delete. Blank disables the action.')
-        hint.setWordWrap(True)
-        form.addWidget(hint)
+        self.sequence_hint = QLabel()
+        self.sequence_hint.setWordWrap(True)
+        form.addWidget(self.sequence_hint)
+        self.hold_validator = QRegularExpressionValidator(QRegularExpression('[^,]*'), self.sequence)
         self.message = QLabel()
         self.message.setWordWrap(True)
         right.addWidget(self.message)
@@ -664,11 +665,27 @@ class ButtonEditor(QWidget):
         right.insertWidget(0, self.form_scroll, 1)
         right.addWidget(self.actions)
         layout.addLayout(right, 1)
-        self.behaviour.currentIndexChanged.connect(self.update_draft)
+        self.behaviour.currentIndexChanged.connect(self.behaviour_changed)
         for field in (self.key, self.sequence):
             field.textChanged.connect(lambda _text, edit=field: self.normalise_key_field(edit))
         for field in [self.name, *self.icons, self.sequence]:
             field.textChanged.connect(self.update_draft)
+        self.behaviour_changed()
+
+    def behaviour_changed(self, *_):
+        hold = self.behaviour.currentData() == 'hold'
+        self.append_key.setVisible(not hold)
+        self.sequence.setValidator(self.hold_validator if hold else None)
+        self.sequence.setPlaceholderText('Ctrl+C' if hold else 'Ctrl+C, Ctrl+V')
+        self.sequence_hint.setText(
+            'Hold accepts one key or shortcut. Blank disables the action.' if hold else
+            'Separate keys or shortcuts with commas. Example: Ctrl+A, Delete. Blank disables the action.')
+        shortened = hold and ',' in self.sequence.text()
+        if shortened:
+            self.sequence.setText(self.sequence.text().split(',', 1)[0].strip())
+        self.update_draft()
+        if shortened and not self.loading:
+            self.message.setText('Hold accepts one shortcut; kept the first entry. Unsaved changes.')
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -682,6 +699,8 @@ class ButtonEditor(QWidget):
 
     def normalise_key_field(self, field):
         text = normalise_sequence(field.text())
+        if field is self.sequence and self.behaviour.currentData() == 'hold':
+            text = text.split(',', 1)[0].strip()
         if text != field.text():
             cursor = field.cursorPosition()
             blocked = field.blockSignals(True)
@@ -709,6 +728,7 @@ class ButtonEditor(QWidget):
             parts.append(self.key.text().strip())
         chord = '+'.join(parts)
         sequence = self.sequence.text().strip()
+        append = append and self.behaviour.currentData() != 'hold'
         candidate = f'{sequence}, {chord}' if append and sequence else chord
         try:
             if self.modifiers_only.isChecked():

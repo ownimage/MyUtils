@@ -695,3 +695,15 @@ py -3.11 -m venv venv
   Special keys…, while a named key selects the matching entry. Signals are blocked
   during dropdown sync so it cannot overwrite the typed key or affect sequences.
 - Validation: the existing key-entry interaction test now checks reset after typing/clearing and reselecting the same special key. It passed with a clean exit on retry; the first run passed assertions but hit the documented Qt teardown crash. Diff formatting passed.
+
+
+## Hold editor single-entry controls (2026-11-20)
+
+- ButtonEditor hides Append key for Hold, sets a no-comma validator on the
+  sequence field and uses single-shortcut hint/placeholder text. Normal/Repeat
+  restore the append action and multi-entry field. Switching to Hold retains
+  the first entry and reports that change; drafts still require explicit Save.
+- Programmatic multi-entry changes are reduced to the first chord in Hold;
+  apply_key also replaces instead of appending in Hold. Existing model/save
+  validation remains authoritative and still rejects multiple Hold chords.
+- Validation: the Hold profile/editor regression passed, including mode changes, first-entry retention, typing a comma, direct multi-entry updates, forced append, persistence and restoring Normal/Repeat append. Existing key-entry and editor/navigation tests plus all 17 behaviour/input tests also passed with clean exits.
