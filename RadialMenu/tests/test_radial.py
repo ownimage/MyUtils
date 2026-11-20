@@ -62,11 +62,11 @@ class RadialTests(unittest.TestCase):
             restored = next(iter(context.windows))
             self.assertTrue(restored.isVisible())
             self.assertIs(restored.pages['radial-menu'].service, service)
-            service.exit_background()
+            service.tray_menu.actions()[-1].trigger()
             self.assertFalse(service.tray.isVisible())
             self.assertTrue(self.app.quitOnLastWindowClosed())
-            self.assertTrue(restored.isVisible())
-            restored.close()
+            self.assertFalse(restored.isVisible())
+            self.assertEqual(len(context.windows), 0)
             self.app.aboutToQuit.disconnect(service.stop)
             service.tray.hide()
 
@@ -182,3 +182,30 @@ class RadialTests(unittest.TestCase):
         backend.api.SendInput.side_effect = send
         self.assertTrue(backend.send_letter(target, 'l'))
         self.assertEqual(received, [(1, ord('L'), 0), (1, ord('L'), 2)])
+
+    def test_tray_exit_respects_cancelled_ui_close(self):
+        import tempfile
+        from unittest.mock import Mock, patch
+        from photo_tools.shell import SuiteContext, SuiteWindow
+        from radial_gui import RadialService
+        with tempfile.TemporaryDirectory() as folder, patch.object(RadialService, 'start'), \
+                patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=folder+'/settings.ini')
+            host = SuiteWindow(context)
+            host.open_app('radial-menu', force_new=False)
+            host.show()
+            page = host.pages['radial-menu']
+            service = page.service
+            page.dirty = True
+            page._discard = Mock(return_value=False)
+            try:
+                service.exit_background()
+                page._discard.assert_called_once()
+                self.assertIn(host, context.windows)
+                self.assertTrue(host.isVisible())
+                self.assertFalse(service.registered)
+            finally:
+                page.dirty = False
+                host.close()
+                service.stop()
+                self.app.aboutToQuit.disconnect(service.stop)

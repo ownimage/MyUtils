@@ -79,7 +79,7 @@ Choose RadialMenu in the Launcher, then press Ctrl+Alt+Space. Use **Edit Hotkey*
 below **Edit Buttons** in Settings to configure an alternative activation shortcut.
 Change the segment count on the main settings page. Choose **Run in background** to hide to the
 system tray; the global key works in other apps. Double-click the tray icon for
-settings or use its **Exit RadialMenu** menu item to stop listening.
+settings or use its **Exit RadialMenu** menu item to stop listening and close the running UI.
 Standalone: `.\RadialMenu.cmd` (or `.\RadialMenu\run_gui.bat`). The full test command includes RadialMenu.
 
 After updating RadialMenu, choose **Exit RadialMenu** from its tray menu and reopen

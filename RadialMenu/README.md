@@ -14,7 +14,8 @@ The activation key is global and works while another application has focus.
 Choose **Run in background** to hide the Launcher to the system tray. Closing the
 Launcher also leaves RadialMenu listening when the system tray is available.
 Double-click its tray icon to restore settings; right-click and choose **Exit
-RadialMenu** to stop it. Other open suite windows remain open. Without a system
+RadialMenu** to stop it and close the running suite UI. Normal close checks
+for unsaved work and active jobs still apply. Without a system
 tray, Run in background minimises the window and closing the last window exits. A second process using the same hotkey reports
 the conflict and can use another key.
 
@@ -179,3 +180,16 @@ When **Hold** is selected, **Append key** is hidden and the sequence field accep
 only one key or shortcut. Switching a multi-entry sequence to Hold keeps its first
 entry and shows a notice; save explicitly to persist the change. Normal and Repeat
 retain the Append key option and multi-entry sequences.
+
+The button editor uses inline Name, Icon 1, Icon 2, Behaviour and Keys rows.
+Use key and Append key sit beside the key field and special-key selector.
+Hover over the information icons at the end of Behaviour and Keys for help,
+or click them to open a dismissible flyout. Keys help follows the selected behaviour.
+
+The highlighted radial segment identifies the selected button; there is no
+separate button-number heading. Build shares a row with the modifier checkboxes
+and an information icon with builder instructions. The following key input row
+is indented to align with Name, Icons and Keys.
+
+Icon rows show the selected icon itself. Use **Icons…** or **File…** to select an icon,
+and **Clear** to remove it. Hover over a preview to see its reference.

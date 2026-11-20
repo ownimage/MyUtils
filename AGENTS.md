@@ -344,8 +344,8 @@ py -3.11 -m venv venv
 - Run in background hides the host to the system tray. With a tray available,
   automatic quit on last window close is disabled and the listener survives host
   closure. Tray double-click/settings recreates or restores the host. Exit
-  RadialMenu stops listening and restores normal quit behaviour, leaving visible
-  suite windows open. Without a tray, background mode minimises; closing the last
+  RadialMenu stops listening, restores normal quit behaviour and closes suite
+  windows through their normal close flow (including unsaved/busy checks). Without a tray, background mode minimises; closing the last
   host exits. Restart resident code via tray Exit RadialMenu, then relaunch.
 
 ### Popup and input delivery
@@ -707,3 +707,52 @@ py -3.11 -m venv venv
   apply_key also replaces instead of appending in Hold. Existing model/save
   validation remains authoritative and still rejects multiple Hold chords.
 - Validation: the Hold profile/editor regression passed, including mode changes, first-entry retention, typing a comma, direct multi-entry updates, forced append, persistence and restoring Normal/Repeat append. Existing key-entry and editor/navigation tests plus all 17 behaviour/input tests also passed with clean exits.
+
+
+## Compact button editor (2026-11-20)
+
+- Name, Icon 1, Icon 2, Behaviour and Keys labels share rows with their controls.
+  Keys replaces the visible Button sequence label; its accessible name remains
+  Button sequence. Use key/Append key share the key/special-key input row.
+- EditorInfoButton uses remix:fill/information-2.svg, recoloured for theme changes.
+  Behaviour and Keys help moved to end-of-row icons with hover tooltips and
+  keyboard/click-activated, dismissible Fluent flyouts. Keys help still changes
+  for Hold. No new dependency. The scroll area remains for overflow at other
+  font/DPI settings; existing footer and Hold-only restrictions remain intact.
+- Visual QA with Windows Segoe UI: the complete editor fits without horizontal
+  or vertical scrolling at 760x540, 900x620 and 1000x720 in light/dark. Inspected
+  the Behaviour flyout and both theme variants. Offscreen tests without registered
+  fonts show different control heights/widths, so row alignment checks use centres.
+- Validation: all 31 profile/editor, hotkey and behaviour/input tests passed assertions. The layout regression now compares row centres because native/Fluent control heights differ. Key-entry and small-window layout tests exited cleanly on retry; the behaviour/profile test also encountered the previously documented intermittent Qt teardown access violation after passing assertions. Diff formatting passed.
+
+
+## Build row and tray Exit (2026-11-20)
+
+- Removed Button n above the form; the radial selection remains its indicator.
+  Build now labels the modifier row with another Remix information-2 fill help
+  button. Builder instructions explain modifiers, special keys, replace/append
+  and modifier-only actions. The key input row shares the field-label indent.
+  Selector width remains bounded at 240–360px, using 32% of editor width to
+  provide room for complete control text in the compact form.
+- Tray Exit RadialMenu now stops hotkeys/input, hides the tray icon and closes
+  all suite host windows via window.close(), including a hidden host. Explicit
+  quit occurs only when no hosts remain. Deferred busy shutdown and declined
+  unsaved-work prompts retain their normal shell behaviour; no forced quit.
+- Validation: all 7 radial/tray tests, the focused editor/small-window test and all 18 Launch tests passed with clean exits (26 tests). Tray action coverage verifies the listener/tray stop and restored UI closes; a declined close prompt retains its host. Light/dark renders at 760x540, 900x620 and 1000x720 have no horizontal/vertical scrolling. Build/key alignment and info icons were visually checked.
+
+- Icon 1/2 rows in ButtonEditor show visual previews. Users select values
+  through Icons… or File… and remove them with Clear; saved profiles still load
+  normally. References are kept in preview.reference and shown only in tooltips.
+
+- IconPreview replaces the icon reference text fields with 28px thumbnails,
+  rendered through button_icon for library and file icons. Empty slots are blank,
+  unavailable references show ? with explanatory tooltips, and theme changes refresh
+  library colours. referenceChanged retains the existing draft/preview updates.
+- Validation: the existing editor/profile round-trip test passed with a clean exit and now verifies both assigned image previews contain pixmaps. Light/dark preview renders inspected at 760x540, 900x620 and 1000x720; both icon slots and their simultaneous radial previews render correctly without scrolling. Diff formatting passed.
+
+- Icon row picker/file/clear actions now follow the preview immediately, with
+  all spare width after Clear rather than between the preview and actions.
+
+- IconPreview has a fixed 32x32 slot for every state (selected, empty, missing),
+  so Icons…/File…/Clear stay aligned when only one icon slot is populated.
+- Validation: mixed icon/empty states checked in both directions in light/dark at 760x540, 900x620 and 1000x720. All three action-button columns have matching x positions and the form remains free of scrolling. Diff formatting passed.

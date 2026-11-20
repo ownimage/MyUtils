@@ -4,6 +4,7 @@ from ctypes import wintypes
 import math
 import ntpath
 import time
+import textwrap
 import sys
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from application_icons import ApplicationIcons
 from icon_library import IconPicker, button_icon
 from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key, normalise_sequence, normalise_button, BEHAVIOURS
 from photo_tools.fluent import QComboBox, QPushButton, QLineEdit, QCheckBox
-from qfluentwidgets import ToolButton, FluentIcon
+from qfluentwidgets import ToolButton, FluentIcon, TransparentToolButton, ToolTipFilter, Flyout, qconfig, isDarkTheme
 
 
 def popup_geometry(cursor, available, diameter=360):
@@ -262,11 +263,13 @@ class RadialService(QObject):
         self.stop()
         if self.tray is not None:
             self.tray.hide()
-        self.status = 'Stopped. Choose an activation key to restart.'
+        self.status = 'RadialMenu stopped.'
         self.changed.emit()
         app = QApplication.instance()
         app.setQuitOnLastWindowClosed(True)
-        if not any(window.isVisible() for window in self.context.windows):
+        for window in tuple(self.context.windows):
+            window.close()
+        if not self.context.windows:
             app.quit()
 
     def run_in_background(self, window):
@@ -523,6 +526,63 @@ class SingleKeyEdit(QLineEdit):
         super().keyPressEvent(event)
 
 
+class IconPreview(QLabel):
+    referenceChanged = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.reference = ''
+        self.setFixedSize(32, 32)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        qconfig.themeChanged.connect(self.refresh_icon)
+        self.refresh_icon()
+
+    def set_reference(self, reference):
+        if reference == self.reference:
+            return
+        self.reference = reference
+        self.refresh_icon()
+        self.referenceChanged.emit(reference)
+
+    def clear(self):
+        self.set_reference('')
+
+    def refresh_icon(self, *_):
+        icon = button_icon(self.reference, isDarkTheme())
+        self.setToolTip(self.reference if not icon.isNull() else
+                        f'Unavailable icon: {self.reference}' if self.reference else 'No icon selected')
+        if self.reference and not icon.isNull():
+            self.setPixmap(icon.pixmap(28, 28))
+        else:
+            self.setText('?' if self.reference else '')
+
+
+class EditorInfoButton(TransparentToolButton):
+    """Compact help available on hover, click and keyboard activation."""
+    def __init__(self, title, content='', parent=None):
+        super().__init__(parent)
+        self.title = title
+        self.setFixedSize(28, 28)
+        self.setAccessibleName(title + ' information')
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.installEventFilter(ToolTipFilter(self))
+        self.clicked.connect(self.show_help)
+        qconfig.themeChanged.connect(self.refresh_icon)
+        self.refresh_icon()
+        self.set_help(content)
+
+    def refresh_icon(self, *_):
+        self.setIcon(button_icon('remix:fill/information-2.svg', isDarkTheme()))
+
+    def set_help(self, content):
+        self.content = content
+        self.setToolTip(textwrap.fill(content, 52))
+
+    def show_help(self):
+        self.flyout = Flyout.create(title=self.title, content=textwrap.fill(self.content, 52),
+                                   target=self, parent=self.window(), isClosable=True)
+
+
 class ButtonEditor(QWidget):
     def __init__(self, owner):
         super().__init__()
@@ -556,21 +616,26 @@ class ButtonEditor(QWidget):
         form = QVBoxLayout(form_widget)
         form.setContentsMargins(0, 0, 14, 0)
         form.setSpacing(4)
-        self.button_heading = QLabel()
-        form.addWidget(self.button_heading)
-        form.addWidget(QLabel('Name'))
+        def field_row(title):
+            row = QHBoxLayout()
+            row.setSpacing(6)
+            label = QLabel(title)
+            label.setFixedWidth(66)
+            row.addWidget(label)
+            form.addLayout(row)
+            return row
+
+        name_row = field_row('Name')
         self.name = QLineEdit()
         self.name.setMaxLength(40)
         self.name.setAccessibleName('Button name')
-        form.addWidget(self.name)
+        name_row.addWidget(self.name, 1)
         self.icons = []
         for title in ('Icon 1', 'Icon 2'):
-            form.addWidget(QLabel(title))
-            row = QHBoxLayout()
-            field = QLineEdit()
+            row = field_row(title)
+            field = IconPreview()
             field.setAccessibleName(title)
-            field.setPlaceholderText('Choose an image, or leave blank')
-            row.addWidget(field, 1)
+            row.addWidget(field)
             library = QPushButton('Icons…')
             library.clicked.connect(lambda _=False, edit=field: self.choose_library_icon(edit))
             row.addWidget(library)
@@ -580,34 +645,41 @@ class ButtonEditor(QWidget):
             clear = QPushButton('Clear')
             clear.clicked.connect(field.clear)
             row.addWidget(clear)
-            form.addLayout(row)
+            row.addStretch()
             self.icons.append(field)
-        form.addWidget(QLabel('Behaviour'))
+        behaviour_row = field_row('Behaviour')
         self.behaviour = QComboBox()
         self.behaviour.setAccessibleName('Button behaviour')
         for mode, marker in BEHAVIOURS.items():
             self.behaviour.addItem(f'{mode.title()} ({marker})', mode)
-        form.addWidget(self.behaviour)
-        behaviour_hint = QLabel('Press the hotkey to start Hold / Repeat; press again to stop. The following press opens the menu.')
-        behaviour_hint.setWordWrap(True)
-        form.addWidget(behaviour_hint)
-        form.addWidget(QLabel('Build a key or shortcut'))
-        modifiers = QHBoxLayout()
+        behaviour_row.addWidget(self.behaviour, 1)
+        self.behaviour_help = EditorInfoButton('Behaviour',
+            'Press the hotkey to start Hold / Repeat; press again to stop. The following press opens the menu.')
+        behaviour_row.addWidget(self.behaviour_help)
+        modifiers = field_row('Build')
+        modifiers.setSpacing(2)
         self.modifiers = {}
         for name in ('Ctrl', 'Alt', 'Shift', 'Win'):
             check = QCheckBox(name)
             check.setAccessibleName(f'{name} modifier')
             self.modifiers[name] = check
+            check.setMinimumWidth(check.sizeHint().width())
             modifiers.addWidget(check)
         modifiers.addStretch()
         self.modifiers_only = QCheckBox('Modifiers only')
         self.modifiers_only.toggled.connect(self.modifier_only_changed)
+        self.modifiers_only.setMinimumWidth(self.modifiers_only.sizeHint().width())
         modifiers.addWidget(self.modifiers_only)
-        form.addLayout(modifiers)
-        keys = QHBoxLayout()
+        self.build_help = EditorInfoButton('Build',
+            'Choose Ctrl, Alt, Shift or Win, then type a key or choose a special key. '
+            'Use key replaces Keys; Append key adds another shortcut for Normal or Repeat. '
+            'Choose Modifiers only to use the checked modifiers without a key.')
+        modifiers.addWidget(self.build_help)
+        keys = field_row('')
         self.key = SingleKeyEdit()
         self.key.setAccessibleName('Shortcut key')
-        self.key.setPlaceholderText('Type one key, or choose a special key')
+        self.key.setPlaceholderText('Key')
+        self.key.setMinimumWidth(56)
         keys.addWidget(self.key, 1)
         self.special_key = QComboBox()
         self.special_key.setAccessibleName('Special key')
@@ -618,25 +690,21 @@ class ButtonEditor(QWidget):
                 'Left', 'Right', 'Up', 'Down', 'Plus', 'Comma']):
             self.special_key.addItem(name, name)
         self.special_key.currentIndexChanged.connect(self.choose_special_key)
+        self.special_key.setMinimumWidth(126)
         keys.addWidget(self.special_key, 1)
-        form.addLayout(keys)
-        key_actions = QHBoxLayout()
         self.use_key = QPushButton('Use key')
         self.use_key.clicked.connect(lambda: self.apply_key(append=False))
-        key_actions.addWidget(self.use_key)
+        keys.addWidget(self.use_key)
         self.append_key = QPushButton('Append key')
         self.append_key.clicked.connect(lambda: self.apply_key(append=True))
-        key_actions.addWidget(self.append_key)
-        key_actions.addStretch()
-        form.addLayout(key_actions)
-        form.addWidget(QLabel('Button sequence'))
+        keys.addWidget(self.append_key)
+        sequence_row = field_row('Keys')
         self.sequence = QLineEdit()
         self.sequence.setAccessibleName('Button sequence')
         self.sequence.setPlaceholderText('Ctrl+C, Ctrl+V')
-        form.addWidget(self.sequence)
-        self.sequence_hint = QLabel()
-        self.sequence_hint.setWordWrap(True)
-        form.addWidget(self.sequence_hint)
+        sequence_row.addWidget(self.sequence, 1)
+        self.sequence_help = EditorInfoButton('Keys')
+        sequence_row.addWidget(self.sequence_help)
         self.hold_validator = QRegularExpressionValidator(QRegularExpression('[^,]*'), self.sequence)
         self.message = QLabel()
         self.message.setWordWrap(True)
@@ -668,8 +736,10 @@ class ButtonEditor(QWidget):
         self.behaviour.currentIndexChanged.connect(self.behaviour_changed)
         for field in (self.key, self.sequence):
             field.textChanged.connect(lambda _text, edit=field: self.normalise_key_field(edit))
-        for field in [self.name, *self.icons, self.sequence]:
+        for field in (self.name, self.sequence):
             field.textChanged.connect(self.update_draft)
+        for preview in self.icons:
+            preview.referenceChanged.connect(self.update_draft)
         self.behaviour_changed()
 
     def behaviour_changed(self, *_):
@@ -677,7 +747,7 @@ class ButtonEditor(QWidget):
         self.append_key.setVisible(not hold)
         self.sequence.setValidator(self.hold_validator if hold else None)
         self.sequence.setPlaceholderText('Ctrl+C' if hold else 'Ctrl+C, Ctrl+V')
-        self.sequence_hint.setText(
+        self.sequence_help.set_help(
             'Hold accepts one key or shortcut. Blank disables the action.' if hold else
             'Separate keys or shortcuts with commas. Example: Ctrl+A, Delete. Blank disables the action.')
         shortened = hold and ',' in self.sequence.text()
@@ -689,7 +759,7 @@ class ButtonEditor(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        size = min(360, max(240, int(self.width() * .34)))
+        size = min(360, max(240, int(self.width() * .32)))
         self.selector_column.setFixedWidth(size)
         self.ring.setFixedSize(size, size)
 
@@ -745,12 +815,12 @@ class ButtonEditor(QWidget):
     def choose_library_icon(self, field):
         picker = IconPicker(self, dark=self.ring.dark)
         if picker.exec():
-            field.setText(picker.reference)
+            field.set_reference(picker.reference)
 
     def choose_icon(self, field):
         path, _ = QFileDialog.getOpenFileName(self, 'Choose button icon', '', 'Images (*.png *.svg *.ico *.jpg *.jpeg *.bmp)')
         if path:
-            field.setText(path)
+            field.set_reference(path)
 
     def load_application(self, application):
         self.application = application
@@ -768,10 +838,9 @@ class ButtonEditor(QWidget):
         self.loading = True
         self.current = number-1
         button = self.buttons[self.current]
-        self.button_heading.setText(f'Button {number}')
         self.name.setText(button['name'])
-        self.icons[0].setText(button['icon'])
-        self.icons[1].setText(button['secondary_icon'])
+        self.icons[0].set_reference(button['icon'])
+        self.icons[1].set_reference(button['secondary_icon'])
         self.sequence.setText(button['sequence'])
         self.behaviour.setCurrentIndex(self.behaviour.findData(button.get('behaviour', 'normal')))
         for check in self.modifiers.values():
@@ -796,8 +865,8 @@ class ButtonEditor(QWidget):
     def update_draft(self):
         if self.loading or not self.buttons:
             return
-        self.buttons[self.current] = dict(name=self.name.text(), icon=self.icons[0].text(),
-            secondary_icon=self.icons[1].text(), sequence=self.sequence.text(),
+        self.buttons[self.current] = dict(name=self.name.text(), icon=self.icons[0].reference,
+            secondary_icon=self.icons[1].reference, sequence=self.sequence.text(),
             behaviour=self.behaviour.currentData())
         self.ring.update()
         self.message.setText('Unsaved changes')
