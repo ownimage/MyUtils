@@ -28,5 +28,15 @@
     "module": "slideshow_gui",
     "window_class": "SlideshowWindow",
     "icon": "photo"
+  },
+  {
+    "id": "radial-menu",
+    "name": "RadialMenu",
+    "description": "Open a radial menu at the mouse with a global activation key.",
+    "detail": "Configure and activate a radial menu",
+    "folder": "../RadialMenu",
+    "module": "radial_gui",
+    "window_class": "RadialMenuWindow",
+    "icon": "menu"
   }
 ]

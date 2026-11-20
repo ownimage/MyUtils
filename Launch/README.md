@@ -5,7 +5,7 @@ in `P:\git\MyUtils` with the sibling folders `Launch`, `Import`, `Yearbook`, and
 
 ## Start
 
-Double-click **launcher.bat** in the MyUtils root, or **run_gui.bat** in this
+Double-click **Launch.cmd** in the MyUtils root, or **run_gui.bat** in this
 Launch folder. The root batch file delegates to this folder's run_gui.bat. Every app
 uses the single top-level `../venv`, with dependencies from `../requirements.txt`.
 Follow [commands.md](../commands.md) for setup from the MyUtils root.

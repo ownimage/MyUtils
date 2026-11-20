@@ -97,7 +97,7 @@ class SuiteTests(unittest.TestCase):
         dialog.appearance.setCurrentIndex(dialog.appearance.findData('dark'))
         dialog.save()
         state = self.context.preferences.state
-        self.assertEqual(state['order'], ['yearbook', 'camera-import', 'slideshow'])
+        self.assertEqual(state['order'], ['yearbook', 'camera-import', 'slideshow', 'radial-menu'])
         self.assertTrue(state['new_windows']['yearbook'])
         self.assertFalse(state['new_windows']['camera-import'])
         self.assertEqual(state['accent'], '#a34dce')
@@ -140,7 +140,7 @@ class SuiteTests(unittest.TestCase):
             dialog.move_item(-1)
             dialog.save()
             self.assertIs(self.window.stack.currentWidget(), self.window.home)
-            self.assertEqual(list(self.window.tiles), ['yearbook', 'camera-import', 'slideshow'])
+            self.assertEqual(list(self.window.tiles), ['yearbook', 'camera-import', 'slideshow', 'radial-menu'])
             self.assertIs(self.window.tiles_layout.itemAtPosition(0, 0).widget(), original_tiles['yearbook'])
             self.assertIs(self.window.tiles_layout.itemAtPosition(0, 1).widget(), original_tiles['camera-import'])
             camera_theme.assert_not_called()
@@ -168,11 +168,11 @@ class SuiteTests(unittest.TestCase):
             self.direct.append(page)
             self.assertEqual([action.text() for action in page.menuBar().actions()], ['Settings', 'Launch'])
             self.assertEqual(list(page.suite_binding.navigation.launch_actions),
-                             ['camera-import', 'yearbook', 'slideshow'])
-        self.context.preferences.update(order=['yearbook', 'camera-import', 'slideshow'])
+                             ['camera-import', 'yearbook', 'slideshow', 'radial-menu'])
+        self.context.preferences.update(order=['yearbook', 'camera-import', 'slideshow', 'radial-menu'])
         for page in self.direct:
             self.assertEqual(list(page.suite_binding.navigation.launch_actions),
-                             ['yearbook', 'camera-import', 'slideshow'])
+                             ['yearbook', 'camera-import', 'slideshow', 'radial-menu'])
 
     def test_cross_process_settings_update_every_open_app(self):
         self.window.open_app('camera-import')
@@ -185,7 +185,7 @@ class SuiteTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.context.preferences.refresh()
         self.assertIn('#ae395a', self.window.styleSheet())
-        self.assertEqual(list(self.window.navigation.launch_actions), ['yearbook', 'camera-import', 'slideshow'])
+        self.assertEqual(list(self.window.navigation.launch_actions), ['yearbook', 'camera-import', 'slideshow', 'radial-menu'])
         for page in self.window.pages.values():
             self.assertIn('#ae395a', page.styleSheet())
             self.assertTrue(page.is_dark)
@@ -243,7 +243,7 @@ class SuiteTests(unittest.TestCase):
         self.assertIsNone(apps._drag_item)
         self.assertIsNone(apps._drag_overlay)
         dialog.save()
-        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import', 'slideshow'])
+        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import', 'slideshow', 'radial-menu'])
         self.assertTrue(self.context.preferences.state['new_windows']['camera-import'])
         dialog.deleteLater()
 
@@ -386,7 +386,7 @@ dialog.close()
         self.context.preferences.settings.setValue('suite/state', json.dumps({
             'order': ['yearbook', 'missing-app', 'yearbook'], 'accent': 32, 'new_windows': []}))
         self.context.preferences.refresh()
-        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import', 'slideshow'])
+        self.assertEqual(self.context.preferences.state['order'], ['yearbook', 'camera-import', 'slideshow', 'radial-menu'])
         self.assertEqual(self.context.preferences.state['accent'], '#246b53')
 
 

@@ -37,8 +37,9 @@ and validation. Read it before making changes anywhere in this repository.
 | `requirements.txt` | Combined GUI, import and image dependencies |
 | `venv/` | Shared Python 3.11 environment; generated, not source |
 | `commands.md` | Setup, launch, and full-test commands |
-| `run_tests.py` | Runs all four suites in separate processes |
-| `launcher.bat` | Root launch command; delegates to `Launch/run_gui.bat` |
+| `run_tests.py` | Runs all five suites in separate processes |
+| `RadialMenu.cmd` | Root RadialMenu command; delegates to `RadialMenu/run_gui.bat` |
+| `Launch.cmd` | Root launch command; delegates to `Launch/run_gui.bat` |
 | `Launch/launcher.py` | Python launcher entry point |
 | `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders |
 | `Launch/photo_tools/` | Shared shell, navigation, settings, Fluent controls, theme |
@@ -54,13 +55,22 @@ and validation. Read it before making changes anywhere in this repository.
 | `Slideshow/template.json` | Optional user default, created by Save user default |
 | `Slideshow/render_slide.py` | Legacy single-image native render command |
 | `Slideshow/slideshow.py` | Compatibility create_slide API for native rendering |
+| `RadialMenu/radial_gui.py` | Configuration page, button editor, radial popup, tray service |
+| `RadialMenu/activation_monitor.py` | Temporary physical activation capture for Hold/Repeat |
+| `RadialMenu/windows_input.py` | Windows hotkeys' target capture, app discovery/icons, key injection |
+| `RadialMenu/button_profiles.py` | Per-executable button profiles, migration, sequence validation |
+| `RadialMenu/icon_library.py` | Manifest discovery, offline icon picker and lazy SVG rendering |
+| `RadialMenu/application_icons.py` | Persistent application-icon cache beside shared settings |
+| `RadialMenu/import_icon_set.py` | Maintenance importer/updater for offline SVG libraries |
+| `RadialMenu/assets/` | Tabler, Phosphor, Lucide, Remix SVGs, manifests and licenses |
+| `RadialMenu/about_page.py` | Offline icon attributions and full license notices |
 
 ## Shared GUI architecture
 
 - `photo_tools/shell.py` owns `SuiteContext`, `SuiteWindow`, shared navigation,
   page lifetime, window placement, app switching, and closing while work is busy.
 - Apps are loaded lazily using `registry.py` and `Launch/apps.json`. Current IDs
-  are `camera-import`, `yearbook`, and `slideshow`. Adding an app updates the
+  are `camera-import`, `yearbook`, `slideshow`, and `radial-menu`. Adding an app updates the
   launcher tiles, Launch menu, and Settings > Apps through this registry.
 - A compatible view is a `QMainWindow` taking `directory=''` and keyword-only
   `suite=None`. After building its UI, call `bind_window(self, app_id, suite)`.
@@ -207,7 +217,7 @@ py -3.11 -m venv venv
 .\venv\Scripts\python.exe -m pip install -r requirements.txt
 .\venv\Scripts\python.exe .\run_tests.py
 .\venv\Scripts\python.exe -m pip check
-.\launcher.bat
+.\Launch.cmd
 ```
 
 - `run_tests.py` uses its own interpreter for each suite, with each app directory
@@ -228,7 +238,7 @@ py -3.11 -m venv venv
 - Offscreen Qt may expose no installed fonts in a restricted environment.
   Register Windows Segoe UI with QFontDatabase in the visual-check harness when
   necessary; missing-glyph screenshots are not automatically a production bug.
-- Latest full validation on 2026-11-16: all 113 tests passed (Launch 18,
+- Pre-RadialMenu baseline validation on 2026-11-16: all 113 tests passed (Launch 18,
   Import 27, Yearbook 19, Slideshow 49) after parallel rendering and transparent
   overlay reuse. Checks prove concurrent workers, CPU-count sizing, coordinator-only
   font rendering, PNG cache reuse after memory eviction, transparent backgrounds,
@@ -265,7 +275,7 @@ py -3.11 -m venv venv
 - Added a root test runner and commands.md; this file is the ongoing architecture,
   decision, and gotcha record and must be maintained with future changes.
 
-- Moved launcher.bat to the repository root so the main entry point sits beside
+- Moved launcher.bat (now Launch.cmd) to the repository root so the main entry point sits beside
   commands.md, requirements.txt, and the shared environment.
 
 - Adopted native rendering and a visual template editor. Superseding storage
@@ -312,3 +322,437 @@ py -3.11 -m venv venv
   Feature file content was verified unchanged; all 113 tests passed after rebase.
   The interrupted index/rebase/files were backed up under .git and the original
   tip retained in refs/backup/slideshow-before-main-rebase-20261116.
+
+## RadialMenu (current behaviour, 2026-11-19)
+
+### Launcher, background lifetime and activation
+
+- Registered as `radial-menu` in Launch/apps.json. RadialMenuWindow follows the
+  shared QMainWindow/bind_window contract; standalone uses the shared run_app
+  shell and root environment. No extra environment or runtime dependency.
+- One RadialService per SuiteContext owns the independent top-level RadialPopup,
+  native hotkey filter, delivery timer and system-tray icon. Shared theme/accent
+  changes update the popup. Default activation is Ctrl+Alt+Space; Edit Hotkey accepts a single supported
+  key with optional Ctrl/Alt/Shift/Win modifiers (Escape is reserved for cancellation). RegisterHotKey uses MOD_NOREPEAT. Registration conflicts
+  appear inline; separate processes must use distinct activation keys.
+- HotkeyFilter uses QAbstractNativeEventFilter for windows_dispatcher_MSG and
+  windows_generic_MSG. Start/stop install/remove it with the registration;
+  aboutToQuit releases the registration. Do not restore timer-based PeekMessage
+  polling: Qt consumed WM_HOTKEY before that timer, breaking background activation.
+  Tests must post native messages and let Qt dispatch them, rather than directly
+  calling the handler. Earlier direct polling smoke checks missed this bug.
+- Run in background hides the host to the system tray. With a tray available,
+  automatic quit on last window close is disabled and the listener survives host
+  closure. Tray double-click/settings recreates or restores the host. Exit
+  RadialMenu stops listening, restores normal quit behaviour and closes suite
+  windows through their normal close flow (including unsaved/busy checks). Without a tray, background mode minimises; closing the last
+  host exits. Restart resident code via tray Exit RadialMenu, then relaunch.
+
+### Popup and input delivery
+
+- Frameless, translucent, always-on-top popup shows only the radial segments and
+  the top-right settings cog. Default segment count is 12 (a–l), configurable
+  globally from 2 to 26. Position clamps to the cursor screen's available geometry,
+  including negative monitor coordinates; diameter shrinks on tiny screens.
+- Left-click selects a segment. Escape, right-click, centre/outside click or focus
+  loss dismisses it. The cog hides the popup and opens RadialMenu configuration,
+  preselecting the captured executable. Opening settings cancels pending input.
+- Hotkey activation captures HWND/PID/thread before showing the popup, excludes
+  this process's own windows and resolves the executable via a typed
+  QueryFullProcessImageNameW call. It loads that executable's saved button profile;
+  unconfigured applications use letter defaults. Invalid active profiles report
+  an error instead of silently discarding their configuration.
+- Selecting a Normal button hides the popup, requests original-window focus once and
+  polls every 20ms for up to five seconds. Send only when the same HWND/PID/thread
+  remains valid and foreground, with Ctrl/Alt/Shift/Windows and mouse buttons
+  released. Closed/changed target, timeout, new activation or stop cancels input.
+  A blank sequence disables the action. Tray preview and editing never send input.
+- windows_input.py uses pointer-sized Windows API types and correctly sized
+  INPUT unions. SendInput sends a single batch of key down/up pairs, balancing
+  modifiers per chord and setting extended flags for navigation/Win keys. The
+  focus/modifier guard is checked again immediately before sending. There is one
+  delivery attempt; failure is reported. Keyboard state/layout and target-app
+  shortcut handling apply. Windows integrity restrictions may reject injection
+  into applications with higher privileges.
+- Sequences support up to 32 comma-separated keys/chords, e.g. Ctrl+A, Ctrl+C.
+  Modifiers: Ctrl, Alt, Shift, Win. Keys: ASCII letters/digits, F1–F24, Enter,
+  Return, Tab, Space, Escape/Esc, Backspace, Delete, Insert, Home, End, PageUp,
+  PageDown, arrows, Plus and Comma. Unsupported syntax is rejected before saving.
+  This is key injection, not arbitrary command execution or text expansion.
+
+### Configuration, editor and profile storage
+
+- Application dropdown combines running taskbar-style apps with configured
+  executables, deduplicated by normalised full executable path. It refreshes on
+  opening, preserves selection if still listed and marks closed saved profiles
+  '(configured)'. The selected-app control also shows its icon. File browsing
+  supports configuring another executable that is not running.
+- WindowsInput.running_applications excludes tool, owned utility and cloaked
+  windows. Icon extraction uses bounded WM_GETICON/SendMessageTimeout, then class
+  icons, then QFileIconProvider. QImage.fromHICON copies borrowed handles; never
+  destroy another application's icon handle.
+- ApplicationIcons caches 48px PNGs under the shared settings file's sibling
+  RadialMenu/app-icons directory, with SHA-256 filenames from normalised executable
+  paths and atomic QSaveFile commits. Closed configured apps retain their cached
+  icons across restarts, even if their executable becomes unavailable. Temporary
+  settings paths isolate the cache in tests.
+- Edit Buttons opens ButtonEditor directly with button 1 selected; there is no
+  intermediate radial popup. Application name/path appears at the top, embedded
+  radial selector on the left and button fields on the right. Clicking another
+  segment switches fields and retains drafts. Embedded RadialPopup uses Widget
+  flags, stays visible on segment selection/focus loss, and highlights selection.
+- Fields are Name, Icon 1, Icon 2, Behaviour and Button sequence. Both icons display together
+  above the name, before and during hover; either can be empty. Both slots share
+  all four icon libraries, with Icons… for the offline picker and File… for images.
+  Labels elide to segment width. Draft names/icons update the editor ring live.
+- Save Buttons persists all drafts for the selected executable. Save and Back
+  saves then returns to configuration; Cancel returns without saving. Drafts are
+  held in the page and should be saved explicitly before closing the host. Runtime
+  activation reloads the saved profile, not unsaved editor drafts.
+- Shared QSettings keys: radial/key, radial/count and radial/profiles. Profiles
+  are JSON keyed by case-normalised full executable path, then zero-based slot
+  strings. Each of 26 slots stores name, icon, secondary_icon, sequence and behaviour.
+  Missing behaviour migrates to normal; unknown values fail validation. Hold
+  permits one chord only (or blank to disable), while Repeat permits sequences.
+  Existing hover_icon is migrated into secondary_icon on read and canonicalised
+  on Save. Preserve this migration: the second icon is simultaneous, not a hover
+  alternative. Validate sequences before replacing a profile; report save errors.
+
+### Offline libraries, stable identities and updates
+
+- Bundled assets: Tabler Icons 3.52.0 Design (461 SVG variants), Phosphor 2.1.1
+  (9,072 variants), lucide-static 1.76.0 (2,404 outline SVGs, including upstream
+  aliases), and Remix Icon 4.9.1 (3,229 line/fill/regular SVGs). Total: 15,166.
+  All retain original SVG contents, source/version/archive SHA-256 and exact
+  bundled license texts. No runtime network calls or new package dependency.
+- Licenses: Tabler/Phosphor MIT; Lucide ISC plus MIT for Feather-derived icons
+  (including the original list and Cole Bemis notice); Remix Icon License v1.0,
+  not Apache 2.0. Preserve Remix's full terms and notices when distributing this
+  functional app; its icons remain separately licensed from other assets.
+- AboutPage (about_page.py), reached by About & Licenses in configuration, lists
+  all libraries with versions, attribution, links to their sites/releases and
+  every bundled license/copyright notice verbatim. A contents list jumps between
+  sets. IconPicker also opens this information in a dialog. Notices are readable
+  offline; external links open only when clicked. Manifest metadata supplies
+  website/license_label/attribution; future manifests have generic fallbacks.
+- icon_library.py discovers assets/*/manifest.json. Permanent IDs use
+  <set-id>:<style>/<name>.svg, e.g. tabler:outline/palette.svg and
+  phosphor:regular/palette.svg. Display labels include library/style/name.
+  Same-name icons are kept in both sets; version is manifest metadata, never part
+  of assignment identity. Existing Tabler references remain valid.
+- Manifests contain id/label/version/source/checksum and icons with name/style/
+  path/tags. Set IDs are permanent lowercase namespaces. New conforming manifests
+  add libraries without picker code changes. File paths are allowlisted; absolute,
+  traversal and noncanonical manifest paths are rejected lexically.
+- Picker offers set/style filters and keyword search across all 15,166 active SVG
+  variants. A native QStyledItemDelegate lazily renders visible thumbnails with
+  bounded icon caching. Replace currentColor in memory for light/dark contrast.
+  Do not use the Fluent list delegate for this IconMode grid: its labels were
+  missing. Avoid per-entry filesystem resolves: cold opening measured 0.20s after
+  replacing them with lexical validation; the palette filter drew 13 thumbnails.
+- import_icon_set.py is a maintenance-only offline importer for pinned archives.
+  It supports styles (Phosphor), flat (Lucide) and remix (category folders with
+  -line/-fill suffixes; unsuffixed icons use regular) layouts, --prefix and
+  --license-name overrides. It validates
+  XML and IDs before writes, normalises style suffixes, atomically replaces SVGs
+  and publishes the manifest last. Other archive layouts must map to the same
+  manifest contract. Setup/reimport commands are in commands.md and the README.
+- Updating under the same set ID retains missing upstream entries/files as
+  retired=true so existing assignments still resolve; the picker hides retired
+  entries. Never pre-delete a library folder before updating. Restart the resident
+  app after library updates because catalog indexes are cached. Review upstream
+  licenses on every update; update curated attribution metadata if terms change.
+  The importer preserves website/license_label/attribution across updates.
+
+### Validation and known limits
+
+- Latest full run on 2026-11-19: all 132 tests passed (Launch 18, Import 27,
+  Yearbook 19, Slideshow 49, RadialMenu 19). This includes all four libraries,
+  simultaneous icons and About & Licenses. All 15,166 SVG variants rendered in
+  light/dark; collision retention, filters, legacy references, importer layouts,
+  future namespace import and retired-ID preservation passed. License tests
+  compare exact upstream notices and verify About navigation. Migration and
+  pixel checks prove both assigned icons stay visible before/during hover.
+- Other regression coverage includes native message dispatch while hidden,
+  tray persistence/host recreation, target/modifier gating, one delivery attempt,
+  preview cancellation, invalid-target/timeout handling, input structure layout,
+  balanced shortcut payloads, profile isolation/reload, invalid-save preservation,
+  button-switch draft retention, cached app icons and direct editor navigation.
+- Visual checks covered light/dark popup and cog, editor layout, selected-app
+  icon/text spacing, combined library picker and two simultaneous icons. A native
+  desktop smoke check enumerated 10 taskbar-style apps and copied 10 window icons.
+- Real end-to-end key delivery into another application remains unverified:
+  Windows prevented the isolated receiver from acquiring foreground focus in the
+  automation session. Native message delivery and input payloads were tested;
+  those results do not prove physical-hotkey-to-external-app delivery.
+- About/license-page layout was rendered and inspected with Segoe UI; full
+  notices wrap without horizontal overflow. New tests compare every exact LICENSE
+  with the generated page, cover navigation and both new archive layouts.
+
+## Changes on 2026-11-20
+
+- Renamed the root launcher to Launch.cmd to match Launch/; RadialMenu.cmd
+  delegates to RadialMenu/run_gui.bat. Both forward arguments and exit codes.
+- ButtonEditor offers Ctrl/Alt/Shift/Win checkboxes, typed keys and a special-key
+  dropdown including F1–F24 and all supported named keys. Use key replaces the
+  sequence; Append key adds a comma-separated chord. Both validate before editing.
+  The editable sequence and profile schema remain compatible. Selecting a button
+  resets the builder and reflects its existing single chord.
+- Validation: all 19 RadialMenu and 18 Launch tests passed on 2026-11-20.
+  Editor coverage exercises all special-key options, combined modifiers,
+  append/replace, profile persistence and empty-key protection. Isolated batch
+  stubs verified both root wrappers from a different working directory and paths
+  containing spaces, including argument and exit-code forwarding. Rendered editor
+  layout inspected at the default host size; no clipping. External-app input
+  delivery was not retested; the existing limitation above still applies.
+- Standardised both root entry points on .cmd (Launch.cmd and RadialMenu.cmd).
+  These wrappers run under cmd.exe; neither needs legacy DOS .bat compatibility.
+  Repeated isolated wrapper checks passed after the extension change.
+- Letter key tokens now normalise to uppercase in both editor key fields,
+  profile loading/saving and default sequences. Button names retain their case.
+  normalise_sequence preserves incomplete edits and spacing; validation remains
+  authoritative at save. Uppercase never adds an implicit Shift modifier.
+- Uppercase normalization validation: 7 profile/editor tests and 6 radial/input
+  tests passed. Coverage verifies old-profile loading, canonical persisted text,
+  immediate editor conversion and unchanged virtual keys/modifier payloads.
+- SingleKeyEdit now overtypes each typed key and keeps only the last inserted
+  character on paste, independent of cursor position. Backspace/Delete clear the
+  whole key. Named keys from the dropdown or profile loading remain intact;
+  sequence text still supports multiple chords. Space/plus/comma map to names.
+- TDD: added an interaction regression first and observed failure (typing abc
+  produced Abc rather than C), then implemented SingleKeyEdit. All 8 profile/editor
+  tests pass, covering overtyping, cursor position, uppercase, paste, clearing,
+  special-key selection and preservation of the multi-chord sequence editor.
+
+## Button behaviours (2026-11-20)
+
+- Per-button Behaviour dropdown: normal (.), hold (-), repeat (...). RadialPopup
+  draws a marker near each segment's outer edge without replacing its name/icons.
+- Normal retains one-shot guarded delivery. Hold/Repeat selection hides the menu
+  and restores the captured HWND/PID/thread, with a five-second initial focus
+  timeout. Release the menu-opening main key, then tap to start and tap again
+  to stop; Ctrl/Alt may remain held across selection. Hold injects one chord's downs once. Repeat sends balanced sequences
+  immediately and at most every 100ms. Release does not stop either mode. Both modes leave the menu hidden on
+  the stopping press; the next press opens it, per the user's updated instructions.
+- activation_monitor.py installs WH_KEYBOARD_LL only for the armed action, tracks
+  physical/remapped key downs/ups (including left/right modifiers), and ignores
+  only our own tagged injected events. The initial opening press releases normally; the subsequent activation
+  components are swallowed so hotkey Ctrl/Alt do not contaminate output. Escape
+  cancels. RegisterHotKey is suspended during capture and restored on completion
+  to prevent configured output from generating recursive WM_HOTKEY messages.
+- WindowsInput gesture methods check original-target focus, physical trigger and
+  unrelated modifiers/mouse buttons immediately before injection (active Hold
+  permits mouse use so modifier-only holds support modified dragging). Cancel on focus
+  loss, invalid target, Escape, settings/preview, stop or delivery failure. Track
+  actually inserted downs after partial SendInput, release in reverse order even
+  after focus loss, and retry a failed cleanup batch once. Retain failed cleanup
+  state for another attempt on stop/next cancellation. Hook and registration
+  failures report errors. No new dependency; Normal needs no keyboard hook.
+- Added profile/editor and runtime tests before implementation and observed their
+  failures. New coverage exercises migration, persisted behaviours, Hold chord
+  validation, initial-release/fresh-press arming, hold/repeat/release, cancellation,
+  repeat timing, registration restoration, hook failure, real native hook install
+  and removal, exact injected payloads and partial-send cleanup. End-to-end
+  physical keyboard delivery to an external application remains unverified.
+- Validation: the full 31-test RadialMenu run passed; after adding three extra
+  lifecycle/marker/cleanup tests and strengthening cleanup, all 27 runtime,
+  profile/editor and radial tests passed again (34 total with the 7 unchanged
+  offline tests from the full run). All 18 Launch tests passed. Light/dark editor
+  renders inspected at default host size: mode markers and dropdown are visible,
+  both icon slots remain intact and Save actions fit. Diff formatting passed.
+
+## Modifier-only actions and compact editor (2026-11-20)
+
+- Modifiers only in the button builder sends one or more checked modifiers with
+  no ordinary key. Sequence syntax accepts Ctrl, Ctrl+Alt, Shift+Win etc. Parser
+  represents these as (modifiers, None); all three injection paths omit the absent
+  key and balance actual modifier downs/ups. Duplicate modifiers and empty chords
+  remain invalid. Hold permits mouse use once active, retaining target/modifier
+  guards and release/cancel cleanup, so held modifiers can be used when dragging.
+- Edit Buttons — executable is the actual window title, restored to RadialMenu
+  on leaving the editor. No large heading occupies the content area. The app name
+  remains above the left selector with the full path in its tooltip; the form
+  starts at the top right. The selector scales from 240 to 360px. A native Qt scroll
+  area hosts the form; status and Save/Back/Cancel stay outside it and visible.
+  Scroll surfaces are transparent to preserve light/dark theme contrast.
+- CurrentPageStack in shell.py computes size hints from the active page only;
+  hidden launcher/app pages no longer force the RadialMenu editor beyond the
+  screen. RadialMenu allows a 760x540 minimum host size; the launcher and other
+  apps retain their 980x860 minimum. Configuration also scrolls. Other app page
+  instances and edits remain retained when switching pages.
+- TDD: observed failing modifier parsing/payload and title/layout tests first.
+  Coverage includes modifier-only save/load and builder restoration, no empty
+  modifier actions, exact Normal/Hold/Repeat payloads, mouse use during Hold,
+  title-bar state and form/footer geometry in a 900x620 host.
+- Opening RadialMenu clamps a non-maximized host's size and position to the
+  available screen with room for its native frame/title bar. The short-screen
+  regression verifies this against a simulated 1024x700 available area.
+- Validation: all 31 affected RadialMenu runtime/editor/input tests and all 18
+  Launch tests passed with exit code 0. Renders checked at 1000x720, 900x620 and
+  760x540 in light/dark. Native Qt scroll areas use scoped scrollbar styling.
+  Combined offscreen modules have intermittently crashed during native Qt teardown,
+  even with native scroll areas; this is not proven to be caused by Fluent scroll
+  wrappers. Isolating test modules in separate processes gives clean exits.
+
+## Toggle Hold/Repeat and remapped activation fix (2026-11-20)
+
+- Updated user requirement: both Hold and Repeat start on the first fresh hotkey
+  press after selection and stop on the next press. Hotkey release does not stop
+  either mode. Both stop and leave the following press to open the menu.
+- ActivationMonitor counts rising complete-chord edges, not key auto-repeat, so
+  quick taps completed between timer ticks still start/stop actions. Tag every
+  SendInput KEYBDINPUT with process-specific INPUT_TAG. Ignore only that tagged
+  output; previously ignoring every LLKHF_INJECTED event prevented activation
+  from mouse software/remappers. Foreign injected hotkeys now work without our
+  configured output changing activation state or triggering recursion.
+- Tests first reproduced ignored remapper activation and failed quick-tap Hold;
+  after clarification, added failing Repeat-toggle and separate menu-opening coverage.
+  Native opt-in test (test_native_activation.py; command in commands.md) acquired
+  a real foreground receiver, injected untagged Ctrl+Alt+Space remapper input,
+  verified repeated balanced F24 presses with no leaked Ctrl/Alt, release
+  persistence, stopping with the menu hidden and quick-tap Hold down/up across two taps.
+  This verifies native hook/SendInput/Qt delivery to our own isolated receiver;
+  real hardware and other applications still need hands-on verification.
+- Validation: all 32 affected RadialMenu runtime/editor/radial regression tests
+  passed with exit code 0; native receiver integration also passed with the final
+  toggle logic. Active toggled actions allow mouse use while retaining target
+  focus and unrelated-modifier guards; Repeat no longer stops just on a click.
+
+- Repeat stopping behaviour revised per user: the stop press leaves the menu
+  hidden, exactly like Hold. The following fresh hotkey press opens the menu.
+  Updated the regression first and observed it fail, then removed immediate
+  reopening and updated runtime hints, status, README and commands.
+
+## First Hold activation press (2026-11-20)
+
+- TDD reproduced the extra-press bug in both unit and native receiver tests:
+  selecting Hold with Ctrl/Alt still held left ActivationMonitor waiting for all
+  hotkey components to release, so the next Space tap was discarded. Readiness
+  now depends only on releasing the main activation key (Space/R/F8). The first
+  post-selection hotkey press starts Hold, even when modifiers stay held.
+- begin_gesture clears logical downs for physically held activation modifiers
+  using tagged key-ups while retaining their captured physical state. This
+  prevents Ctrl/Alt leaking into the configured combo and does not count as a new
+  activation. Right Ctrl/Alt releases carry extended flags. Selection still sends
+  no configured key; the second subsequent press stops, leaving the menu hidden.
+- Native integration now seeds Ctrl+Alt across selection, taps Space exactly
+  once, asserts one unmodified F24 down, and asserts key-up on the second tap.
+  It first failed with zero F24 events, then passed after the fix. The receiver
+  may briefly join the foreground input queue to activate its own test window;
+  it detaches before injection and still checks focus before sending any downs.
+- Final validation: 17 behaviour/input, 11 profile/editor and 6 radial tests all
+  passed in isolated processes with clean exits. The native receiver test also
+  passed (35 tests total). Diff formatting passed. A combined offscreen run passed
+  all assertions but hit the intermittent Qt teardown crash noted above; module
+  isolation was used for the final verification rather than treating that crash
+  as a successful run.
+
+
+## Custom activation hotkey (2026-11-20)
+
+- Edit Hotkey sits directly below Edit Buttons on RadialMenu configuration and
+  opens an embedded page with Save Hotkey and Cancel. Opening it cancels pending
+  input and hides the popup. Cancel discards its draft; Save validates one chord,
+  registers it immediately and persists radial/key. The configuration summary
+  follows changes. Failed registration restores the previous listener and leaves
+  the editor open with an inline error; invalid syntax does not stop listening.
+- activation_monitor.parse_hotkey shares the button sequence parser but rejects
+  multiple chords, modifier-only chords and Escape. Both normal registration and
+  Hold/Repeat use it, including Shift and either Windows key. Gesture setup clears
+  held Shift/Win activation modifiers as well as Ctrl/Alt to avoid contaminating
+  configured output. Existing preset settings remain compatible.
+- Validation: all 43 RadialMenu tests and 18 Launch tests passed. The 11 profile
+  tests passed with clean exits when isolated individually; running that whole
+  module still hits the previously documented Qt teardown access violation after
+  assertions pass. A native-platform attempt also hit a platform-dependent icon
+  pixel assertion; the supported offscreen checks passed. New coverage verifies
+  custom modifier mapping, rejected chords, button placement, page navigation,
+  Save/Cancel, conflict recovery, persisted reload and native-registration flags.
+  Light/dark settings and editor renders inspected at 900x620 with Segoe UI.
+  Physical hotkey delivery to external applications was not retested.
+
+
+## Hotkey builder and live validation (2026-11-20)
+
+- HotkeyEditor now uses Ctrl/Shift/Alt/Windows checkboxes, SingleKeyEdit and a
+  special-key dropdown, mirroring the button builder. It loads existing chords
+  into those controls, displays the assembled shortcut and synchronises the
+  dropdown when typing. Escape is excluded from the dropdown and still rejected
+  by parse_hotkey. Save is disabled for missing/invalid/unavailable shortcuts.
+- Live availability checks briefly RegisterHotKey with HOTKEY_ID + 1 and release
+  it immediately. The existing listener remains registered; the current chord
+  is recognised by parsed key/modifier values without probing. The native filter
+  ignores the probe ID. Save checks registration again to handle availability
+  changing after validation; its previous-listener recovery remains in place.
+- Validation: all 3 hotkey tests, 17 behaviour/input tests and 18 Launch tests
+  passed with clean exits. Coverage includes typing/overtyping, dropdown sync,
+  invalid/empty/reserved keys, live availability conflict, immediate probe release,
+  preserving the listener, Save/Cancel and registration-time conflict recovery.
+  Light/dark renders inspected at the 760x540 host minimum; controls and footer fit.
+
+- ButtonEditor now synchronises its special-key dropdown with its key field,
+  matching HotkeyEditor: typing a letter/digit or clearing the key resets it to
+  Special keys…, while a named key selects the matching entry. Signals are blocked
+  during dropdown sync so it cannot overwrite the typed key or affect sequences.
+- Validation: the existing key-entry interaction test now checks reset after typing/clearing and reselecting the same special key. It passed with a clean exit on retry; the first run passed assertions but hit the documented Qt teardown crash. Diff formatting passed.
+
+
+## Hold editor single-entry controls (2026-11-20)
+
+- ButtonEditor hides Append key for Hold, sets a no-comma validator on the
+  sequence field and uses single-shortcut hint/placeholder text. Normal/Repeat
+  restore the append action and multi-entry field. Switching to Hold retains
+  the first entry and reports that change; drafts still require explicit Save.
+- Programmatic multi-entry changes are reduced to the first chord in Hold;
+  apply_key also replaces instead of appending in Hold. Existing model/save
+  validation remains authoritative and still rejects multiple Hold chords.
+- Validation: the Hold profile/editor regression passed, including mode changes, first-entry retention, typing a comma, direct multi-entry updates, forced append, persistence and restoring Normal/Repeat append. Existing key-entry and editor/navigation tests plus all 17 behaviour/input tests also passed with clean exits.
+
+
+## Compact button editor (2026-11-20)
+
+- Name, Icon 1, Icon 2, Behaviour and Keys labels share rows with their controls.
+  Keys replaces the visible Button sequence label; its accessible name remains
+  Button sequence. Use key/Append key share the key/special-key input row.
+- EditorInfoButton uses remix:fill/information-2.svg, recoloured for theme changes.
+  Behaviour and Keys help moved to end-of-row icons with hover tooltips and
+  keyboard/click-activated, dismissible Fluent flyouts. Keys help still changes
+  for Hold. No new dependency. The scroll area remains for overflow at other
+  font/DPI settings; existing footer and Hold-only restrictions remain intact.
+- Visual QA with Windows Segoe UI: the complete editor fits without horizontal
+  or vertical scrolling at 760x540, 900x620 and 1000x720 in light/dark. Inspected
+  the Behaviour flyout and both theme variants. Offscreen tests without registered
+  fonts show different control heights/widths, so row alignment checks use centres.
+- Validation: all 31 profile/editor, hotkey and behaviour/input tests passed assertions. The layout regression now compares row centres because native/Fluent control heights differ. Key-entry and small-window layout tests exited cleanly on retry; the behaviour/profile test also encountered the previously documented intermittent Qt teardown access violation after passing assertions. Diff formatting passed.
+
+
+## Build row and tray Exit (2026-11-20)
+
+- Removed Button n above the form; the radial selection remains its indicator.
+  Build now labels the modifier row with another Remix information-2 fill help
+  button. Builder instructions explain modifiers, special keys, replace/append
+  and modifier-only actions. The key input row shares the field-label indent.
+  Selector width remains bounded at 240–360px, using 32% of editor width to
+  provide room for complete control text in the compact form.
+- Tray Exit RadialMenu now stops hotkeys/input, hides the tray icon and closes
+  all suite host windows via window.close(), including a hidden host. Explicit
+  quit occurs only when no hosts remain. Deferred busy shutdown and declined
+  unsaved-work prompts retain their normal shell behaviour; no forced quit.
+- Validation: all 7 radial/tray tests, the focused editor/small-window test and all 18 Launch tests passed with clean exits (26 tests). Tray action coverage verifies the listener/tray stop and restored UI closes; a declined close prompt retains its host. Light/dark renders at 760x540, 900x620 and 1000x720 have no horizontal/vertical scrolling. Build/key alignment and info icons were visually checked.
+
+- Icon 1/2 rows in ButtonEditor show visual previews. Users select values
+  through Icons… or File… and remove them with Clear; saved profiles still load
+  normally. References are kept in preview.reference and shown only in tooltips.
+
+- IconPreview replaces the icon reference text fields with 28px thumbnails,
+  rendered through button_icon for library and file icons. Empty slots are blank,
+  unavailable references show ? with explanatory tooltips, and theme changes refresh
+  library colours. referenceChanged retains the existing draft/preview updates.
+- Validation: the existing editor/profile round-trip test passed with a clean exit and now verifies both assigned image previews contain pixmaps. Light/dark preview renders inspected at 760x540, 900x620 and 1000x720; both icon slots and their simultaneous radial previews render correctly without scrolling. Diff formatting passed.
+
+- Icon row picker/file/clear actions now follow the preview immediately, with
+  all spare width after Clear rather than between the preview and actions.
+
+- IconPreview has a fixed 32x32 slot for every state (selected, empty, missing),
+  so Icons…/File…/Clear stay aligned when only one icon slot is populated.
+- Validation: mixed icon/empty states checked in both directions in light/dark at 760x540, 900x620 and 1000x720. All three action-button columns have matching x positions and the form remains free of scrolling. Diff formatting passed.
