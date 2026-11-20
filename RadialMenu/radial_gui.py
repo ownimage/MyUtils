@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QW
 from photo_tools import apply_theme, bind_window, run_app
 from photo_tools.shell import CurrentPageStack
 from windows_input import WindowsInput
-from activation_monitor import HOTKEYS
+from activation_monitor import parse_hotkey
 from about_page import AboutPage
 from application_icons import ApplicationIcons
 from icon_library import IconPicker, button_icon
@@ -209,6 +209,10 @@ class RadialService(QObject):
         QApplication.instance().aboutToQuit.connect(self.stop)
         # QApplication.aboutToQuit releases the process-owned registration.
         self.refresh_theme()
+        try:
+            parse_hotkey(self.key)
+        except ValueError:
+            self.key = 'Ctrl+Alt+Space'
         self.start(self.key)
         self.install_tray()
 
@@ -293,22 +297,38 @@ class RadialService(QObject):
         self.popup.hide()
 
     def start(self, key):
+        try:
+            modifiers, vk = parse_hotkey(key)
+        except ValueError as error:
+            self.status = str(error)
+            self.changed.emit()
+            return False
+        previous, was_registered = self.key, self.registered or self.gesture_registration
         self.stop()
-        keys = HOTKEYS
-        self.key = key if key in keys else 'Ctrl+Alt+Space'
         if sys.platform == 'win32':
-            modifiers, vk = keys[self.key]
             self.registered = bool(ctypes.windll.user32.RegisterHotKey(None, self.HOTKEY_ID, modifiers | 0x4000, vk))
-        self.status = f'Listening for {self.key}' if self.registered else 'Activation key unavailable. Choose another key; Preview still works.'
+        success = self.registered
+        if success:
+            self.key = key
+            self.settings.setValue('radial/key', self.key)
+            self.settings.sync()
+            self.status = f'Listening for {self.key}'
+        else:
+            self.status = 'Activation key unavailable. Choose another shortcut.'
+            if was_registered:
+                modifiers, vk = parse_hotkey(previous)
+                self.registered = bool(ctypes.windll.user32.RegisterHotKey(None, self.HOTKEY_ID, modifiers | 0x4000, vk))
+                self.status += (f' Still listening for {previous}.' if self.registered
+                                else ' Previous hotkey could not be restored.')
         if self.registered:
             QApplication.instance().installNativeEventFilter(self.hotkey_filter)
             self.filter_installed = True
-            self.settings.setValue('radial/key', self.key)
         if self.tray is not None:
             self.tray.setToolTip('RadialMenu - ' + self.status)
             self.tray.show()
             QApplication.instance().setQuitOnLastWindowClosed(False)
         self.changed.emit()
+        return success
 
     def cancel_delivery(self, *, resume=True):
         self.send_timer.stop()
@@ -322,7 +342,7 @@ class RadialService(QObject):
         if self.gesture_registration:
             self.gesture_registration = False
             if resume:
-                modifiers, vk = HOTKEYS[self.key]
+                modifiers, vk = parse_hotkey(self.key)
                 self.registered = bool(ctypes.windll.user32.RegisterHotKey(
                     None, self.HOTKEY_ID, modifiers | 0x4000, vk))
                 cleaned = self.registered and cleaned
@@ -802,6 +822,126 @@ class ApplicationPicker(QComboBox):
         ComboBox.addItem(self, text, icon=icon, userData=path)
 
 
+class HotkeyEditor(QWidget):
+    def __init__(self, owner):
+        super().__init__(owner)
+        self.owner = owner
+        self.loading = False
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 24, 28, 24)
+        layout.addWidget(QLabel('Activation hotkey'))
+        hint = QLabel('Choose modifiers, then type one letter or digit, or choose a special key. '
+                      'Escape is reserved for cancelling actions.')
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        modifiers = QHBoxLayout()
+        self.modifiers = {}
+        for name, label in [('Ctrl', 'Ctrl'), ('Shift', 'Shift'), ('Alt', 'Alt'), ('Win', 'Windows')]:
+            check = QCheckBox(label)
+            check.setAccessibleName(f'{label} hotkey modifier')
+            self.modifiers[name] = check
+            modifiers.addWidget(check)
+            check.toggled.connect(self.update_shortcut)
+        modifiers.addStretch()
+        layout.addLayout(modifiers)
+        keys = QHBoxLayout()
+        self.key = SingleKeyEdit()
+        self.key.setAccessibleName('Hotkey key')
+        self.key.setPlaceholderText('Type one letter or digit')
+        keys.addWidget(self.key, 1)
+        self.special_key = QComboBox()
+        self.special_key.setAccessibleName('Hotkey special key')
+        self.special_key.addItem('Special keys…', '')
+        for name in ([f'F{i}' for i in range(1, 25)] + [
+                'Tab', 'Space', 'Backspace', 'Return', 'Enter',
+                'Delete', 'Insert', 'Home', 'End', 'PageUp', 'PageDown',
+                'Left', 'Right', 'Up', 'Down', 'Plus', 'Comma']):
+            self.special_key.addItem(name, name)
+        keys.addWidget(self.special_key, 1)
+        layout.addLayout(keys)
+        self.shortcut = QLabel()
+        self.shortcut.setAccessibleName('Activation hotkey preview')
+        self.shortcut.setWordWrap(True)
+        layout.addWidget(self.shortcut)
+        self.message = QLabel()
+        self.message.setAccessibleName('Hotkey validation')
+        self.message.setWordWrap(True)
+        layout.addWidget(self.message)
+        layout.addStretch()
+        buttons = QHBoxLayout()
+        self.save_button = QPushButton('Save Hotkey')
+        self.cancel_button = QPushButton('Cancel')
+        buttons.addWidget(self.save_button)
+        buttons.addWidget(self.cancel_button)
+        layout.addLayout(buttons)
+        self.key.textChanged.connect(self.update_shortcut)
+        self.special_key.currentIndexChanged.connect(self.choose_special_key)
+        self.save_button.clicked.connect(self.save)
+        self.cancel_button.clicked.connect(lambda: owner.pages.setCurrentIndex(0))
+
+    def choose_special_key(self, index):
+        key = self.special_key.itemData(index)
+        if key:
+            self.key.setText(key)
+
+    def load(self):
+        self.loading = True
+        try:
+            parts = self.owner.service.key.split('+')
+            selected = {part.strip().lower() for part in parts[:-1]}
+            for name, check in self.modifiers.items():
+                check.setChecked(name.lower() in selected)
+            self.key.setText(parts[-1].strip())
+        finally:
+            self.loading = False
+        self.update_shortcut()
+
+    def update_shortcut(self, *_):
+        if self.loading:
+            return
+        key = normalise_sequence(self.key.text().strip())
+        if key != self.key.text():
+            self.key.setText(key)
+            return
+        # Reflect typed keys too, so the dropdown never shows a stale selection.
+        index = self.special_key.findData(key)
+        blocked = self.special_key.blockSignals(True)
+        self.special_key.setCurrentIndex(max(0, index))
+        self.special_key.blockSignals(blocked)
+        parts = [name for name in ('Ctrl', 'Alt', 'Shift', 'Win') if self.modifiers[name].isChecked()]
+        parts.append(key)
+        self.candidate = '+'.join(parts)
+        self.shortcut.setText('Shortcut: ' + (self.candidate or 'Choose a key'))
+        valid, message = self.validate_shortcut()
+        self.message.setText(message)
+        self.save_button.setEnabled(valid)
+
+    def validate_shortcut(self):
+        try:
+            modifiers, vk = parse_hotkey(self.candidate)
+        except ValueError as error:
+            return False, 'Invalid shortcut: ' + str(error)
+        service = self.owner.service
+        if service.registered and parse_hotkey(service.key) == (modifiers, vk):
+            return True, 'Valid shortcut — currently active.'
+        if sys.platform != 'win32':
+            return False, 'Global hotkeys require Windows.'
+        # Probe a separate ID and release it immediately; retain the active listener.
+        probe_id = service.HOTKEY_ID + 1
+        api = ctypes.windll.user32
+        if not api.RegisterHotKey(None, probe_id, modifiers | 0x4000, vk):
+            return False, 'Shortcut unavailable — already in use or reserved by Windows.'
+        api.UnregisterHotKey(None, probe_id)
+        return True, 'Valid shortcut — available. Save Hotkey to apply.'
+
+    def save(self):
+        # Registration checks availability again in case another app acquired it.
+        if self.owner.service.start(self.candidate):
+            self.owner.pages.setCurrentIndex(0)
+        else:
+            self.message.setText(self.owner.service.status)
+
+
 class RadialMenuWindow(QMainWindow):
     def __init__(self, directory='', *, suite=None):
         super().__init__()
@@ -814,10 +954,8 @@ class RadialMenuWindow(QMainWindow):
         for label, data in [('Follow Windows', 'system'), ('Light', 'light'), ('Dark', 'dark')]:
             self.appearance.addItem(label, data)
         layout.addWidget(self.appearance)
-        layout.addWidget(QLabel('Activation key'))
-        self.key = QComboBox()
-        self.key.addItems(['Ctrl+Alt+Space', 'Ctrl+Alt+R', 'F8'])
-        layout.addWidget(self.key)
+        self.hotkey_summary = QLabel()
+        layout.addWidget(self.hotkey_summary)
         layout.addWidget(QLabel('Segments'))
         self.segments = QComboBox()
         for count in range(2, 27):
@@ -834,6 +972,8 @@ class RadialMenuWindow(QMainWindow):
         layout.addWidget(browse_app)
         self.edit_buttons = QPushButton('Edit Buttons')
         layout.addWidget(self.edit_buttons)
+        self.edit_hotkey = QPushButton('Edit Hotkey')
+        layout.addWidget(self.edit_hotkey)
         self.profile_message = QLabel('Choose a running application, or browse for another executable.')
         self.profile_message.setWordWrap(True)
         layout.addWidget(self.profile_message)
@@ -866,15 +1006,17 @@ class RadialMenuWindow(QMainWindow):
             context.radial_service = RadialService(context)
         self.service = context.radial_service
         self.app_icons = ApplicationIcons(context.preferences.settings)
-        self.key.setCurrentText(self.service.key)
+        self.hotkey_summary.setText(f'Activation hotkey: {self.service.key}')
         self.segments.setCurrentIndex(self.segments.findData(self.service.popup.count))
         self.status.setText(self.service.status)
-        self.key.currentTextChanged.connect(self.service.start)
         self.segments.currentIndexChanged.connect(self.change_count)
         self.service.changed.connect(self.refresh_status)
         self.service.popup.selected.connect(self.selected_button)
         self.editor = ButtonEditor(self)
         self.pages.addWidget(self.editor)
+        self.hotkey_editor = HotkeyEditor(self)
+        self.pages.addWidget(self.hotkey_editor)
+        self.edit_hotkey.clicked.connect(self.begin_hotkey_edit)
         self.about = AboutPage(lambda: self.pages.setCurrentIndex(0),self)
         self.pages.addWidget(self.about)
         self.pages.currentChanged.connect(self.update_page_title)
@@ -889,13 +1031,21 @@ class RadialMenuWindow(QMainWindow):
 
     def update_page_title(self, *_):
         title = (f'Edit Buttons — {ntpath.basename(self.editor.application)}'
-                 if self.pages.currentWidget() is self.editor else 'RadialMenu')
+                 if self.pages.currentWidget() is self.editor else
+                 'Edit Hotkey' if self.pages.currentWidget() is self.hotkey_editor else 'RadialMenu')
         self.setWindowTitle(title)
         host = self.window()
         if host is self or getattr(host, 'current_app', None) == 'radial-menu':
             host.setWindowTitle(title)
 
+    def begin_hotkey_edit(self):
+        self.service.cancel_delivery()
+        self.service.popup.hide()
+        self.hotkey_editor.load()
+        self.pages.setCurrentWidget(self.hotkey_editor)
+
     def refresh_status(self):
+        self.hotkey_summary.setText(f'Activation hotkey: {self.service.key}')
         self.status.setText(self.service.status)
 
     def selected_button(self, number):

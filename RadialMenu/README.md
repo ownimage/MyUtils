@@ -1,7 +1,14 @@
 # RadialMenu
 
 Run `RadialMenu.cmd` from the repository root, or open RadialMenu from the Launcher to start listening for Ctrl+Alt+Space.
-The settings page offers alternative keys, 2–26 segments (default 12), and application button profiles.
+The settings page offers 2–26 segments (default 12) and application button profiles.
+Choose **Edit Hotkey**, directly below **Edit Buttons**, to change the global activation shortcut.
+Select **Ctrl**, **Shift**, **Alt** and/or **Windows**, then type one letter or digit,
+or choose a named key (including F1–F24) from **Special keys…**. The assembled shortcut
+and its validity/Windows availability update immediately. **Save Hotkey** is enabled
+only for a valid, available shortcut; choose it to apply the change. **Cancel** discards the edit. Escape is reserved for cancellation.
+If Windows rejects the shortcut, the editor reports the conflict and restores the previous listener.
+The saved hotkey also controls Hold and Repeat and is restored on the next launch.
 Settings use the shared suite settings file; appearance and accent follow the suite.
 The activation key is global and works while another application has focus.
 Choose **Run in background** to hide the Launcher to the system tray. Closing the

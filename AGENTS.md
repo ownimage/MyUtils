@@ -332,8 +332,8 @@ py -3.11 -m venv venv
   shell and root environment. No extra environment or runtime dependency.
 - One RadialService per SuiteContext owns the independent top-level RadialPopup,
   native hotkey filter, delivery timer and system-tray icon. Shared theme/accent
-  changes update the popup. Default activation is Ctrl+Alt+Space; alternatives
-  are Ctrl+Alt+R and F8. RegisterHotKey uses MOD_NOREPEAT. Registration conflicts
+  changes update the popup. Default activation is Ctrl+Alt+Space; Edit Hotkey accepts a single supported
+  key with optional Ctrl/Alt/Shift/Win modifiers (Escape is reserved for cancellation). RegisterHotKey uses MOD_NOREPEAT. Registration conflicts
   appear inline; separate processes must use distinct activation keys.
 - HotkeyFilter uses QAbstractNativeEventFilter for windows_dispatcher_MSG and
   windows_generic_MSG. Start/stop install/remove it with the registration;
@@ -646,3 +646,46 @@ py -3.11 -m venv venv
   all assertions but hit the intermittent Qt teardown crash noted above; module
   isolation was used for the final verification rather than treating that crash
   as a successful run.
+
+
+## Custom activation hotkey (2026-11-20)
+
+- Edit Hotkey sits directly below Edit Buttons on RadialMenu configuration and
+  opens an embedded page with Save Hotkey and Cancel. Opening it cancels pending
+  input and hides the popup. Cancel discards its draft; Save validates one chord,
+  registers it immediately and persists radial/key. The configuration summary
+  follows changes. Failed registration restores the previous listener and leaves
+  the editor open with an inline error; invalid syntax does not stop listening.
+- activation_monitor.parse_hotkey shares the button sequence parser but rejects
+  multiple chords, modifier-only chords and Escape. Both normal registration and
+  Hold/Repeat use it, including Shift and either Windows key. Gesture setup clears
+  held Shift/Win activation modifiers as well as Ctrl/Alt to avoid contaminating
+  configured output. Existing preset settings remain compatible.
+- Validation: all 43 RadialMenu tests and 18 Launch tests passed. The 11 profile
+  tests passed with clean exits when isolated individually; running that whole
+  module still hits the previously documented Qt teardown access violation after
+  assertions pass. A native-platform attempt also hit a platform-dependent icon
+  pixel assertion; the supported offscreen checks passed. New coverage verifies
+  custom modifier mapping, rejected chords, button placement, page navigation,
+  Save/Cancel, conflict recovery, persisted reload and native-registration flags.
+  Light/dark settings and editor renders inspected at 900x620 with Segoe UI.
+  Physical hotkey delivery to external applications was not retested.
+
+
+## Hotkey builder and live validation (2026-11-20)
+
+- HotkeyEditor now uses Ctrl/Shift/Alt/Windows checkboxes, SingleKeyEdit and a
+  special-key dropdown, mirroring the button builder. It loads existing chords
+  into those controls, displays the assembled shortcut and synchronises the
+  dropdown when typing. Escape is excluded from the dropdown and still rejected
+  by parse_hotkey. Save is disabled for missing/invalid/unavailable shortcuts.
+- Live availability checks briefly RegisterHotKey with HOTKEY_ID + 1 and release
+  it immediately. The existing listener remains registered; the current chord
+  is recognised by parsed key/modifier values without probing. The native filter
+  ignores the probe ID. Save checks registration again to handle availability
+  changing after validation; its previous-listener recovery remains in place.
+- Validation: all 3 hotkey tests, 17 behaviour/input tests and 18 Launch tests
+  passed with clean exits. Coverage includes typing/overtyping, dropdown sync,
+  invalid/empty/reserved keys, live availability conflict, immediate probe release,
+  preserving the listener, Save/Cancel and registration-time conflict recovery.
+  Light/dark renders inspected at the 760x540 host minimum; controls and footer fit.

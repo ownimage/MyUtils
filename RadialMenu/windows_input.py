@@ -115,7 +115,7 @@ class WindowsInput:
         # selected. Clear their logical downs, while the monitor retains physical
         # state, so the first subsequent main-key press injects only our combo.
         release = []
-        for generic, sides in ((17, (162, 163)), (18, (164, 165))):
+        for generic, sides in ((17, (162, 163)), (18, (164, 165)), (16, (160, 161)), (91, (91, 92))):
             if generic in self.monitor.trigger_keys:
                 held = [vk for vk in sides if vk in self.monitor.physical]
                 if not held and generic in self.monitor.physical:

@@ -1,11 +1,24 @@
 """Temporary physical-key capture for one armed Hold/Repeat action."""
 import ctypes
 import os
+from button_profiles import parse_sequence
 from ctypes import wintypes as w
 
 INPUT_TAG = 0x524D0000 | (os.getpid() & 0xffff)
 
-HOTKEYS = {'Ctrl+Alt+Space': (3, 0x20), 'Ctrl+Alt+R': (3, 0x52), 'F8': (0, 0x77)}
+
+
+def parse_hotkey(text):
+    chords = parse_sequence(text)
+    if len(chords) != 1 or chords[0][1] is None:
+        raise ValueError('Choose one key with optional Ctrl, Alt, Shift or Win modifiers.')
+    mods, vk = chords[0]
+    if vk == 27:
+        raise ValueError('Escape is reserved for cancelling actions.')
+    flags = {17: 2, 18: 1, 16: 4, 91: 8}
+    return sum(flags[mod] for mod in mods), vk
+
+
 MODIFIER_KEYS = {16, 17, 18, 91, 92, 160, 161, 162, 163, 164, 165}
 
 
@@ -16,13 +29,17 @@ class KBDLLHOOKSTRUCT(ctypes.Structure):
 
 class ActivationMonitor:
     def __init__(self, key):
-        modifiers, vk = HOTKEYS[key]
+        modifiers, vk = parse_hotkey(key)
         self.primary_key = vk
         self.groups = [{vk}]
         if modifiers & 2:
             self.groups.append({17, 162, 163})
         if modifiers & 1:
             self.groups.append({18, 164, 165})
+        if modifiers & 4:
+            self.groups.append({16, 160, 161})
+        if modifiers & 8:
+            self.groups.append({91, 92})
         self.trigger_keys = set().union(*self.groups)
         self.physical = set()
         self.ready = False
