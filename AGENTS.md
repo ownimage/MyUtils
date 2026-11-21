@@ -38,7 +38,7 @@ and validation. Read it before making changes anywhere in this repository.
 | `venv/` | Shared Python 3.11 environment; generated, not source |
 | `commands.md` | Setup, launch, and full-test commands |
 | `run_tests.py` | Runs all five suites in separate processes |
-| `RadialMenu.cmd` | Root RadialMenu command; delegates to `RadialMenu/run_gui.bat` |
+| `RadialMenu.cmd` | Stops standalone instances and starts RadialMenu detached via `start_background.py` |
 | `Launch.cmd` | Root launch command; delegates to `Launch/run_gui.bat` |
 | `Launch/launcher.py` | Python launcher entry point |
 | `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders |
@@ -346,7 +346,7 @@ py -3.11 -m venv venv
   closure. Tray double-click/settings recreates or restores the host. Exit
   RadialMenu stops listening, restores normal quit behaviour and closes suite
   windows through their normal close flow (including unsaved/busy checks). Without a tray, background mode minimises; closing the last
-  host exits. Restart resident code via tray Exit RadialMenu, then relaunch.
+  host exits. Restart standalone resident code with RadialMenu.cmd; for a Launcher-hosted instance, use tray Exit RadialMenu, then relaunch.
 
 ### Popup and input delivery
 
@@ -769,3 +769,39 @@ py -3.11 -m venv venv
   on return, and explicit Clear followed by reassignment.
 - Validation: all 11 profile/editor tests passed offscreen with a clean exit;
   diff formatting passed.
+
+
+## Standalone RadialMenu restart command (2026-11-21)
+
+- RadialMenu.cmd runs RadialMenu/stop_instance.ps1 before start_background.py. The helper
+  matches python.exe/pythonw.exe command lines against this checkout's full
+  radial_gui.py path, including quoted paths and slash variants. It kills all
+  matching standalone instances and waits for exit before permitting startup.
+  Enumeration/termination errors prevent a replacement from starting.
+- Forced restart discards unsaved edits. Other Python scripts, other checkouts
+  and Launcher-hosted suites are excluded. Direct run_gui.bat keeps its existing
+  start-only foreground behaviour; root wrapper arguments are preserved. The root
+  wrapper returns startup status rather than the detached GUI's eventual exit code.
+- Validation: isolated Windows subprocess smoke checks passed from another working
+  directory with a checkout path containing spaces: no existing instance, two
+  existing instances, replacement startup, quoted argument forwarding and exit
+  code 23. A separate checkout's Python process remained running. Real resident
+  UI was not terminated during these checks. Diff formatting passed.
+
+
+## Detached RadialMenu startup (2026-11-21)
+
+- RadialMenu/start_background.py launches the shared venv pythonw.exe with
+  DETACHED_PROCESS and CREATE_NEW_PROCESS_GROUP, closed inherited handles and
+  standard streams set to DEVNULL. RadialMenu.cmd returns after spawning instead
+  of waiting for the GUI. It checks for pythonw before stopping an existing app.
+- stop_instance.ps1 ignores a failed Kill only when that process has already
+  exited: terminating the venv launcher may also finish its Python child between
+  enumeration and Kill. This reproduced as Access is denied in an isolated restart
+  test; actual errors on live processes still prevent replacement startup.
+- Validation: two successive isolated launches from another directory with spaces
+  in the checkout path returned in 0.75s and 0.70s. Each background child remained
+  alive with GetConsoleWindow() == 0 and preserved a quoted argument; the second
+  launch terminated the first, and cleanup exited successfully. Diff check passed.
+- The user-reported PID 56124 was no longer present when inspected after the fix;
+  no live standalone RadialMenu process remained in that snapshot.

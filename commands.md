@@ -80,10 +80,11 @@ below **Edit Buttons** in Settings to configure an alternative activation shortc
 Change the segment count on the main settings page. Choose **Run in background** to hide to the
 system tray; the global key works in other apps. Double-click the tray icon for
 settings or use its **Exit RadialMenu** menu item to stop listening and close the running UI.
-Standalone: `.\RadialMenu.cmd` (or `.\RadialMenu\run_gui.bat`). The full test command includes RadialMenu.
+Standalone: `.\RadialMenu.cmd` stops any existing standalone RadialMenu instances from this checkout, waits for them to exit, then starts a fresh instance in the background and returns to the command prompt. No Python console window is opened. Unsaved edits are discarded. Other Python applications and suite instances started through `Launch.cmd` are left running. Use `.\RadialMenu\run_gui.bat` to launch without stopping existing instances. The full test command includes RadialMenu.
 
-After updating RadialMenu, choose **Exit RadialMenu** from its tray menu and reopen
-it from the Launcher so the resident listener loads the updated code.
+After updating standalone RadialMenu, run `.\RadialMenu.cmd` again to load the updated code.
+For RadialMenu opened through the Launcher, choose **Exit RadialMenu** from its tray
+menu and reopen it from the Launcher.
 
 RadialMenu defaults to letters a–l. Activate over the target app, then click a
 letter to return focus and send that key. Preview sends no input. Focus must

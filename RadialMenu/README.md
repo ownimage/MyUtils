@@ -1,6 +1,12 @@
 # RadialMenu
 
 Run `RadialMenu.cmd` from the repository root, or open RadialMenu from the Launcher to start listening for Ctrl+Alt+Space.
+`RadialMenu.cmd` kills existing standalone RadialMenu instances from this checkout,
+waits for them to exit, and starts a fresh instance in the background using pythonw.
+The command returns to the prompt without opening a Python console window.
+Unsaved edits are discarded.
+Other Python applications and suite instances opened through the Launcher are left
+running. `RadialMenu/run_gui.bat` starts directly without restarting existing instances.
 The settings page offers 2–26 segments (default 12) and application button profiles.
 Choose **Edit Hotkey**, directly below **Edit Buttons**, to change the global activation shortcut.
 Select **Ctrl**, **Shift**, **Alt** and/or **Windows**, then type one letter or digit,
