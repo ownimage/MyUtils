@@ -40,17 +40,33 @@ def normalise_button(button):
     return dict(name=button['name'], icon=button['icon'], secondary_icon=second,
                 sequence=sequence, behaviour=behaviour)
 
+def character_key(character):
+    """Resolve a printable character through the current Windows keyboard layout."""
+    import ctypes
+    if len(character) != 1 or not character.isprintable() or ord(character) > 0xffff:
+        raise ValueError('Choose one printable character supported by the keyboard layout.')
+    scan = ctypes.windll.user32.VkKeyScanW
+    scan.argtypes = [ctypes.c_wchar]
+    scan.restype = ctypes.c_short
+    value = scan(character)
+    if value == -1 or (value >> 8) & ~7:
+        raise ValueError(f'Character {character!r} is unavailable on the current keyboard layout.')
+    mods = [vk for bit, vk in ((1, 16), (2, 17), (4, 18)) if (value >> 8) & bit]
+    return mods, value & 255
+
+
 def parse_sequence(text):
     named = {'enter': 13, 'return': 13, 'tab': 9, 'space': 32, 'escape': 27,
              'esc': 27, 'backspace': 8, 'delete': 46, 'insert': 45, 'home': 36,
              'end': 35, 'pageup': 33, 'pagedown': 34, 'left': 37, 'up': 38,
-             'right': 39, 'down': 40, 'plus': 187, 'comma': 188}
+             'right': 39, 'down': 40}
     modifiers = {'ctrl': 17, 'alt': 18, 'shift': 16, 'win': 91}
     result = []
     if not text.strip():
         return result
     for chord in text.split(','):
-        parts = [part.strip().lower() for part in chord.split('+')]
+        raw_parts = [part.strip() for part in chord.split('+')]
+        parts = [part.lower() for part in raw_parts]
         if not parts or not parts[-1]:
             raise ValueError('Use comma-separated keys, e.g. Ctrl+C, Ctrl+V. Use Plus for +.')
         mods = []
@@ -64,12 +80,16 @@ def parse_sequence(text):
             vk = None
         elif len(key) == 1 and key.isascii() and key.isalnum():
             vk = ord(key.upper())
+        elif len(raw_parts[-1]) == 1 or key in ('plus', 'comma'):
+            character = {'plus': '+', 'comma': ','}.get(key, raw_parts[-1])
+            required, vk = character_key(character)
+            mods.extend(mod for mod in required if mod not in mods)
         elif key in named:
             vk = named[key]
         elif key.startswith('f') and key[1:].isdigit() and 1 <= int(key[1:]) <= 24:
             vk = 111 + int(key[1:])
         else:
-            raise ValueError(f'Unsupported key: {key}. Use letters, digits, F1–F24 or named keys.')
+            raise ValueError(f'Unsupported key: {key}. Use a printable character, F1–F24 or a named key.')
         result.append((mods, vk))
     if len(result) > 32:
         raise ValueError('A sequence can contain at most 32 keys or shortcuts.')

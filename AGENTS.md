@@ -38,10 +38,10 @@ and validation. Read it before making changes anywhere in this repository.
 | `venv/` | Shared Python 3.11 environment; generated, not source |
 | `commands.md` | Setup, launch, and full-test commands |
 | `run_tests.py` | Runs all five suites in separate processes |
-| `RadialMenu.cmd` | Root RadialMenu command; delegates to `RadialMenu/run_gui.bat` |
+| `RadialMenu.cmd` | Stops standalone instances and starts RadialMenu detached via `start_background.py` |
 | `Launch.cmd` | Root launch command; delegates to `Launch/run_gui.bat` |
 | `Launch/launcher.py` | Python launcher entry point |
-| `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders |
+| `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders, icon basenames |
 | `Launch/photo_tools/` | Shared shell, navigation, settings, Fluent controls, theme |
 | `Import/reorg.py` | Camera import planning and file operations |
 | `Import/reorg_gui.py` | Camera Import view and background worker |
@@ -346,7 +346,7 @@ py -3.11 -m venv venv
   closure. Tray double-click/settings recreates or restores the host. Exit
   RadialMenu stops listening, restores normal quit behaviour and closes suite
   windows through their normal close flow (including unsaved/busy checks). Without a tray, background mode minimises; closing the last
-  host exits. Restart resident code via tray Exit RadialMenu, then relaunch.
+  host exits. Restart standalone resident code with RadialMenu.cmd; for a Launcher-hosted instance, use tray Exit RadialMenu, then relaunch.
 
 ### Popup and input delivery
 
@@ -355,7 +355,7 @@ py -3.11 -m venv venv
   globally from 2 to 26. Position clamps to the cursor screen's available geometry,
   including negative monitor coordinates; diameter shrinks on tiny screens.
 - Left-click selects a segment. Escape, right-click, centre/outside click or focus
-  loss dismisses it. The cog hides the popup and opens RadialMenu configuration,
+  loss dismisses it. The cog hides the popup and opens RadialMenu Edit Buttons,
   preselecting the captured executable. Opening settings cancels pending input.
 - Hotkey activation captures HWND/PID/thread before showing the popup, excludes
   this process's own windows and resolves the executable via a typed
@@ -405,8 +405,8 @@ py -3.11 -m venv venv
   above the name, before and during hover; either can be empty. Both slots share
   all four icon libraries, with Icons… for the offline picker and File… for images.
   Labels elide to segment width. Draft names/icons update the editor ring live.
-- Save Buttons persists all drafts for the selected executable. Save and Back
-  saves then returns to configuration; Cancel returns without saving. Drafts are
+- Save Buttons persists all drafts for the selected executable. Save and Hide
+  saves then backgrounds the host (tray or minimise fallback); Cancel returns without saving. Drafts are
   held in the page and should be saved explicitly before closing the host. Runtime
   activation reloads the saved profile, not unsaved editor drafts.
 - Shared QSettings keys: radial/key, radial/count and radial/profiles. Profiles
@@ -496,7 +496,7 @@ py -3.11 -m venv venv
 - ButtonEditor offers Ctrl/Alt/Shift/Win checkboxes, typed keys and a special-key
   dropdown including F1–F24 and all supported named keys. Use key replaces the
   sequence; Append key adds a comma-separated chord. Both validate before editing.
-  The editable sequence and profile schema remain compatible. Selecting a button
+  The sequence display is now read-only; the profile schema remains compatible. Selecting a button
   resets the builder and reflects its existing single chord.
 - Validation: all 19 RadialMenu and 18 Launch tests passed on 2026-11-20.
   Editor coverage exercises all special-key options, combined modifiers,
@@ -518,7 +518,7 @@ py -3.11 -m venv venv
 - SingleKeyEdit now overtypes each typed key and keeps only the last inserted
   character on paste, independent of cursor position. Backspace/Delete clear the
   whole key. Named keys from the dropdown or profile loading remain intact;
-  sequence text still supports multiple chords. Space/plus/comma map to names.
+  the generated sequence display still supports multiple chords. Space/plus/comma map to names.
 - TDD: added an interaction regression first and observed failure (typing abc
   produced Abc rather than C), then implemented SingleKeyEdit. All 8 profile/editor
   tests pass, covering overtyping, cursor position, uppercase, paste, clearing,
@@ -756,3 +756,156 @@ py -3.11 -m venv venv
 - IconPreview has a fixed 32x32 slot for every state (selected, empty, missing),
   so Icons…/File…/Clear stay aligned when only one icon slot is populated.
 - Validation: mixed icon/empty states checked in both directions in light/dark at 760x540, 900x620 and 1000x720. All three action-button columns have matching x positions and the form remains free of scrolling. Diff formatting passed.
+
+
+## Empty button icon previews (2026-11-21)
+
+- IconPreview.refresh_icon explicitly calls QLabel.clear through super() before
+  showing empty/unavailable text. QLabel.setText('') can leave a pixmap displayed
+  when its existing text is already empty. Do not call IconPreview.clear here:
+  that override changes the reference and emits draft-change signals.
+- Regression reproduced the stale pixmap when navigating from two assigned icons
+  to an unassigned button. Coverage now checks both empty slots, restored previews
+  on return, and explicit Clear followed by reassignment.
+- Validation: all 11 profile/editor tests passed offscreen with a clean exit;
+  diff formatting passed.
+
+
+## Standalone RadialMenu restart command (2026-11-21)
+
+- RadialMenu.cmd runs RadialMenu/stop_instance.ps1 before start_background.py. The helper
+  matches python.exe/pythonw.exe command lines against this checkout's full
+  radial_gui.py path, including quoted paths and slash variants. It kills all
+  matching standalone instances and waits for exit before permitting startup.
+  Enumeration/termination errors prevent a replacement from starting.
+- Forced restart discards unsaved edits. Other Python scripts, other checkouts
+  and Launcher-hosted suites are excluded. Direct run_gui.bat keeps its existing
+  start-only foreground behaviour; root wrapper arguments are preserved. The root
+  wrapper returns startup status rather than the detached GUI's eventual exit code.
+- Validation: isolated Windows subprocess smoke checks passed from another working
+  directory with a checkout path containing spaces: no existing instance, two
+  existing instances, replacement startup, quoted argument forwarding and exit
+  code 23. A separate checkout's Python process remained running. Real resident
+  UI was not terminated during these checks. Diff formatting passed.
+
+
+## Detached RadialMenu startup (2026-11-21)
+
+- RadialMenu/start_background.py launches the shared venv pythonw.exe with
+  DETACHED_PROCESS and CREATE_NEW_PROCESS_GROUP, closed inherited handles and
+  standard streams set to DEVNULL. RadialMenu.cmd returns after spawning instead
+  of waiting for the GUI. It checks for pythonw before stopping an existing app.
+- stop_instance.ps1 ignores a failed Kill only when that process has already
+  exited: terminating the venv launcher may also finish its Python child between
+  enumeration and Kill. This reproduced as Access is denied in an isolated restart
+  test; actual errors on live processes still prevent replacement startup.
+- Validation: two successive isolated launches from another directory with spaces
+  in the checkout path returned in 0.75s and 0.70s. Each background child remained
+  alive with GetConsoleWindow() == 0 and preserved a quoted argument; the second
+  launch terminated the first, and cleanup exited successfully. Diff check passed.
+- The user-reported PID 56124 was no longer present when inspected after the fix;
+  no live standalone RadialMenu process remained in that snapshot.
+
+
+## Direct settings-to-button editor navigation (2026-11-21)
+
+- RadialService.open_settings selects the captured application and calls begin_edit
+  for existing and recreated hosts, so the popup cog and tray settings enter Edit
+  Buttons directly. With no selected application, configuration remains available.
+- ButtonEditor has Main configuration below the selector. Configuration's Edit
+  Buttons returns to the existing draft/selection for the same application, while
+  refreshing ring count and theme. Switching applications loads that profile.
+  Cancel invalidates the editor draft before returning, ensuring reentry reloads
+  saved values. Save and Hide saves then backgrounds the host.
+- Validation: all 12 profile/editor, 7 radial/tray and 3 hotkey tests passed in
+  separate offscreen processes with clean exits (22 total). Coverage includes
+  cog entry for existing/recreated hosts, configuration return with unsaved drafts
+  and selected segment preserved, ring count refresh, Cancel reload and application
+  switching. Existing short-screen layout checks passed. Diff formatting passed.
+
+
+## Read-only Keys and printable Build characters (2026-11-21)
+
+- ButtonEditor.sequence is read-only but remains selectable/copyable. Build's
+  Use key and Append key update it programmatically; Clear removes all chords
+  and disables the action. Help and README no longer invite direct sequence edits.
+- SingleKeyEdit retains printable punctuation/Unicode instead of clearing it.
+  Space, Plus and Comma aliases prevent ambiguity with the sequence delimiters.
+  ASCII letters keep the established uppercase-without-implicit-Shift behaviour.
+- button_profiles.character_key uses typed Win32 VkKeyScanW to map printable
+  characters through the current thread's Windows keyboard layout, merging its
+  Shift/Ctrl/Alt requirements with explicit modifiers without duplicates. Plus
+  and Comma also use layout mapping; raw character case is preserved for mapping.
+  Unmappable characters and unsupported shift-state bits report validation errors;
+  IME text, supplementary Unicode and multi-key composition are not text injection.
+  Normal, Hold, Repeat and hotkey validation share the parser. Profiles keep the
+  same schema; mapping follows the current layout when parsed, not a stored layout.
+- Validation: 13 profile/editor, 18 behaviour/input and 3 hotkey tests passed in
+  separate offscreen processes with clean exits (34 total). Coverage verifies
+  typing/paste/deletion cannot edit Keys, punctuation entry, both brackets,
+  Space/Plus/Comma aliases, replace/append/Clear, Shift/AltGr mapping and rejection,
+  case preservation, and balanced Normal/Repeat plus Hold release payloads.
+
+
+## Cursor-relative button editor placement (2026-11-21)
+
+- begin_edit captures QCursor.pos and queues position_editor_near_cursor with a
+  QObject context so it runs after showing/layout and is cancelled with the page.
+  The method skips a page/app that is no longer active, restores the host from
+  maximized/minimized state, and uses screenAt(cursor).availableGeometry.
+- Placement aligns the embedded radial selector's actual centre with the captured
+  cursor, then clamps the entire native frame to that monitor's work area. The
+  host shrinks when needed, including its frame/title bar; minimum dimensions may
+  be reduced for work areas below the normal host minimum. Layouts are activated
+  before measuring the selector. Use host.pos plus the frame delta to preserve
+  Qt's distinction between client position and decorated frame position.
+- Validation: 14 profile/editor, 7 radial/tray and 3 hotkey tests passed in separate
+  offscreen processes with clean exits (24 total). New coverage proves exact
+  selector/cursor alignment where space allows, all four work-area corners,
+  monitors with negative x/y, and oversized-window fitting on a 1024x700 work area.
+  Native mixed-DPI monitor movement was not exercised. Diff formatting passed.
+
+
+## Save and Hide button (2026-11-21)
+
+- ButtonEditor replaces Save and Back/go_back with Save and Hide/save_and_hide.
+  Successful save uses RadialService.run_in_background for tray hiding and the
+  existing no-tray minimise fallback. Validation/save errors leave the editor
+  visible. Main configuration remains the separate navigation action.
+- Queued cursor placement skips hidden/minimised hosts, preventing a pending
+  placement callback from reopening the window immediately after Save and Hide.
+- Validation: all 15 profile/editor tests passed with a clean offscreen exit.
+  New coverage checks saved data, editor retention, tray hiding, errors remaining
+  visible, minimise fallback, and a queued placement not unhiding the host.
+
+
+## MyUtils application icon family (2026-11-21)
+
+- Original SVG artwork and multi-resolution ICO files live in Launch/assets/icons:
+  camera-import (teal camera/import arrow), yearbook (purple book), slideshow
+  (amber photos/play), radial-menu (blue ring) and launcher (slate four-tile mark).
+  No external artwork/font or new runtime dependency. Launch/tools/build_icons.py
+  regenerates ICO sizes 16/20/24/32/40/48/64/128/256 from editable SVGs using the
+  existing Qt SVG renderer and Pillow; rebuild command is in commands.md.
+- apps.json icon fields now name the asset basenames. photo_tools/app_icons.py
+  loads QIcons relative to the installed package. shell.py uses the same icons
+  for 56px launcher tile thumbnails, Launch menu entries, directly constructed
+  app views, QApplication defaults and the active host. Home restores launcher.
+  RadialMenu's system-tray icon also uses its new application asset.
+- On native Windows, startup sets a process AppUserModelID; each SuiteWindow
+  additionally sets its own MyUtils.<app-id> ID, relaunch icon resource, display
+  name and absolute pythonw/script command through pywin32's window property store.
+  These window IDs support distinct taskbar groups for different apps even within
+  one process; selecting another app updates identity, home restores launcher.
+  Relaunch properties are set before the ID. Accepted host close clears all four
+  properties using VT_EMPTY, after busy/unsaved-work checks have allowed closing.
+  Offscreen/non-Windows platforms retain Qt icons without native property calls.
+- Icon assets were visually inspected at 16/32/48/64/128px on light/dark backgrounds,
+  plus light/dark 1160x940 launcher renders with Segoe UI. Native hidden Windows
+  tests verified IDs, ICO resources, relaunch commands, small/large WM_GETICON
+  handles and VT_EMPTY cleanup for all four apps and launcher. Launcher coverage
+  verifies tiles, menus, direct page icons, active-host switching and home restore.
+- Final validation: run_tests.py completed with exit code 0 across all five suites:
+  Launch 21, Import 27, Yearbook 19, Slideshow 49 and RadialMenu 51 (167 total,
+  one opt-in native-input test skipped). All other tests passed. The strengthened
+  native taskbar/icon-handle check also passed independently. Diff check passed.

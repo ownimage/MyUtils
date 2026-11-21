@@ -1,6 +1,12 @@
 # RadialMenu
 
 Run `RadialMenu.cmd` from the repository root, or open RadialMenu from the Launcher to start listening for Ctrl+Alt+Space.
+`RadialMenu.cmd` kills existing standalone RadialMenu instances from this checkout,
+waits for them to exit, and starts a fresh instance in the background using pythonw.
+The command returns to the prompt without opening a Python console window.
+Unsaved edits are discarded.
+Other Python applications and suite instances opened through the Launcher are left
+running. `RadialMenu/run_gui.bat` starts directly without restarting existing instances.
 The settings page offers 2–26 segments (default 12) and application button profiles.
 Choose **Edit Hotkey**, directly below **Edit Buttons**, to change the global activation shortcut.
 Select **Ctrl**, **Shift**, **Alt** and/or **Windows**, then type one letter or digit,
@@ -31,9 +37,13 @@ on the settings page. Key behaviour follows the target app and keyboard state. E
 dismisses it. Normal uses the Windows hotkey registration. Hold and Repeat temporarily capture
 the physical activation keys for one armed action; no additional dependency is needed.
 
-Click the cog at the top right of the popup to open RadialMenu settings. This
-closes the popup and cancels any letter delivery. Settings can also be restored
-from the tray icon.
+Click the cog at the top right of the popup to open Edit Buttons directly for the
+captured application. This closes the popup and cancels any letter delivery.
+Choose **Main configuration** to access application selection, hotkey and other
+settings, then **Edit Buttons** to return; drafts and the selected button are
+preserved for the same application. **Cancel** discards the drafts. Settings
+restored from the tray also open Edit Buttons when an application is available.
+Without a selected application, the main configuration page asks you to choose one.
 
 ## Edit application buttons
 
@@ -42,7 +52,10 @@ popup cog to select the application captured by the hotkey. Saved applications
 appear in the Application selector. Profiles match the full executable path,
 case-insensitively, and apply to all windows of that executable.
 
-Select **Edit Buttons** to open the editor directly, with the first button selected. The button editor shows
+Select **Edit Buttons** to open the editor directly, with the first button selected.
+The window opens with the radial selector centred as close to the mouse as the
+space allows. It stays inside the mouse monitor's usable area, including its
+title bar and frame, and shrinks if needed to fit. The button editor shows
 **Edit Buttons — application** in the window title bar, a radial selector on the
 left and the selected button's fields starting at the top on the right. The form
 scrolls in smaller windows; Save and Cancel stay visible beneath it. Clicking another segment switches buttons and
@@ -58,8 +71,12 @@ Use the Ctrl, Alt, Shift and Win checkboxes with a typed key or the special-key
 dropdown (F1–F24, Tab, Space, Backspace, Return and navigation keys).
 The key entry holds one key: each typed key replaces the previous one, and
 pasting retains only the last inserted character. Backspace or Delete clears it. **Use key**
-replaces the sequence; **Append key** adds another shortcut. You can also edit
-the sequence directly. Letter keys are always shown and saved in uppercase (including existing profiles
+replaces the sequence; **Append key** adds another shortcut. **Keys** is read-only;
+use its **Clear** button to remove the sequence and disable the action.
+Build accepts printable characters such as `[`, `]`, punctuation and symbols.
+Windows maps these through the current keyboard layout and adds required Shift
+or Ctrl+Alt (AltGr) modifiers. Characters that cannot be produced by one key/chord
+on that layout are reported when you choose **Use key** or **Append key**. Letter keys are always shown and saved in uppercase (including existing profiles
 when loaded); uppercase does not imply Shift. Choose Shift explicitly when needed.
 Select **Modifiers only** to send Ctrl, Alt, Shift or Win without another key
 (for example `Ctrl+Shift`). This works with Normal, Hold and Repeat. Hold keeps
@@ -67,7 +84,8 @@ the modifiers down for mouse actions such as modified dragging, until the hotkey
 is pressed again. Use `Plus` or `Comma` for those literal keys. A blank sequence disables the action.
 
 **Save Buttons** persists all button drafts for this application. **Save and
-Back** saves and returns to configuration. **Cancel** returns without saving
+Hide** saves and hides the window to the tray (or minimises it if no tray is
+available). A save error leaves the editor visible. **Cancel** returns without saving
 the pending drafts. Editing and the tray preview never send input. Profiles are
 stored in the existing shared settings file. Unconfigured applications retain
 the default letter buttons. The next hotkey activation loads the saved profile.
@@ -193,3 +211,10 @@ is indented to align with Name, Icons and Keys.
 
 Icon rows show the selected icon itself. Use **Icons…** or **File…** to select an icon,
 and **Clear** to remove it. Hover over a preview to see its reference.
+
+
+## Application icon
+
+The app uses its own matching icon on the Launch page, window title bar and
+Windows taskbar. Restart an open instance after icon updates. Editable SVG and
+multi-resolution ICO assets are shared under `../Launch/assets/icons`.

@@ -77,13 +77,24 @@ Cancel stops publishing new results and waits for active temporary jobs to finis
 
 Choose RadialMenu in the Launcher, then press Ctrl+Alt+Space. Use **Edit Hotkey**
 below **Edit Buttons** in Settings to configure an alternative activation shortcut.
+In Edit Buttons, **Keys** is read-only. Use **Build**, **Use key** / **Append key**,
+and **Clear** to assemble or remove shortcuts. Build accepts printable characters,
+including `[` and `]`, supported by the current Windows keyboard layout.
+
+The radial popup settings cog opens **Edit Buttons** for the captured application.
+The editor places its radial selector near the mouse and keeps the window inside
+that monitor's usable area.
+Use **Main configuration** and **Edit Buttons** to move between pages without
+losing drafts for that application; **Cancel** discards them.
+
 Change the segment count on the main settings page. Choose **Run in background** to hide to the
 system tray; the global key works in other apps. Double-click the tray icon for
 settings or use its **Exit RadialMenu** menu item to stop listening and close the running UI.
-Standalone: `.\RadialMenu.cmd` (or `.\RadialMenu\run_gui.bat`). The full test command includes RadialMenu.
+Standalone: `.\RadialMenu.cmd` stops any existing standalone RadialMenu instances from this checkout, waits for them to exit, then starts a fresh instance in the background and returns to the command prompt. No Python console window is opened. Unsaved edits are discarded. Other Python applications and suite instances started through `Launch.cmd` are left running. Use `.\RadialMenu\run_gui.bat` to launch without stopping existing instances. The full test command includes RadialMenu.
 
-After updating RadialMenu, choose **Exit RadialMenu** from its tray menu and reopen
-it from the Launcher so the resident listener loads the updated code.
+After updating standalone RadialMenu, run `.\RadialMenu.cmd` again to load the updated code.
+For RadialMenu opened through the Launcher, choose **Exit RadialMenu** from its tray
+menu and reopen it from the Launcher.
 
 RadialMenu defaults to letters a–l. Activate over the target app, then click a
 letter to return focus and send that key. Preview sends no input. Focus must
@@ -94,7 +105,7 @@ The cog at the popup’s top right opens RadialMenu settings without sending a k
 To configure RadialMenu buttons for an application, choose its executable in the
 Application selector and click **Edit Buttons**. The editor opens directly; use the radial menu on the left to switch buttons. Set name, Icon 1
 and Icon 2, and a key sequence such as `Ctrl+C, Ctrl+V`. **Save Buttons**
-saves the profile for that executable; **Save and Back** returns to configuration.
+saves the profile for that executable; **Save and Hide** saves and hides the window to the tray (minimises when no tray is available). Save errors keep the editor open.
 Opening settings through the live popup cog selects its captured application.
 Choose a per-button **Behaviour**: Normal (`.`) sends once; Hold (`-`) holds one
 combo; Repeat (`...`) repeats the sequence up to 10 times per second. Hold/Repeat
@@ -156,4 +167,15 @@ $env:RADIALMENU_NATIVE_INPUT_TEST = '1'
 Remove-Item Env:RADIALMENU_NATIVE_INPUT_TEST
 Remove-Item Env:QT_QPA_PLATFORM
 Remove-Item Env:PYTHONPATH
+```
+
+
+## Rebuild application icons
+
+The four GUI apps and launcher use original matching icons on launcher tiles,
+window title bars and the Windows taskbar. Restart open apps to load changes.
+Edit `Launch/assets/icons/*.svg`, then regenerate multi-resolution ICO files:
+
+```powershell
+.\venv\Scripts\python.exe Launch/tools/build_icons.py
 ```

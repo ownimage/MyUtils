@@ -7,7 +7,7 @@
     "folder": "../Import",
     "module": "reorg_gui",
     "window_class": "ImportWindow",
-    "icon": "camera"
+    "icon": "camera-import"
   },
   {
     "id": "yearbook",
@@ -17,7 +17,7 @@
     "folder": "../Yearbook",
     "module": "yearbook_gui",
     "window_class": "YearbookWindow",
-    "icon": "book"
+    "icon": "yearbook"
   },
   {
     "id": "slideshow",
@@ -27,7 +27,7 @@
     "folder": "../Slideshow",
     "module": "slideshow_gui",
     "window_class": "SlideshowWindow",
-    "icon": "photo"
+    "icon": "slideshow"
   },
   {
     "id": "radial-menu",
@@ -37,6 +37,6 @@
     "folder": "../RadialMenu",
     "module": "radial_gui",
     "window_class": "RadialMenuWindow",
-    "icon": "menu"
+    "icon": "radial-menu"
   }
 ]

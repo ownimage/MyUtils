@@ -13,6 +13,7 @@ from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QRectF, 
 from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QIcon, QPixmap, QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu, QHBoxLayout, QFileDialog, QFileIconProvider, QFrame, QScrollArea
 from photo_tools import apply_theme, bind_window, run_app
+from photo_tools.app_icons import app_icon
 from photo_tools.shell import CurrentPageStack
 from windows_input import WindowsInput
 from activation_monitor import parse_hotkey
@@ -220,14 +221,7 @@ class RadialService(QObject):
     def install_tray(self):
         if self.tray is not None or not QSystemTrayIcon.isSystemTrayAvailable():
             return
-        image = QPixmap(32, 32)
-        image.fill(Qt.GlobalColor.transparent)
-        painter = QPainter(image)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(QColor('#246b53'), 7))
-        painter.drawEllipse(5, 5, 22, 22)
-        painter.end()
-        self.tray = QSystemTrayIcon(QIcon(image), self)
+        self.tray = QSystemTrayIcon(app_icon('radial-menu'), self)
         self.tray.setToolTip('RadialMenu - ' + self.status)
         self.tray_menu = QMenu()
         self.tray_menu.addAction('Open RadialMenu settings', self.open_settings)
@@ -249,15 +243,20 @@ class RadialService(QObject):
         for window in self.context.windows:
             if not window.closing:
                 window.open_app('radial-menu', force_new=False)
+                page = window.pages['radial-menu']
                 if self.application:
-                    window.pages['radial-menu'].choose_application(self.application)
+                    page.choose_application(self.application)
+                page.begin_edit()
                 window.showNormal()
                 window.raise_()
                 window.activateWindow()
                 return
         window = self.context.create_window('radial-menu')
-        if window and self.application:
-            window.pages['radial-menu'].choose_application(self.application)
+        if window:
+            page = window.pages['radial-menu']
+            if self.application:
+                page.choose_application(self.application)
+            page.begin_edit()
 
     def exit_background(self):
         self.stop()
@@ -512,7 +511,8 @@ class SingleKeyEdit(QLineEdit):
         if character.isascii() and character.isalnum():
             key = character.upper()
         else:
-            key = {' ': 'Space', '+': 'Plus', ',': 'Comma'}.get(character, '')
+            key = {' ': 'Space', '+': 'Plus', ',': 'Comma'}.get(
+                character, character if character.isprintable() else '')
         self.setText(key)
 
     def keyPressEvent(self, event):
@@ -554,6 +554,9 @@ class IconPreview(QLabel):
         if self.reference and not icon.isNull():
             self.setPixmap(icon.pixmap(28, 28))
         else:
+            # Empty text may already match QLabel's text while a pixmap remains.
+            # Call the base implementation: our clear() changes the reference.
+            super().clear()
             self.setText('?' if self.reference else '')
 
 
@@ -605,6 +608,9 @@ class ButtonEditor(QWidget):
         self.ring.setFixedSize(360, 360)
         self.ring.selected.connect(self.select_button)
         left.addWidget(self.ring)
+        self.configuration_button = QPushButton('Main configuration')
+        self.configuration_button.clicked.connect(lambda: self.owner.pages.setCurrentIndex(0))
+        left.addWidget(self.configuration_button)
         left.addStretch()
         layout.addWidget(self.selector_column)
         right = QVBoxLayout()
@@ -671,7 +677,8 @@ class ButtonEditor(QWidget):
         self.modifiers_only.setMinimumWidth(self.modifiers_only.sizeHint().width())
         modifiers.addWidget(self.modifiers_only)
         self.build_help = EditorInfoButton('Build',
-            'Choose Ctrl, Alt, Shift or Win, then type a key or choose a special key. '
+            'Choose Ctrl, Alt, Shift or Win, then type a character or choose a special key. '
+            'Symbols use the current keyboard layout and include required modifiers. '
             'Use key replaces Keys; Append key adds another shortcut for Normal or Repeat. '
             'Choose Modifiers only to use the checked modifiers without a key.')
         modifiers.addWidget(self.build_help)
@@ -700,9 +707,14 @@ class ButtonEditor(QWidget):
         keys.addWidget(self.append_key)
         sequence_row = field_row('Keys')
         self.sequence = QLineEdit()
+        self.sequence.setReadOnly(True)
         self.sequence.setAccessibleName('Button sequence')
         self.sequence.setPlaceholderText('Ctrl+C, Ctrl+V')
         sequence_row.addWidget(self.sequence, 1)
+        self.clear_keys = QPushButton('Clear')
+        self.clear_keys.setAccessibleName('Clear keys')
+        self.clear_keys.clicked.connect(self.sequence.clear)
+        sequence_row.addWidget(self.clear_keys)
         self.sequence_help = EditorInfoButton('Keys')
         sequence_row.addWidget(self.sequence_help)
         self.hold_validator = QRegularExpressionValidator(QRegularExpression('[^,]*'), self.sequence)
@@ -715,11 +727,11 @@ class ButtonEditor(QWidget):
         save = QPushButton('Save Buttons')
         save.clicked.connect(self.save)
         actions.addWidget(save)
-        back = QPushButton('Save and Back')
-        back.clicked.connect(self.go_back)
-        actions.addWidget(back)
+        self.save_hide = QPushButton('Save and Hide')
+        self.save_hide.clicked.connect(self.save_and_hide)
+        actions.addWidget(self.save_hide)
         cancel = QPushButton('Cancel')
-        cancel.clicked.connect(lambda: self.owner.pages.setCurrentIndex(0))
+        cancel.clicked.connect(lambda: self.owner.cancel_edit())
         actions.addWidget(cancel)
         form.addStretch()
         self.form_scroll.setWidget(form_widget)
@@ -748,8 +760,8 @@ class ButtonEditor(QWidget):
         self.sequence.setValidator(self.hold_validator if hold else None)
         self.sequence.setPlaceholderText('Ctrl+C' if hold else 'Ctrl+C, Ctrl+V')
         self.sequence_help.set_help(
-            'Hold accepts one key or shortcut. Blank disables the action.' if hold else
-            'Separate keys or shortcuts with commas. Example: Ctrl+A, Delete. Blank disables the action.')
+            'Use Build for one key or shortcut. Clear disables the action.' if hold else
+            'Use Build to replace or append keys and shortcuts. Clear disables the action.')
         shortened = hold and ',' in self.sequence.text()
         if shortened:
             self.sequence.setText(self.sequence.text().split(',', 1)[0].strip())
@@ -888,9 +900,9 @@ class ButtonEditor(QWidget):
         self.message.setText('Buttons saved')
         return True
 
-    def go_back(self):
+    def save_and_hide(self):
         if self.save():
-            self.owner.pages.setCurrentIndex(0)
+            self.owner.service.run_in_background(self.owner.window())
 
 
 class ApplicationPicker(QComboBox):
@@ -1207,11 +1219,58 @@ class RadialMenuWindow(QMainWindow):
         self.service.cancel_delivery()
         self.service.popup.hide()
         try:
-            self.editor.load_application(application)
+            if app_key(self.editor.application) != app_key(application):
+                self.editor.load_application(application)
+            else:
+                self.editor.ring.count = self.service.popup.count
+                self.editor.ring.accent = self.service.popup.accent
+                self.editor.ring.dark = self.service.popup.dark
+                self.editor.ring.update()
         except (ValueError, OSError) as error:
+            self.pages.setCurrentIndex(0)
             self.profile_message.setText(str(error))
             return
         self.pages.setCurrentWidget(self.editor)
+        cursor = QCursor.pos()
+        # Wait for the host to be shown and the editor layout/frame to settle.
+        QTimer.singleShot(0, self, lambda: self.position_editor_near_cursor(cursor))
+
+    def position_editor_near_cursor(self, cursor):
+        if self.pages.currentWidget() is not self.editor:
+            return
+        host = self.window()
+        if not host.isVisible() or host.isMinimized():
+            return
+        if getattr(host, 'current_app', 'radial-menu') != 'radial-menu':
+            return
+        screen = QApplication.screenAt(cursor) or QApplication.primaryScreen()
+        if screen is None:
+            return
+        available = screen.availableGeometry()
+        host.showNormal()
+        frame = host.frameGeometry()
+        frame_width = max(0, frame.width() - host.width())
+        frame_height = max(0, frame.height() - host.height())
+        width = max(1, available.width() - frame_width)
+        height = max(1, available.height() - frame_height)
+        # Very small work areas may be below the usual host minimum size.
+        host.setMinimumSize(min(host.minimumWidth(), width), min(host.minimumHeight(), height))
+        host.resize(min(host.width(), width), min(host.height(), height))
+        host.layout().activate()
+        self.pages.layout().activate()
+        self.editor.layout().activate()
+        self.editor.selector_column.layout().activate()
+        frame = host.frameGeometry()
+        ring_center = self.editor.ring.mapToGlobal(self.editor.ring.rect().center())
+        desired = frame.topLeft() + cursor - ring_center
+        x = max(available.left(), min(desired.x(), available.right() - frame.width() + 1))
+        y = max(available.top(), min(desired.y(), available.bottom() - frame.height() + 1))
+        host.move(host.pos() + QPoint(x - frame.left(), y - frame.top()))
+
+    def cancel_edit(self):
+        self.editor.application = ''
+        self.editor.buttons = []
+        self.pages.setCurrentIndex(0)
 
     def change_count(self):
         self.service.popup.count = self.segments.currentData()

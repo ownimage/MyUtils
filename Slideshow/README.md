@@ -136,3 +136,10 @@ From this Slideshow folder:
 
 Tests use temporary photos and cover native rendering, dimensions/DPI, safe
 replacement, CSV/template persistence, old-format migration and visual editing.
+
+
+## Application icon
+
+The app uses its own matching icon on the Launch page, window title bar and
+Windows taskbar. Restart an open instance after icon updates. Editable SVG and
+multi-resolution ICO assets are shared under `../Launch/assets/icons`.

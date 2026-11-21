@@ -74,9 +74,33 @@ class ProfileTests(unittest.TestCase):
             QTest.keyClick(field, Qt.Key.Key_Backspace)
             self.assertEqual(field.text(), '')
             self.assertEqual(editor.special_key.currentText(), 'Special keys…')
-            # The sequence field continues to allow multiple chords.
-            QTest.keyClicks(editor.sequence, 'Ctrl+A, Tab')
+            # Keys is a generated, selectable display, not a typing surface.
+            editor.sequence.setText('Ctrl+A, Tab')
+            self.assertTrue(editor.sequence.isReadOnly())
+            editor.sequence.selectAll()
+            QTest.keyClicks(editor.sequence, 'Z')
+            QTest.keyClick(editor.sequence, Qt.Key.Key_Backspace)
+            self.app.clipboard().setText('Ctrl+X')
+            QTest.keyClick(editor.sequence, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
             self.assertEqual(editor.sequence.text(), 'Ctrl+A, Tab')
+            for character in '[]{};:\'"\\|`~!@#$%^&*()-_=<>/?':
+                QTest.keyClicks(field, character)
+                self.assertEqual(field.text(), character)
+                editor.apply_key(append=False)
+                self.assertEqual(editor.sequence.text(), character)
+                self.assertTrue(parse_sequence(character))
+            for character, name in ((' ', 'Space'), ('+', 'Plus'), (',', 'Comma')):
+                QTest.keyClicks(field, character)
+                self.assertEqual(field.text(), name)
+                editor.apply_key(append=False)
+                self.assertEqual(editor.sequence.text(), name)
+            editor.clear_keys.click()
+            self.assertEqual(editor.sequence.text(), '')
+            field.setText(']')
+            editor.apply_key(append=False)
+            field.setText('[')
+            editor.apply_key(append=True)
+            self.assertEqual(editor.sequence.text(), '], [')
         finally:
             editor.close()
 
@@ -177,7 +201,7 @@ class ProfileTests(unittest.TestCase):
                 self.assertTrue(editor.modifiers['Alt'].isChecked())
                 self.assertEqual(editor.key.text(), '')
                 self.assertEqual(page.service.profiles.buttons('C:/Apps/One.exe')[0]['sequence'], 'Ctrl+Alt')
-                editor.go_back()
+                editor.configuration_button.click()
                 self.assertEqual(host.windowTitle(), 'RadialMenu')
             finally:
                 page.service.stop()
@@ -192,6 +216,21 @@ class ProfileTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_sequence(invalid)
 
+    def test_character_mapping_adds_required_modifiers_and_preserves_case(self):
+        with patch('button_profiles.character_key', return_value=([16], 49)) as mapping:
+            self.assertEqual(parse_sequence('Ctrl+!'), [([17, 16], 49)])
+            self.assertEqual(parse_sequence('Shift+!'), [([16], 49)])
+            mapping.assert_called_with('!')
+        with patch('button_profiles.character_key', return_value=([17, 18], 69)):
+            self.assertEqual(parse_sequence('€'), [([17, 18], 69)])
+        with patch('button_profiles.character_key', return_value=([], 222)) as mapping:
+            parse_sequence('É')
+            mapping.assert_called_with('É')
+        from button_profiles import character_key
+        with patch('ctypes.windll.user32.VkKeyScanW', return_value=-1):
+            with self.assertRaisesRegex(ValueError, 'keyboard layout'):
+                character_key('☃')
+
     def test_sequence_validation(self):
         self.assertEqual(parse_sequence('Ctrl+C, Ctrl+V, Enter'), [([17],67),([17],86),([],13)])
         self.assertEqual(parse_sequence('Shift+F12, Win+Left'), [([16],123),([91],37)])
@@ -199,6 +238,117 @@ class ProfileTests(unittest.TestCase):
         for invalid in ('Ctrl+', 'Ctrl+Ctrl+C', 'Unknown', 'a,', ',a'):
             with self.assertRaises(ValueError):
                 parse_sequence(invalid)
+
+    def test_save_and_hide_persists_and_only_hides_after_success(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            host = SuiteWindow(context)
+            host.open_app('radial-menu', force_new=False)
+            page = host.pages['radial-menu']
+            service = page.service
+            quit_on_close = self.app.quitOnLastWindowClosed()
+            service.tray = Mock()
+            try:
+                host.show()
+                page.choose_application('C:/Apps/One.exe')
+                page.begin_edit()
+                page.editor.name.setText('Saved name')
+                self.assertEqual(page.editor.save_hide.text(), 'Save and Hide')
+                page.editor.save_hide.click()
+                self.app.processEvents()
+                self.assertFalse(host.isVisible())
+                self.assertIs(page.pages.currentWidget(), page.editor)
+                self.assertEqual(service.profiles.buttons('C:/Apps/One.exe')[0]['name'], 'Saved name')
+                service.tray.show.assert_called_once()
+                host.showNormal()
+                page.editor.sequence.setText('InvalidKey')
+                page.editor.save_hide.click()
+                self.assertTrue(host.isVisible())
+                self.assertIn('Unsupported key', page.editor.message.text())
+                page.editor.sequence.setText('A')
+                service.tray = None
+                page.editor.save_hide.click()
+                self.assertTrue(host.isMinimized())
+            finally:
+                service.stop()
+                self.app.aboutToQuit.disconnect(service.stop)
+                host.close()
+                self.app.setQuitOnLastWindowClosed(quit_on_close)
+
+    def test_editor_opens_near_cursor_and_keeps_frame_on_cursor_screen(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            host = SuiteWindow(context)
+            host.open_app('radial-menu', force_new=False)
+            page = host.pages['radial-menu']
+            page.choose_application('C:/Apps/One.exe')
+            host.resize(900, 620)
+            host.show()
+            screen = Mock()
+            try:
+                available = QRect(0, 0, 1920, 1040)
+                screen.availableGeometry.return_value = available
+                cursor = QPoint(600, 450)
+                with patch('radial_gui.QCursor.pos', return_value=cursor), patch.object(QApplication, 'screenAt', return_value=screen):
+                    page.begin_edit()
+                    self.app.processEvents()
+                    self.assertEqual(page.editor.ring.mapToGlobal(page.editor.ring.rect().center()), cursor)
+                    self.assertTrue(available.contains(host.frameGeometry()))
+                    # Every corner, including a monitor left/above the primary.
+                    for available in (QRect(0, 0, 1920, 1040), QRect(-1920, -200, 1920, 1040)):
+                        screen.availableGeometry.return_value = available
+                        for point in (available.topLeft(), available.topRight(), available.bottomLeft(), available.bottomRight()):
+                            page.position_editor_near_cursor(point)
+                            self.assertTrue(available.contains(host.frameGeometry()), host.frameGeometry())
+                    # Oversized windows shrink to the usable area, including frame.
+                    screen.availableGeometry.return_value = QRect(-1024, 0, 1024, 700)
+                    host.resize(1600, 1000)
+                    page.position_editor_near_cursor(QPoint(-20, 690))
+                    self.assertTrue(screen.availableGeometry().contains(host.frameGeometry()))
+            finally:
+                page.service.stop()
+                self.app.aboutToQuit.disconnect(page.service.stop)
+                host.close()
+
+    def test_cog_opens_editor_and_configuration_round_trip_preserves_drafts(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            host = SuiteWindow(context)
+            host.open_app('radial-menu', force_new=False)
+            page = host.pages['radial-menu']
+            service = page.service
+            try:
+                service.application = 'C:/Apps/One.exe'
+                host.show()
+                service.popup.show_at_cursor()
+                QTest.mouseClick(service.popup.settings_button, Qt.MouseButton.LeftButton)
+                self.assertIs(page.pages.currentWidget(), page.editor)
+                self.assertEqual(app_key(page.editor.application), app_key(service.application))
+                self.assertFalse(service.popup.isVisible())
+                page.editor.select_button(3)
+                page.editor.name.setText('Pending edit')
+                QTest.mouseClick(page.editor.configuration_button, Qt.MouseButton.LeftButton)
+                self.assertEqual(page.pages.currentIndex(), 0)
+                self.assertEqual(host.windowTitle(), 'RadialMenu')
+                QTest.mouseClick(page.edit_buttons, Qt.MouseButton.LeftButton)
+                self.assertIs(page.pages.currentWidget(), page.editor)
+                self.assertEqual(page.editor.current, 2)
+                self.assertEqual(page.editor.name.text(), 'Pending edit')
+                self.assertEqual(service.profiles.buttons(service.application)[2]['name'], 'c')
+                page.segments.setCurrentIndex(page.segments.findData(8))
+                page.editor.configuration_button.click()
+                page.edit_buttons.click()
+                self.assertEqual(page.editor.ring.count, 8)
+                page.cancel_edit()
+                page.edit_buttons.click()
+                self.assertEqual(page.editor.name.text(), 'a')
+                page.choose_application('C:/Apps/Two.exe')
+                page.begin_edit()
+                self.assertEqual(page.editor.application, app_key('C:/Apps/Two.exe'))
+            finally:
+                service.stop()
+                self.app.aboutToQuit.disconnect(service.stop)
+                host.close()
 
     def test_editor_switches_segments_saves_and_never_sends_input(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
@@ -269,12 +419,25 @@ class ProfileTests(unittest.TestCase):
                 QTest.mouseClick(editor.ring, Qt.MouseButton.LeftButton, pos=QPoint(editor.ring.width()//2, round(editor.ring.height()*.86)))
                 self.assertTrue(editor.ring.isVisible())
                 self.assertEqual(editor.current, 6)
+                for preview in editor.icons:
+                    self.assertEqual(preview.reference, '')
+                    self.assertTrue(preview.pixmap().isNull())
+                    self.assertEqual(preview.text(), '')
+                    self.assertEqual(preview.toolTip(), 'No icon selected')
                 editor.name.setText('Paste')
                 editor.sequence.setText('Ctrl+V')
                 editor.select_button(1)
                 self.assertEqual(editor.name.text(), 'Copy')
                 self.assertEqual(editor.icons[0].reference, normal)
                 self.assertEqual(editor.icons[1].reference, hover)
+                for preview, reference in zip(editor.icons, (normal, hover)):
+                    self.assertFalse(preview.pixmap().isNull())
+                    preview.clear()
+                    self.assertTrue(preview.pixmap().isNull())
+                    self.assertEqual(preview.reference, '')
+                    self.assertEqual(preview.text(), '')
+                    preview.set_reference(reference)
+                    self.assertFalse(preview.pixmap().isNull())
                 self.assertTrue(editor.save())
                 self.assertEqual(service.profiles.buttons('C:/Apps/One.exe')[6]['sequence'], 'Ctrl+V')
                 self.assertEqual(service.profiles.buttons('C:/Apps/Two.exe')[0]['name'], 'a')
