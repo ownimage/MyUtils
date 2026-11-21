@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow
 from photo_tools.app_icons import set_window_identity, clear_window_identity
 from photo_tools.registry import load_apps
 from win32com.propsys import propsys, pscon
+import win32gui, win32con
 app = QApplication([])
 windows = []
 for definition in [*load_apps().values(), None]:
@@ -40,6 +41,9 @@ for definition in [*load_apps().values(), None]:
     command = store.GetValue(pscon.PKEY_AppUserModel_RelaunchCommand).GetValue()
     assert 'pythonw.exe' in command and '.py' in command, command
     assert not window.windowIcon().isNull()
+    hwnd = int(window.winId())
+    assert win32gui.SendMessage(hwnd, win32con.WM_GETICON, win32con.ICON_SMALL, 0)
+    assert win32gui.SendMessage(hwnd, win32con.WM_GETICON, win32con.ICON_BIG, 0)
 for window in windows:
     clear_window_identity(window)
     store = propsys.SHGetPropertyStoreForWindow(int(window.winId()))

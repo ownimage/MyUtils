@@ -41,7 +41,7 @@ and validation. Read it before making changes anywhere in this repository.
 | `RadialMenu.cmd` | Stops standalone instances and starts RadialMenu detached via `start_background.py` |
 | `Launch.cmd` | Root launch command; delegates to `Launch/run_gui.bat` |
 | `Launch/launcher.py` | Python launcher entry point |
-| `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders |
+| `Launch/apps.json` | App registry: IDs, names, modules, classes, relative folders, icon basenames |
 | `Launch/photo_tools/` | Shared shell, navigation, settings, Fluent controls, theme |
 | `Import/reorg.py` | Camera import planning and file operations |
 | `Import/reorg_gui.py` | Camera Import view and background worker |
@@ -877,3 +877,35 @@ py -3.11 -m venv venv
 - Validation: all 15 profile/editor tests passed with a clean offscreen exit.
   New coverage checks saved data, editor retention, tray hiding, errors remaining
   visible, minimise fallback, and a queued placement not unhiding the host.
+
+
+## MyUtils application icon family (2026-11-21)
+
+- Original SVG artwork and multi-resolution ICO files live in Launch/assets/icons:
+  camera-import (teal camera/import arrow), yearbook (purple book), slideshow
+  (amber photos/play), radial-menu (blue ring) and launcher (slate four-tile mark).
+  No external artwork/font or new runtime dependency. Launch/tools/build_icons.py
+  regenerates ICO sizes 16/20/24/32/40/48/64/128/256 from editable SVGs using the
+  existing Qt SVG renderer and Pillow; rebuild command is in commands.md.
+- apps.json icon fields now name the asset basenames. photo_tools/app_icons.py
+  loads QIcons relative to the installed package. shell.py uses the same icons
+  for 56px launcher tile thumbnails, Launch menu entries, directly constructed
+  app views, QApplication defaults and the active host. Home restores launcher.
+  RadialMenu's system-tray icon also uses its new application asset.
+- On native Windows, startup sets a process AppUserModelID; each SuiteWindow
+  additionally sets its own MyUtils.<app-id> ID, relaunch icon resource, display
+  name and absolute pythonw/script command through pywin32's window property store.
+  These window IDs support distinct taskbar groups for different apps even within
+  one process; selecting another app updates identity, home restores launcher.
+  Relaunch properties are set before the ID. Accepted host close clears all four
+  properties using VT_EMPTY, after busy/unsaved-work checks have allowed closing.
+  Offscreen/non-Windows platforms retain Qt icons without native property calls.
+- Icon assets were visually inspected at 16/32/48/64/128px on light/dark backgrounds,
+  plus light/dark 1160x940 launcher renders with Segoe UI. Native hidden Windows
+  tests verified IDs, ICO resources, relaunch commands, small/large WM_GETICON
+  handles and VT_EMPTY cleanup for all four apps and launcher. Launcher coverage
+  verifies tiles, menus, direct page icons, active-host switching and home restore.
+- Final validation: run_tests.py completed with exit code 0 across all five suites:
+  Launch 21, Import 27, Yearbook 19, Slideshow 49 and RadialMenu 51 (167 total,
+  one opt-in native-input test skipped). All other tests passed. The strengthened
+  native taskbar/icon-handle check also passed independently. Diff check passed.
