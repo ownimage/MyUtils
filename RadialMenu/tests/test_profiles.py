@@ -200,6 +200,46 @@ class ProfileTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_sequence(invalid)
 
+    def test_cog_opens_editor_and_configuration_round_trip_preserves_drafts(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            host = SuiteWindow(context)
+            host.open_app('radial-menu', force_new=False)
+            page = host.pages['radial-menu']
+            service = page.service
+            try:
+                service.application = 'C:/Apps/One.exe'
+                host.show()
+                service.popup.show_at_cursor()
+                QTest.mouseClick(service.popup.settings_button, Qt.MouseButton.LeftButton)
+                self.assertIs(page.pages.currentWidget(), page.editor)
+                self.assertEqual(app_key(page.editor.application), app_key(service.application))
+                self.assertFalse(service.popup.isVisible())
+                page.editor.select_button(3)
+                page.editor.name.setText('Pending edit')
+                QTest.mouseClick(page.editor.configuration_button, Qt.MouseButton.LeftButton)
+                self.assertEqual(page.pages.currentIndex(), 0)
+                self.assertEqual(host.windowTitle(), 'RadialMenu')
+                QTest.mouseClick(page.edit_buttons, Qt.MouseButton.LeftButton)
+                self.assertIs(page.pages.currentWidget(), page.editor)
+                self.assertEqual(page.editor.current, 2)
+                self.assertEqual(page.editor.name.text(), 'Pending edit')
+                self.assertEqual(service.profiles.buttons(service.application)[2]['name'], 'c')
+                page.segments.setCurrentIndex(page.segments.findData(8))
+                page.editor.configuration_button.click()
+                page.edit_buttons.click()
+                self.assertEqual(page.editor.ring.count, 8)
+                page.cancel_edit()
+                page.edit_buttons.click()
+                self.assertEqual(page.editor.name.text(), 'a')
+                page.choose_application('C:/Apps/Two.exe')
+                page.begin_edit()
+                self.assertEqual(page.editor.application, app_key('C:/Apps/Two.exe'))
+            finally:
+                service.stop()
+                self.app.aboutToQuit.disconnect(service.stop)
+                host.close()
+
     def test_editor_switches_segments_saves_and_never_sends_input(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
             context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')

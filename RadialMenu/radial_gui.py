@@ -249,15 +249,20 @@ class RadialService(QObject):
         for window in self.context.windows:
             if not window.closing:
                 window.open_app('radial-menu', force_new=False)
+                page = window.pages['radial-menu']
                 if self.application:
-                    window.pages['radial-menu'].choose_application(self.application)
+                    page.choose_application(self.application)
+                page.begin_edit()
                 window.showNormal()
                 window.raise_()
                 window.activateWindow()
                 return
         window = self.context.create_window('radial-menu')
-        if window and self.application:
-            window.pages['radial-menu'].choose_application(self.application)
+        if window:
+            page = window.pages['radial-menu']
+            if self.application:
+                page.choose_application(self.application)
+            page.begin_edit()
 
     def exit_background(self):
         self.stop()
@@ -608,6 +613,9 @@ class ButtonEditor(QWidget):
         self.ring.setFixedSize(360, 360)
         self.ring.selected.connect(self.select_button)
         left.addWidget(self.ring)
+        self.configuration_button = QPushButton('Main configuration')
+        self.configuration_button.clicked.connect(lambda: self.owner.pages.setCurrentIndex(0))
+        left.addWidget(self.configuration_button)
         left.addStretch()
         layout.addWidget(self.selector_column)
         right = QVBoxLayout()
@@ -722,7 +730,7 @@ class ButtonEditor(QWidget):
         back.clicked.connect(self.go_back)
         actions.addWidget(back)
         cancel = QPushButton('Cancel')
-        cancel.clicked.connect(lambda: self.owner.pages.setCurrentIndex(0))
+        cancel.clicked.connect(lambda: self.owner.cancel_edit())
         actions.addWidget(cancel)
         form.addStretch()
         self.form_scroll.setWidget(form_widget)
@@ -1210,11 +1218,23 @@ class RadialMenuWindow(QMainWindow):
         self.service.cancel_delivery()
         self.service.popup.hide()
         try:
-            self.editor.load_application(application)
+            if app_key(self.editor.application) != app_key(application):
+                self.editor.load_application(application)
+            else:
+                self.editor.ring.count = self.service.popup.count
+                self.editor.ring.accent = self.service.popup.accent
+                self.editor.ring.dark = self.service.popup.dark
+                self.editor.ring.update()
         except (ValueError, OSError) as error:
+            self.pages.setCurrentIndex(0)
             self.profile_message.setText(str(error))
             return
         self.pages.setCurrentWidget(self.editor)
+
+    def cancel_edit(self):
+        self.editor.application = ''
+        self.editor.buttons = []
+        self.pages.setCurrentIndex(0)
 
     def change_count(self):
         self.service.popup.count = self.segments.currentData()

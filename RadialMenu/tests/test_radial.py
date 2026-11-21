@@ -52,6 +52,7 @@ class RadialTests(unittest.TestCase):
             service.input = Mock()
             service.input.running_applications.return_value = []
             service.target = (123, 456, 789)
+            service.application = 'C:/Apps/Restored.exe'
             service.popup.show_at_cursor()
             QTest.mouseClick(service.popup.settings_button, Qt.MouseButton.LeftButton)
             self.assertFalse(service.popup.isVisible())
@@ -61,7 +62,10 @@ class RadialTests(unittest.TestCase):
             self.assertEqual(len(context.windows), 1)
             restored = next(iter(context.windows))
             self.assertTrue(restored.isVisible())
-            self.assertIs(restored.pages['radial-menu'].service, service)
+            page = restored.pages['radial-menu']
+            self.assertIs(page.service, service)
+            self.assertIs(page.pages.currentWidget(), page.editor)
+            self.assertEqual(page.editor.application.lower().replace('\\', '/'), 'c:/apps/restored.exe')
             service.tray_menu.actions()[-1].trigger()
             self.assertFalse(service.tray.isVisible())
             self.assertTrue(self.app.quitOnLastWindowClosed())

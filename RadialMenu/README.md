@@ -37,9 +37,13 @@ on the settings page. Key behaviour follows the target app and keyboard state. E
 dismisses it. Normal uses the Windows hotkey registration. Hold and Repeat temporarily capture
 the physical activation keys for one armed action; no additional dependency is needed.
 
-Click the cog at the top right of the popup to open RadialMenu settings. This
-closes the popup and cancels any letter delivery. Settings can also be restored
-from the tray icon.
+Click the cog at the top right of the popup to open Edit Buttons directly for the
+captured application. This closes the popup and cancels any letter delivery.
+Choose **Main configuration** to access application selection, hotkey and other
+settings, then **Edit Buttons** to return; drafts and the selected button are
+preserved for the same application. **Cancel** discards the drafts. Settings
+restored from the tray also open Edit Buttons when an application is available.
+Without a selected application, the main configuration page asks you to choose one.
 
 ## Edit application buttons
 

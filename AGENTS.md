@@ -355,7 +355,7 @@ py -3.11 -m venv venv
   globally from 2 to 26. Position clamps to the cursor screen's available geometry,
   including negative monitor coordinates; diameter shrinks on tiny screens.
 - Left-click selects a segment. Escape, right-click, centre/outside click or focus
-  loss dismisses it. The cog hides the popup and opens RadialMenu configuration,
+  loss dismisses it. The cog hides the popup and opens RadialMenu Edit Buttons,
   preselecting the captured executable. Opening settings cancels pending input.
 - Hotkey activation captures HWND/PID/thread before showing the popup, excludes
   this process's own windows and resolves the executable via a typed
@@ -805,3 +805,20 @@ py -3.11 -m venv venv
   launch terminated the first, and cleanup exited successfully. Diff check passed.
 - The user-reported PID 56124 was no longer present when inspected after the fix;
   no live standalone RadialMenu process remained in that snapshot.
+
+
+## Direct settings-to-button editor navigation (2026-11-21)
+
+- RadialService.open_settings selects the captured application and calls begin_edit
+  for existing and recreated hosts, so the popup cog and tray settings enter Edit
+  Buttons directly. With no selected application, configuration remains available.
+- ButtonEditor has Main configuration below the selector. Configuration's Edit
+  Buttons returns to the existing draft/selection for the same application, while
+  refreshing ring count and theme. Switching applications loads that profile.
+  Cancel invalidates the editor draft before returning, ensuring reentry reloads
+  saved values. Save and Back retains its existing save-then-config behaviour.
+- Validation: all 12 profile/editor, 7 radial/tray and 3 hotkey tests passed in
+  separate offscreen processes with clean exits (22 total). Coverage includes
+  cog entry for existing/recreated hosts, configuration return with unsaved drafts
+  and selected segment preserved, ring count refresh, Cancel reload and application
+  switching. Existing short-screen layout checks passed. Diff formatting passed.

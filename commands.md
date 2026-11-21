@@ -77,6 +77,10 @@ Cancel stops publishing new results and waits for active temporary jobs to finis
 
 Choose RadialMenu in the Launcher, then press Ctrl+Alt+Space. Use **Edit Hotkey**
 below **Edit Buttons** in Settings to configure an alternative activation shortcut.
+The radial popup settings cog opens **Edit Buttons** for the captured application.
+Use **Main configuration** and **Edit Buttons** to move between pages without
+losing drafts for that application; **Cancel** discards them.
+
 Change the segment count on the main settings page. Choose **Run in background** to hide to the
 system tray; the global key works in other apps. Double-click the tray icon for
 settings or use its **Exit RadialMenu** menu item to stop listening and close the running UI.
