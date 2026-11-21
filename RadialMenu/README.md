@@ -211,3 +211,10 @@ is indented to align with Name, Icons and Keys.
 
 Icon rows show the selected icon itself. Use **Icons…** or **File…** to select an icon,
 and **Clear** to remove it. Hover over a preview to see its reference.
+
+
+## Application icon
+
+The app uses its own matching icon on the Launch page, window title bar and
+Windows taskbar. Restart an open instance after icon updates. Editable SVG and
+multi-resolution ICO assets are shared under `../Launch/assets/icons`.

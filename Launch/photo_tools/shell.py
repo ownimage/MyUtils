@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from .fluent import QPushButton, QLineEdit, QPlainTextEdit, QProgressBar, QTableWidget, QComboBox, PrimaryPushButton
 
+from .app_icons import app_icon, set_process_identity, set_window_identity, clear_window_identity
 from .preferences import Preferences
 from .registry import load_apps, load_window_class
 from .settings_dialog import SettingsDialog
@@ -96,13 +97,13 @@ class SharedNavigation(QObject):
             return
         self._menu_signature = signature
         self.launch_menu.clear()
-        home = self.launch_menu.addAction('Launcher home')
+        home = self.launch_menu.addAction(app_icon(), 'Launcher home')
         home.triggered.connect(self.go_home)
         self.launch_menu.addSeparator()
         self.launch_actions = {}
         for app_id in state['order']:
             app = self.context.apps[app_id]
-            action = self.launch_menu.addAction(app.name)
+            action = self.launch_menu.addAction(app_icon(app.icon), app.name)
             new_window = state['new_windows'][app_id]
             action.setToolTip('Open in a new window' if new_window else 'Open in this window')
             action.triggered.connect(lambda _checked=False, key=app_id: self.launch(key))
@@ -138,6 +139,7 @@ class WindowBinding(QObject):
         self.window, self.app_id = window, app_id
         self.context = suite.context if suite is not None else get_context()
         window.suite_context = self.context
+        window.setWindowIcon(app_icon(self.context.apps[app_id].icon))
         self.navigation = None if suite is not None else SharedNavigation(window, self.context)
         self.context.preferences.changed.connect(self.refresh)
         QApplication.styleHints().colorSchemeChanged.connect(self.refresh)
@@ -171,7 +173,13 @@ class AppTile(QPushButton):
         layout.setSpacing(13)
         self.number_label = QLabel(f'{number:02}  /  PHOTO TOOLS')
         self.number_label.setObjectName('tileNumber')
-        layout.addWidget(self.number_label)
+        heading = QHBoxLayout()
+        heading.addWidget(self.number_label, 1)
+        self.icon_label = QLabel()
+        self.icon_label.setFixedSize(56, 56)
+        self.icon_label.setPixmap(app_icon(app.icon).pixmap(56, 56))
+        heading.addWidget(self.icon_label)
+        layout.addLayout(heading)
         title = QLabel(app.name)
         title.setObjectName('tileTitle')
         layout.addWidget(title)
@@ -332,6 +340,7 @@ class SuiteWindow(QMainWindow):
         self.breadcrumb.show()
         self.page_name.setText(self.context.apps[app_id].name)
         self.setWindowTitle(self.pages[app_id].windowTitle())
+        set_window_identity(self, self.context.apps[app_id])
         if app_id == 'radial-menu' and not self.isMaximized():
             available = self.screen().availableGeometry()
             # Reserve the native frame/title bar even before the first show.
@@ -376,6 +385,7 @@ class SuiteWindow(QMainWindow):
         self.stack.setCurrentWidget(self.home)
         self.breadcrumb.hide()
         self.setWindowTitle('Photo Tools · Launcher')
+        set_window_identity(self)
 
     def _close_when_idle(self):
         if not any(getattr(page, 'busy', False) for page in self.pages.values()):
@@ -400,6 +410,7 @@ class SuiteWindow(QMainWindow):
         for page in self.pages.values():
             if hasattr(page, 'dirty'):
                 page.dirty = False
+        clear_window_identity(self)
         self.context.windows.discard(self)
         for page in self.pages.values():
             page.close()
@@ -407,7 +418,9 @@ class SuiteWindow(QMainWindow):
 
 
 def run_app(initial_app=None, directory='', factory=None):
+    set_process_identity(initial_app)
     app = QApplication.instance() or QApplication(sys.argv)
+    app.setWindowIcon(app_icon(initial_app or 'launcher'))
     app.setApplicationName('Photo Tools')
     app.setOrganizationName('PhotoToolsPrototype')
     app.setStyle('Fusion')

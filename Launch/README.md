@@ -1,6 +1,6 @@
 # Photo Tools Launcher
 
-A shared desktop workspace for **Camera Import**, **Yearbook**, and **Slideshow**. The workspace lives
+A shared desktop workspace for **Camera Import**, **Yearbook**, **Slideshow**, and **RadialMenu**. The workspace lives
 in `P:\git\MyUtils` with the sibling folders `Launch`, `Import`, `Yearbook`, and `Slideshow`.
 
 ## Start
@@ -18,6 +18,15 @@ To start directly from this Launch folder:
 
 The Camera Import and Yearbook batch launchers still work. They start directly
 on their app page, with the same shared menus and settings as the launcher.
+
+## Application icons
+
+Each tool has an original, matching icon on its launcher tile, Launch menu,
+window title bar and Windows taskbar. The launcher has its own grid icon.
+Switching the active app updates the host icon; returning home restores the
+launcher icon. Separate app windows have distinct Windows taskbar identities.
+Restart open apps after an icon update. Vector sources and Windows ICO files
+live in `assets/icons`; see its README for the rebuild command.
 
 ## Using the launcher
 

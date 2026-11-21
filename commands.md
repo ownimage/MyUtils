@@ -168,3 +168,14 @@ Remove-Item Env:RADIALMENU_NATIVE_INPUT_TEST
 Remove-Item Env:QT_QPA_PLATFORM
 Remove-Item Env:PYTHONPATH
 ```
+
+
+## Rebuild application icons
+
+The four GUI apps and launcher use original matching icons on launcher tiles,
+window title bars and the Windows taskbar. Restart open apps to load changes.
+Edit `Launch/assets/icons/*.svg`, then regenerate multi-resolution ICO files:
+
+```powershell
+.\venv\Scripts\python.exe Launch/tools/build_icons.py
+```

@@ -13,6 +13,7 @@ from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QRectF, 
 from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QIcon, QPixmap, QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget, QSystemTrayIcon, QMenu, QHBoxLayout, QFileDialog, QFileIconProvider, QFrame, QScrollArea
 from photo_tools import apply_theme, bind_window, run_app
+from photo_tools.app_icons import app_icon
 from photo_tools.shell import CurrentPageStack
 from windows_input import WindowsInput
 from activation_monitor import parse_hotkey
@@ -220,14 +221,7 @@ class RadialService(QObject):
     def install_tray(self):
         if self.tray is not None or not QSystemTrayIcon.isSystemTrayAvailable():
             return
-        image = QPixmap(32, 32)
-        image.fill(Qt.GlobalColor.transparent)
-        painter = QPainter(image)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(QColor('#246b53'), 7))
-        painter.drawEllipse(5, 5, 22, 22)
-        painter.end()
-        self.tray = QSystemTrayIcon(QIcon(image), self)
+        self.tray = QSystemTrayIcon(app_icon('radial-menu'), self)
         self.tray.setToolTip('RadialMenu - ' + self.status)
         self.tray_menu = QMenu()
         self.tray_menu.addAction('Open RadialMenu settings', self.open_settings)

@@ -105,3 +105,10 @@ behaviour is unchanged.
 The launcher, Camera Import, Yearbook, Slideshow and shared settings now use
 QFluentWidgets controls. Install the top-level `../requirements.txt` in the shared `../venv`. Slideshow appears automatically in the
 launcher, Launch menu and Settings > Apps, preserving existing preferences.
+
+
+## Application icon
+
+The app uses its own matching icon on the Launch page, window title bar and
+Windows taskbar. Restart an open instance after icon updates. Editable SVG and
+multi-resolution ICO assets are shared under `../Launch/assets/icons`.

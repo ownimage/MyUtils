@@ -73,6 +73,30 @@ class SuiteTests(unittest.TestCase):
             QTest.qWait(10)
         self.assertTrue(predicate(), 'Operation did not finish')
 
+    def test_app_icons_follow_tiles_pages_and_host_navigation(self):
+        from photo_tools.app_icons import app_icon
+        from radial_gui import RadialService
+        with patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            launcher_image = app_icon().pixmap(32, 32).toImage()
+            self.assertEqual(self.window.windowIcon().pixmap(32, 32).toImage(), launcher_image)
+            images = []
+            for definition in self.context.apps.values():
+                tile = self.window.tiles[definition.id]
+                expected = app_icon(definition.icon)
+                self.assertFalse(tile.icon_label.pixmap().isNull())
+                self.assertEqual(tile.icon_label.pixmap().toImage(), expected.pixmap(56, 56).toImage())
+                self.assertFalse(self.window.navigation.launch_actions[definition.id].icon().isNull())
+                self.assertTrue(self.window.open_app(definition.id, force_new=False))
+                image = expected.pixmap(32, 32).toImage()
+                self.assertEqual(self.window.windowIcon().pixmap(32, 32).toImage(), image)
+                self.assertEqual(self.window.pages[definition.id].windowIcon().pixmap(32, 32).toImage(), image)
+                self.assertTrue(all(image != other for other in images))
+                images.append(image)
+            self.window.show_home()
+            self.assertEqual(self.window.windowIcon().pixmap(32, 32).toImage(), launcher_image)
+            self.context.radial_service.stop()
+            self.app.aboutToQuit.disconnect(self.context.radial_service.stop)
+
     def test_tiles_open_in_window_and_preserve_app_state(self):
         QTest.mouseClick(self.window.tiles['camera-import'], Qt.MouseButton.LeftButton)
         camera = self.window.pages['camera-import']
