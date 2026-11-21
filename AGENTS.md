@@ -756,3 +756,16 @@ py -3.11 -m venv venv
 - IconPreview has a fixed 32x32 slot for every state (selected, empty, missing),
   so Icons…/File…/Clear stay aligned when only one icon slot is populated.
 - Validation: mixed icon/empty states checked in both directions in light/dark at 760x540, 900x620 and 1000x720. All three action-button columns have matching x positions and the form remains free of scrolling. Diff formatting passed.
+
+
+## Empty button icon previews (2026-11-21)
+
+- IconPreview.refresh_icon explicitly calls QLabel.clear through super() before
+  showing empty/unavailable text. QLabel.setText('') can leave a pixmap displayed
+  when its existing text is already empty. Do not call IconPreview.clear here:
+  that override changes the reference and emits draft-change signals.
+- Regression reproduced the stale pixmap when navigating from two assigned icons
+  to an unassigned button. Coverage now checks both empty slots, restored previews
+  on return, and explicit Clear followed by reassignment.
+- Validation: all 11 profile/editor tests passed offscreen with a clean exit;
+  diff formatting passed.

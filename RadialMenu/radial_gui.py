@@ -554,6 +554,9 @@ class IconPreview(QLabel):
         if self.reference and not icon.isNull():
             self.setPixmap(icon.pixmap(28, 28))
         else:
+            # Empty text may already match QLabel's text while a pixmap remains.
+            # Call the base implementation: our clear() changes the reference.
+            super().clear()
             self.setText('?' if self.reference else '')
 
 
