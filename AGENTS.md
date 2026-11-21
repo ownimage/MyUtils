@@ -405,8 +405,8 @@ py -3.11 -m venv venv
   above the name, before and during hover; either can be empty. Both slots share
   all four icon libraries, with Icons… for the offline picker and File… for images.
   Labels elide to segment width. Draft names/icons update the editor ring live.
-- Save Buttons persists all drafts for the selected executable. Save and Back
-  saves then returns to configuration; Cancel returns without saving. Drafts are
+- Save Buttons persists all drafts for the selected executable. Save and Hide
+  saves then backgrounds the host (tray or minimise fallback); Cancel returns without saving. Drafts are
   held in the page and should be saved explicitly before closing the host. Runtime
   activation reloads the saved profile, not unsaved editor drafts.
 - Shared QSettings keys: radial/key, radial/count and radial/profiles. Profiles
@@ -816,7 +816,7 @@ py -3.11 -m venv venv
   Buttons returns to the existing draft/selection for the same application, while
   refreshing ring count and theme. Switching applications loads that profile.
   Cancel invalidates the editor draft before returning, ensuring reentry reloads
-  saved values. Save and Back retains its existing save-then-config behaviour.
+  saved values. Save and Hide saves then backgrounds the host.
 - Validation: all 12 profile/editor, 7 radial/tray and 3 hotkey tests passed in
   separate offscreen processes with clean exits (22 total). Coverage includes
   cog entry for existing/recreated hosts, configuration return with unsaved drafts
@@ -845,3 +845,35 @@ py -3.11 -m venv venv
   typing/paste/deletion cannot edit Keys, punctuation entry, both brackets,
   Space/Plus/Comma aliases, replace/append/Clear, Shift/AltGr mapping and rejection,
   case preservation, and balanced Normal/Repeat plus Hold release payloads.
+
+
+## Cursor-relative button editor placement (2026-11-21)
+
+- begin_edit captures QCursor.pos and queues position_editor_near_cursor with a
+  QObject context so it runs after showing/layout and is cancelled with the page.
+  The method skips a page/app that is no longer active, restores the host from
+  maximized/minimized state, and uses screenAt(cursor).availableGeometry.
+- Placement aligns the embedded radial selector's actual centre with the captured
+  cursor, then clamps the entire native frame to that monitor's work area. The
+  host shrinks when needed, including its frame/title bar; minimum dimensions may
+  be reduced for work areas below the normal host minimum. Layouts are activated
+  before measuring the selector. Use host.pos plus the frame delta to preserve
+  Qt's distinction between client position and decorated frame position.
+- Validation: 14 profile/editor, 7 radial/tray and 3 hotkey tests passed in separate
+  offscreen processes with clean exits (24 total). New coverage proves exact
+  selector/cursor alignment where space allows, all four work-area corners,
+  monitors with negative x/y, and oversized-window fitting on a 1024x700 work area.
+  Native mixed-DPI monitor movement was not exercised. Diff formatting passed.
+
+
+## Save and Hide button (2026-11-21)
+
+- ButtonEditor replaces Save and Back/go_back with Save and Hide/save_and_hide.
+  Successful save uses RadialService.run_in_background for tray hiding and the
+  existing no-tray minimise fallback. Validation/save errors leave the editor
+  visible. Main configuration remains the separate navigation action.
+- Queued cursor placement skips hidden/minimised hosts, preventing a pending
+  placement callback from reopening the window immediately after Save and Hide.
+- Validation: all 15 profile/editor tests passed with a clean offscreen exit.
+  New coverage checks saved data, editor retention, tray hiding, errors remaining
+  visible, minimise fallback, and a queued placement not unhiding the host.

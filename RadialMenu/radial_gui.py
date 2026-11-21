@@ -733,9 +733,9 @@ class ButtonEditor(QWidget):
         save = QPushButton('Save Buttons')
         save.clicked.connect(self.save)
         actions.addWidget(save)
-        back = QPushButton('Save and Back')
-        back.clicked.connect(self.go_back)
-        actions.addWidget(back)
+        self.save_hide = QPushButton('Save and Hide')
+        self.save_hide.clicked.connect(self.save_and_hide)
+        actions.addWidget(self.save_hide)
         cancel = QPushButton('Cancel')
         cancel.clicked.connect(lambda: self.owner.cancel_edit())
         actions.addWidget(cancel)
@@ -906,9 +906,9 @@ class ButtonEditor(QWidget):
         self.message.setText('Buttons saved')
         return True
 
-    def go_back(self):
+    def save_and_hide(self):
         if self.save():
-            self.owner.pages.setCurrentIndex(0)
+            self.owner.service.run_in_background(self.owner.window())
 
 
 class ApplicationPicker(QComboBox):
@@ -1237,6 +1237,41 @@ class RadialMenuWindow(QMainWindow):
             self.profile_message.setText(str(error))
             return
         self.pages.setCurrentWidget(self.editor)
+        cursor = QCursor.pos()
+        # Wait for the host to be shown and the editor layout/frame to settle.
+        QTimer.singleShot(0, self, lambda: self.position_editor_near_cursor(cursor))
+
+    def position_editor_near_cursor(self, cursor):
+        if self.pages.currentWidget() is not self.editor:
+            return
+        host = self.window()
+        if not host.isVisible() or host.isMinimized():
+            return
+        if getattr(host, 'current_app', 'radial-menu') != 'radial-menu':
+            return
+        screen = QApplication.screenAt(cursor) or QApplication.primaryScreen()
+        if screen is None:
+            return
+        available = screen.availableGeometry()
+        host.showNormal()
+        frame = host.frameGeometry()
+        frame_width = max(0, frame.width() - host.width())
+        frame_height = max(0, frame.height() - host.height())
+        width = max(1, available.width() - frame_width)
+        height = max(1, available.height() - frame_height)
+        # Very small work areas may be below the usual host minimum size.
+        host.setMinimumSize(min(host.minimumWidth(), width), min(host.minimumHeight(), height))
+        host.resize(min(host.width(), width), min(host.height(), height))
+        host.layout().activate()
+        self.pages.layout().activate()
+        self.editor.layout().activate()
+        self.editor.selector_column.layout().activate()
+        frame = host.frameGeometry()
+        ring_center = self.editor.ring.mapToGlobal(self.editor.ring.rect().center())
+        desired = frame.topLeft() + cursor - ring_center
+        x = max(available.left(), min(desired.x(), available.right() - frame.width() + 1))
+        y = max(available.top(), min(desired.y(), available.bottom() - frame.height() + 1))
+        host.move(host.pos() + QPoint(x - frame.left(), y - frame.top()))
 
     def cancel_edit(self):
         self.editor.application = ''

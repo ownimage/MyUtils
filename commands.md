@@ -82,6 +82,8 @@ and **Clear** to assemble or remove shortcuts. Build accepts printable character
 including `[` and `]`, supported by the current Windows keyboard layout.
 
 The radial popup settings cog opens **Edit Buttons** for the captured application.
+The editor places its radial selector near the mouse and keeps the window inside
+that monitor's usable area.
 Use **Main configuration** and **Edit Buttons** to move between pages without
 losing drafts for that application; **Cancel** discards them.
 
@@ -103,7 +105,7 @@ The cog at the popup’s top right opens RadialMenu settings without sending a k
 To configure RadialMenu buttons for an application, choose its executable in the
 Application selector and click **Edit Buttons**. The editor opens directly; use the radial menu on the left to switch buttons. Set name, Icon 1
 and Icon 2, and a key sequence such as `Ctrl+C, Ctrl+V`. **Save Buttons**
-saves the profile for that executable; **Save and Back** returns to configuration.
+saves the profile for that executable; **Save and Hide** saves and hides the window to the tray (minimises when no tray is available). Save errors keep the editor open.
 Opening settings through the live popup cog selects its captured application.
 Choose a per-button **Behaviour**: Normal (`.`) sends once; Hold (`-`) holds one
 combo; Repeat (`...`) repeats the sequence up to 10 times per second. Hold/Repeat

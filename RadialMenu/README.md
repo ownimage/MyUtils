@@ -52,7 +52,10 @@ popup cog to select the application captured by the hotkey. Saved applications
 appear in the Application selector. Profiles match the full executable path,
 case-insensitively, and apply to all windows of that executable.
 
-Select **Edit Buttons** to open the editor directly, with the first button selected. The button editor shows
+Select **Edit Buttons** to open the editor directly, with the first button selected.
+The window opens with the radial selector centred as close to the mouse as the
+space allows. It stays inside the mouse monitor's usable area, including its
+title bar and frame, and shrinks if needed to fit. The button editor shows
 **Edit Buttons — application** in the window title bar, a radial selector on the
 left and the selected button's fields starting at the top on the right. The form
 scrolls in smaller windows; Save and Cancel stay visible beneath it. Clicking another segment switches buttons and
@@ -81,7 +84,8 @@ the modifiers down for mouse actions such as modified dragging, until the hotkey
 is pressed again. Use `Plus` or `Comma` for those literal keys. A blank sequence disables the action.
 
 **Save Buttons** persists all button drafts for this application. **Save and
-Back** saves and returns to configuration. **Cancel** returns without saving
+Hide** saves and hides the window to the tray (or minimises it if no tray is
+available). A save error leaves the editor visible. **Cancel** returns without saving
 the pending drafts. Editing and the tray preview never send input. Profiles are
 stored in the existing shared settings file. Unconfigured applications retain
 the default letter buttons. The next hotkey activation loads the saved profile.

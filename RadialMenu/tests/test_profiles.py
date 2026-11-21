@@ -201,7 +201,7 @@ class ProfileTests(unittest.TestCase):
                 self.assertTrue(editor.modifiers['Alt'].isChecked())
                 self.assertEqual(editor.key.text(), '')
                 self.assertEqual(page.service.profiles.buttons('C:/Apps/One.exe')[0]['sequence'], 'Ctrl+Alt')
-                editor.go_back()
+                editor.configuration_button.click()
                 self.assertEqual(host.windowTitle(), 'RadialMenu')
             finally:
                 page.service.stop()
@@ -238,6 +238,77 @@ class ProfileTests(unittest.TestCase):
         for invalid in ('Ctrl+', 'Ctrl+Ctrl+C', 'Unknown', 'a,', ',a'):
             with self.assertRaises(ValueError):
                 parse_sequence(invalid)
+
+    def test_save_and_hide_persists_and_only_hides_after_success(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            host = SuiteWindow(context)
+            host.open_app('radial-menu', force_new=False)
+            page = host.pages['radial-menu']
+            service = page.service
+            quit_on_close = self.app.quitOnLastWindowClosed()
+            service.tray = Mock()
+            try:
+                host.show()
+                page.choose_application('C:/Apps/One.exe')
+                page.begin_edit()
+                page.editor.name.setText('Saved name')
+                self.assertEqual(page.editor.save_hide.text(), 'Save and Hide')
+                page.editor.save_hide.click()
+                self.app.processEvents()
+                self.assertFalse(host.isVisible())
+                self.assertIs(page.pages.currentWidget(), page.editor)
+                self.assertEqual(service.profiles.buttons('C:/Apps/One.exe')[0]['name'], 'Saved name')
+                service.tray.show.assert_called_once()
+                host.showNormal()
+                page.editor.sequence.setText('InvalidKey')
+                page.editor.save_hide.click()
+                self.assertTrue(host.isVisible())
+                self.assertIn('Unsupported key', page.editor.message.text())
+                page.editor.sequence.setText('A')
+                service.tray = None
+                page.editor.save_hide.click()
+                self.assertTrue(host.isMinimized())
+            finally:
+                service.stop()
+                self.app.aboutToQuit.disconnect(service.stop)
+                host.close()
+                self.app.setQuitOnLastWindowClosed(quit_on_close)
+
+    def test_editor_opens_near_cursor_and_keeps_frame_on_cursor_screen(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=tmp+'/settings.ini')
+            host = SuiteWindow(context)
+            host.open_app('radial-menu', force_new=False)
+            page = host.pages['radial-menu']
+            page.choose_application('C:/Apps/One.exe')
+            host.resize(900, 620)
+            host.show()
+            screen = Mock()
+            try:
+                available = QRect(0, 0, 1920, 1040)
+                screen.availableGeometry.return_value = available
+                cursor = QPoint(600, 450)
+                with patch('radial_gui.QCursor.pos', return_value=cursor), patch.object(QApplication, 'screenAt', return_value=screen):
+                    page.begin_edit()
+                    self.app.processEvents()
+                    self.assertEqual(page.editor.ring.mapToGlobal(page.editor.ring.rect().center()), cursor)
+                    self.assertTrue(available.contains(host.frameGeometry()))
+                    # Every corner, including a monitor left/above the primary.
+                    for available in (QRect(0, 0, 1920, 1040), QRect(-1920, -200, 1920, 1040)):
+                        screen.availableGeometry.return_value = available
+                        for point in (available.topLeft(), available.topRight(), available.bottomLeft(), available.bottomRight()):
+                            page.position_editor_near_cursor(point)
+                            self.assertTrue(available.contains(host.frameGeometry()), host.frameGeometry())
+                    # Oversized windows shrink to the usable area, including frame.
+                    screen.availableGeometry.return_value = QRect(-1024, 0, 1024, 700)
+                    host.resize(1600, 1000)
+                    page.position_editor_near_cursor(QPoint(-20, 690))
+                    self.assertTrue(screen.availableGeometry().contains(host.frameGeometry()))
+            finally:
+                page.service.stop()
+                self.app.aboutToQuit.disconnect(page.service.stop)
+                host.close()
 
     def test_cog_opens_editor_and_configuration_round_trip_preserves_drafts(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
