@@ -517,7 +517,8 @@ class SingleKeyEdit(QLineEdit):
         if character.isascii() and character.isalnum():
             key = character.upper()
         else:
-            key = {' ': 'Space', '+': 'Plus', ',': 'Comma'}.get(character, '')
+            key = {' ': 'Space', '+': 'Plus', ',': 'Comma'}.get(
+                character, character if character.isprintable() else '')
         self.setText(key)
 
     def keyPressEvent(self, event):
@@ -682,7 +683,8 @@ class ButtonEditor(QWidget):
         self.modifiers_only.setMinimumWidth(self.modifiers_only.sizeHint().width())
         modifiers.addWidget(self.modifiers_only)
         self.build_help = EditorInfoButton('Build',
-            'Choose Ctrl, Alt, Shift or Win, then type a key or choose a special key. '
+            'Choose Ctrl, Alt, Shift or Win, then type a character or choose a special key. '
+            'Symbols use the current keyboard layout and include required modifiers. '
             'Use key replaces Keys; Append key adds another shortcut for Normal or Repeat. '
             'Choose Modifiers only to use the checked modifiers without a key.')
         modifiers.addWidget(self.build_help)
@@ -711,9 +713,14 @@ class ButtonEditor(QWidget):
         keys.addWidget(self.append_key)
         sequence_row = field_row('Keys')
         self.sequence = QLineEdit()
+        self.sequence.setReadOnly(True)
         self.sequence.setAccessibleName('Button sequence')
         self.sequence.setPlaceholderText('Ctrl+C, Ctrl+V')
         sequence_row.addWidget(self.sequence, 1)
+        self.clear_keys = QPushButton('Clear')
+        self.clear_keys.setAccessibleName('Clear keys')
+        self.clear_keys.clicked.connect(self.sequence.clear)
+        sequence_row.addWidget(self.clear_keys)
         self.sequence_help = EditorInfoButton('Keys')
         sequence_row.addWidget(self.sequence_help)
         self.hold_validator = QRegularExpressionValidator(QRegularExpression('[^,]*'), self.sequence)
@@ -759,8 +766,8 @@ class ButtonEditor(QWidget):
         self.sequence.setValidator(self.hold_validator if hold else None)
         self.sequence.setPlaceholderText('Ctrl+C' if hold else 'Ctrl+C, Ctrl+V')
         self.sequence_help.set_help(
-            'Hold accepts one key or shortcut. Blank disables the action.' if hold else
-            'Separate keys or shortcuts with commas. Example: Ctrl+A, Delete. Blank disables the action.')
+            'Use Build for one key or shortcut. Clear disables the action.' if hold else
+            'Use Build to replace or append keys and shortcuts. Clear disables the action.')
         shortened = hold and ',' in self.sequence.text()
         if shortened:
             self.sequence.setText(self.sequence.text().split(',', 1)[0].strip())

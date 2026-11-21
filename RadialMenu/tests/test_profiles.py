@@ -74,9 +74,33 @@ class ProfileTests(unittest.TestCase):
             QTest.keyClick(field, Qt.Key.Key_Backspace)
             self.assertEqual(field.text(), '')
             self.assertEqual(editor.special_key.currentText(), 'Special keys…')
-            # The sequence field continues to allow multiple chords.
-            QTest.keyClicks(editor.sequence, 'Ctrl+A, Tab')
+            # Keys is a generated, selectable display, not a typing surface.
+            editor.sequence.setText('Ctrl+A, Tab')
+            self.assertTrue(editor.sequence.isReadOnly())
+            editor.sequence.selectAll()
+            QTest.keyClicks(editor.sequence, 'Z')
+            QTest.keyClick(editor.sequence, Qt.Key.Key_Backspace)
+            self.app.clipboard().setText('Ctrl+X')
+            QTest.keyClick(editor.sequence, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
             self.assertEqual(editor.sequence.text(), 'Ctrl+A, Tab')
+            for character in '[]{};:\'"\\|`~!@#$%^&*()-_=<>/?':
+                QTest.keyClicks(field, character)
+                self.assertEqual(field.text(), character)
+                editor.apply_key(append=False)
+                self.assertEqual(editor.sequence.text(), character)
+                self.assertTrue(parse_sequence(character))
+            for character, name in ((' ', 'Space'), ('+', 'Plus'), (',', 'Comma')):
+                QTest.keyClicks(field, character)
+                self.assertEqual(field.text(), name)
+                editor.apply_key(append=False)
+                self.assertEqual(editor.sequence.text(), name)
+            editor.clear_keys.click()
+            self.assertEqual(editor.sequence.text(), '')
+            field.setText(']')
+            editor.apply_key(append=False)
+            field.setText('[')
+            editor.apply_key(append=True)
+            self.assertEqual(editor.sequence.text(), '], [')
         finally:
             editor.close()
 
@@ -191,6 +215,21 @@ class ProfileTests(unittest.TestCase):
         for invalid in ('Ctrl+Ctrl', 'Alt+Shift+Alt', 'Ctrl+', '+Shift'):
             with self.assertRaises(ValueError):
                 parse_sequence(invalid)
+
+    def test_character_mapping_adds_required_modifiers_and_preserves_case(self):
+        with patch('button_profiles.character_key', return_value=([16], 49)) as mapping:
+            self.assertEqual(parse_sequence('Ctrl+!'), [([17, 16], 49)])
+            self.assertEqual(parse_sequence('Shift+!'), [([16], 49)])
+            mapping.assert_called_with('!')
+        with patch('button_profiles.character_key', return_value=([17, 18], 69)):
+            self.assertEqual(parse_sequence('€'), [([17, 18], 69)])
+        with patch('button_profiles.character_key', return_value=([], 222)) as mapping:
+            parse_sequence('É')
+            mapping.assert_called_with('É')
+        from button_profiles import character_key
+        with patch('ctypes.windll.user32.VkKeyScanW', return_value=-1):
+            with self.assertRaisesRegex(ValueError, 'keyboard layout'):
+                character_key('☃')
 
     def test_sequence_validation(self):
         self.assertEqual(parse_sequence('Ctrl+C, Ctrl+V, Enter'), [([17],67),([17],86),([],13)])

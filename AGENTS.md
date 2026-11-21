@@ -496,7 +496,7 @@ py -3.11 -m venv venv
 - ButtonEditor offers Ctrl/Alt/Shift/Win checkboxes, typed keys and a special-key
   dropdown including F1–F24 and all supported named keys. Use key replaces the
   sequence; Append key adds a comma-separated chord. Both validate before editing.
-  The editable sequence and profile schema remain compatible. Selecting a button
+  The sequence display is now read-only; the profile schema remains compatible. Selecting a button
   resets the builder and reflects its existing single chord.
 - Validation: all 19 RadialMenu and 18 Launch tests passed on 2026-11-20.
   Editor coverage exercises all special-key options, combined modifiers,
@@ -518,7 +518,7 @@ py -3.11 -m venv venv
 - SingleKeyEdit now overtypes each typed key and keeps only the last inserted
   character on paste, independent of cursor position. Backspace/Delete clear the
   whole key. Named keys from the dropdown or profile loading remain intact;
-  sequence text still supports multiple chords. Space/plus/comma map to names.
+  the generated sequence display still supports multiple chords. Space/plus/comma map to names.
 - TDD: added an interaction regression first and observed failure (typing abc
   produced Abc rather than C), then implemented SingleKeyEdit. All 8 profile/editor
   tests pass, covering overtyping, cursor position, uppercase, paste, clearing,
@@ -822,3 +822,26 @@ py -3.11 -m venv venv
   cog entry for existing/recreated hosts, configuration return with unsaved drafts
   and selected segment preserved, ring count refresh, Cancel reload and application
   switching. Existing short-screen layout checks passed. Diff formatting passed.
+
+
+## Read-only Keys and printable Build characters (2026-11-21)
+
+- ButtonEditor.sequence is read-only but remains selectable/copyable. Build's
+  Use key and Append key update it programmatically; Clear removes all chords
+  and disables the action. Help and README no longer invite direct sequence edits.
+- SingleKeyEdit retains printable punctuation/Unicode instead of clearing it.
+  Space, Plus and Comma aliases prevent ambiguity with the sequence delimiters.
+  ASCII letters keep the established uppercase-without-implicit-Shift behaviour.
+- button_profiles.character_key uses typed Win32 VkKeyScanW to map printable
+  characters through the current thread's Windows keyboard layout, merging its
+  Shift/Ctrl/Alt requirements with explicit modifiers without duplicates. Plus
+  and Comma also use layout mapping; raw character case is preserved for mapping.
+  Unmappable characters and unsupported shift-state bits report validation errors;
+  IME text, supplementary Unicode and multi-key composition are not text injection.
+  Normal, Hold, Repeat and hotkey validation share the parser. Profiles keep the
+  same schema; mapping follows the current layout when parsed, not a stored layout.
+- Validation: 13 profile/editor, 18 behaviour/input and 3 hotkey tests passed in
+  separate offscreen processes with clean exits (34 total). Coverage verifies
+  typing/paste/deletion cannot edit Keys, punctuation entry, both brackets,
+  Space/Plus/Comma aliases, replace/append/Clear, Shift/AltGr mapping and rejection,
+  case preservation, and balanced Normal/Repeat plus Hold release payloads.

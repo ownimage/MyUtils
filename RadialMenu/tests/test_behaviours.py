@@ -295,6 +295,25 @@ class PhysicalInputTests(unittest.TestCase):
         backend.focused.return_value = False
         self.assertFalse(backend.gesture_safe((1,2,3), allow_mouse=True))
 
+    def test_printable_character_payloads_for_normal_hold_and_repeat(self):
+        backend, events = self.backend()
+        backend.keys_released = Mock(return_value=True)
+        with patch('button_profiles.character_key', return_value=([16], 49)):
+            self.assertTrue(backend.send_sequence((1,2,3), '!'))
+            tap = [(16,0),(49,0),(49,2),(16,2)]
+            self.assertEqual(events, tap)
+            events.clear()
+            self.assertTrue(backend.begin_hold((1,2,3), '!'))
+            self.assertEqual(events, [(16,0),(49,0)])
+            self.assertTrue(backend.end_gesture())
+            self.assertEqual(events, tap)
+            backend.monitor = Mock()
+            backend.monitor.state.return_value = 'down'
+            backend.monitor.safe.return_value = True
+            events.clear()
+            self.assertTrue(backend.repeat_sequence((1,2,3), '!'))
+            self.assertEqual(events, tap)
+
     def test_modifiers_only_payloads_for_normal_hold_and_repeat(self):
         backend, events = self.backend()
         backend.keys_released = Mock(return_value=True)

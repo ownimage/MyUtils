@@ -77,6 +77,10 @@ Cancel stops publishing new results and waits for active temporary jobs to finis
 
 Choose RadialMenu in the Launcher, then press Ctrl+Alt+Space. Use **Edit Hotkey**
 below **Edit Buttons** in Settings to configure an alternative activation shortcut.
+In Edit Buttons, **Keys** is read-only. Use **Build**, **Use key** / **Append key**,
+and **Clear** to assemble or remove shortcuts. Build accepts printable characters,
+including `[` and `]`, supported by the current Windows keyboard layout.
+
 The radial popup settings cog opens **Edit Buttons** for the captured application.
 Use **Main configuration** and **Edit Buttons** to move between pages without
 losing drafts for that application; **Cancel** discards them.

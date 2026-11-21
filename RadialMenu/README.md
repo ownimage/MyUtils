@@ -68,8 +68,12 @@ Use the Ctrl, Alt, Shift and Win checkboxes with a typed key or the special-key
 dropdown (F1–F24, Tab, Space, Backspace, Return and navigation keys).
 The key entry holds one key: each typed key replaces the previous one, and
 pasting retains only the last inserted character. Backspace or Delete clears it. **Use key**
-replaces the sequence; **Append key** adds another shortcut. You can also edit
-the sequence directly. Letter keys are always shown and saved in uppercase (including existing profiles
+replaces the sequence; **Append key** adds another shortcut. **Keys** is read-only;
+use its **Clear** button to remove the sequence and disable the action.
+Build accepts printable characters such as `[`, `]`, punctuation and symbols.
+Windows maps these through the current keyboard layout and adds required Shift
+or Ctrl+Alt (AltGr) modifiers. Characters that cannot be produced by one key/chord
+on that layout are reported when you choose **Use key** or **Append key**. Letter keys are always shown and saved in uppercase (including existing profiles
 when loaded); uppercase does not imply Shift. Choose Shift explicitly when needed.
 Select **Modifiers only** to send Ctrl, Alt, Shift or Win without another key
 (for example `Ctrl+Shift`). This works with Normal, Hold and Repeat. Hold keeps
