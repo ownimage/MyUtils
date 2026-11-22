@@ -8,6 +8,30 @@ class RadialTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
+    def test_standalone_configuration_starts_at_compact_editor_size(self):
+        import tempfile
+        from unittest.mock import patch
+        from PySide6.QtCore import QSize
+        from photo_tools.shell import SuiteContext
+        from radial_gui import RadialService
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=folder+'/settings.ini')
+            window = context.create_window('radial-menu')
+            try:
+                self.app.processEvents()
+                page = window.pages['radial-menu']
+                self.assertEqual(page.pages.currentIndex(), 0)
+                self.assertEqual(window.size(), QSize(760, 540))
+                self.assertEqual(window.size(), window.minimumSize())
+                window.resize(780, 580)
+                window._select_app('radial-menu')
+                self.assertEqual(window.size(), QSize(780, 580))
+            finally:
+                page.service.stop()
+                self.app.aboutToQuit.disconnect(page.service.stop)
+                window.close()
+
     def test_edges_and_negative_monitor(self):
         screen = QRect(-1920, -200, 1920, 1080)
         for point in (screen.topLeft(), screen.bottomRight(), screen.center()):

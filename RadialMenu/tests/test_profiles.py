@@ -307,6 +307,7 @@ class ProfileTests(unittest.TestCase):
                 with patch('radial_gui.QCursor.pos', return_value=cursor), patch.object(QApplication, 'screenAt', return_value=screen):
                     page.begin_edit()
                     self.app.processEvents()
+                    self.assertEqual(host.size(), host.minimumSize())
                     self.assertEqual(page.editor.ring.mapToGlobal(page.editor.ring.rect().center()), cursor)
                     self.assertTrue(available.contains(host.frameGeometry()))
                     # Every corner, including a monitor left/above the primary.

@@ -219,7 +219,7 @@ class RadialService(QObject):
         self.send_timer.timeout.connect(self.deliver_letter)
         self.popup.selected.connect(self.select_letter)
         self.popup.button_released.connect(lambda: self.finish_gesture(
-            "Action stopped: button released.") if self.armed is not None else None)
+            '') if self.armed is not None else None)
         self.popup.settings_requested.connect(self.open_settings)
         self.tray = None
         self.registered = False
@@ -381,7 +381,7 @@ class RadialService(QObject):
 
     def finish_gesture(self, message):
         cleaned = self.cancel_delivery()
-        self.status = message if cleaned else message + ' Input cleanup or hotkey restart failed; restart RadialMenu.'
+        self.status = message if cleaned else (message + ' Input cleanup or hotkey restart failed; restart RadialMenu.').strip()
         if self.tray is not None:
             self.tray.setToolTip('RadialMenu - ' + self.status)
         self.changed.emit()
@@ -430,7 +430,7 @@ class RadialService(QObject):
         # Native focus restoration may relinquish Qt's mouse capture. Poll the
         # physical button too, so release outside the popup still stops input.
         if mouse_style and not self.input.button_down():
-            self.finish_gesture('Action stopped: button released.')
+            self.finish_gesture('')
             return
         if state == 'cancelled' or not self.input.valid(target):
             self.finish_gesture('Action cancelled.')
@@ -1128,34 +1128,48 @@ class RadialMenuWindow(QMainWindow):
         self.setWindowTitle('RadialMenu')
         root = QWidget()
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(28, 24, 28, 24)
-        layout.addWidget(QLabel('RADIAL MENU'))
+        layout.setContentsMargins(20, 12, 20, 12)
+        layout.setSpacing(8)
+
+        def config_row(label):
+            row = QHBoxLayout()
+            row.setSpacing(8)
+            caption = QLabel(label)
+            caption.setFixedWidth(120)
+            row.addWidget(caption)
+            layout.addLayout(row)
+            return row
+
+        appearance_row = config_row('Radial Menu')
         self.appearance = QComboBox()
         for label, data in [('Follow Windows', 'system'), ('Light', 'light'), ('Dark', 'dark')]:
             self.appearance.addItem(label, data)
-        layout.addWidget(self.appearance)
+        appearance_row.addWidget(self.appearance, 1)
+        hotkey_row = config_row('Activation hotkey')
         self.hotkey_summary = QLabel()
-        layout.addWidget(self.hotkey_summary)
-        layout.addWidget(QLabel('Segments'))
+        hotkey_row.addWidget(self.hotkey_summary, 1)
+        self.edit_hotkey = QPushButton('Edit Hotkey')
+        hotkey_row.addWidget(self.edit_hotkey)
+        segments_row = config_row('Segments')
         self.segments = QComboBox()
         for count in range(2, 27):
             self.segments.addItem(str(count), count)
-        layout.addWidget(self.segments)
+        segments_row.addWidget(self.segments, 1)
         self.status = QLabel()
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
-        layout.addWidget(QLabel('Application'))
+        application_row = config_row('Application')
         self.application_picker = ApplicationPicker()
         self.application_picker.setAccessibleName('Application to configure')
-        layout.addWidget(self.application_picker)
-        browse_app = QPushButton('Choose application…')
-        layout.addWidget(browse_app)
+        application_row.addWidget(self.application_picker, 1)
+        self.application_help = EditorInfoButton('Application',
+            'Choose a running application or a previously configured application from the dropdown.')
+        application_row.addWidget(self.application_help)
         self.edit_buttons = QPushButton('Edit Buttons')
         layout.addWidget(self.edit_buttons)
-        self.edit_hotkey = QPushButton('Edit Hotkey')
-        layout.addWidget(self.edit_hotkey)
-        self.profile_message = QLabel('Choose a running application, or browse for another executable.')
+        self.profile_message = QLabel()
         self.profile_message.setWordWrap(True)
+        self.profile_message.hide()
         layout.addWidget(self.profile_message)
         self.about_button = QPushButton('About & Licenses')
         layout.addWidget(self.about_button)
@@ -1186,9 +1200,10 @@ class RadialMenuWindow(QMainWindow):
             context.radial_service = RadialService(context)
         self.service = context.radial_service
         self.app_icons = ApplicationIcons(context.preferences.settings)
-        self.hotkey_summary.setText(f'Activation hotkey: {self.service.key}')
+        self.hotkey_summary.setText(self.service.key)
         self.segments.setCurrentIndex(self.segments.findData(self.service.popup.count))
         self.status.setText(self.service.status)
+        self.status.setVisible(bool(self.service.status))
         self.segments.currentIndexChanged.connect(self.change_count)
         self.service.changed.connect(self.refresh_status)
         self.service.popup.selected.connect(self.selected_button)
@@ -1202,7 +1217,6 @@ class RadialMenuWindow(QMainWindow):
         self.pages.currentChanged.connect(self.update_page_title)
         self.about_button.clicked.connect(lambda: self.pages.setCurrentWidget(self.about))
         self.edit_buttons.clicked.connect(self.begin_edit)
-        browse_app.clicked.connect(self.browse_application)
         self.application_picker.refreshing.connect(self.refresh_applications)
         self.refresh_applications()
         if self.service.application:
@@ -1225,8 +1239,9 @@ class RadialMenuWindow(QMainWindow):
         self.pages.setCurrentWidget(self.hotkey_editor)
 
     def refresh_status(self):
-        self.hotkey_summary.setText(f'Activation hotkey: {self.service.key}')
+        self.hotkey_summary.setText(self.service.key)
         self.status.setText(self.service.status)
+        self.status.setVisible(bool(self.service.status))
 
     def selected_button(self, number):
         self.selection.setText(f"Selected {self.service.popup.buttons[number-1]['name']}")
@@ -1264,7 +1279,7 @@ class RadialMenuWindow(QMainWindow):
         try:
             self.app_icons.remember(application, icon)
         except OSError as error:
-            self.profile_message.setText(f'Could not cache application icon: {error}')
+            self.show_profile_message(f'Could not cache application icon: {error}')
 
     def choose_application(self, application):
         application = app_key(application)
@@ -1278,15 +1293,14 @@ class RadialMenuWindow(QMainWindow):
             index = self.application_picker.count()-1
         self.application_picker.setCurrentIndex(index)
 
-    def browse_application(self):
-        path, _ = QFileDialog.getOpenFileName(self, 'Choose application', '', 'Applications (*.exe)')
-        if path:
-            self.choose_application(path)
+    def show_profile_message(self, message):
+        self.profile_message.setText(message)
+        self.profile_message.setVisible(bool(message))
 
     def begin_edit(self):
         application = self.application_picker.currentData()
         if not application:
-            self.profile_message.setText('Choose an application first.')
+            self.show_profile_message('Choose an application first.')
             return
         self.service.cancel_delivery()
         self.service.popup.hide()
@@ -1300,7 +1314,7 @@ class RadialMenuWindow(QMainWindow):
                 self.editor.ring.update()
         except (ValueError, OSError) as error:
             self.pages.setCurrentIndex(0)
-            self.profile_message.setText(str(error))
+            self.show_profile_message(str(error))
             return
         self.pages.setCurrentWidget(self.editor)
         cursor = QCursor.pos()
@@ -1327,7 +1341,7 @@ class RadialMenuWindow(QMainWindow):
         height = max(1, available.height() - frame_height)
         # Very small work areas may be below the usual host minimum size.
         host.setMinimumSize(min(host.minimumWidth(), width), min(host.minimumHeight(), height))
-        host.resize(min(host.width(), width), min(host.height(), height))
+        host.resize(host.minimumWidth(), host.minimumHeight())
         host.layout().activate()
         self.pages.layout().activate()
         self.editor.layout().activate()

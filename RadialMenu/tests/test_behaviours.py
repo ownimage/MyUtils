@@ -260,6 +260,7 @@ class BehaviourTests(unittest.TestCase):
         self.service.deliver_letter()
         self.assertIsNone(self.service.armed)
         self.backend.end_gesture.assert_called_once()
+        self.assertEqual(self.service.status, '')
 
     def test_button_style_preview_does_not_arm_or_keep_mouse_capture(self):
         from PySide6.QtCore import Qt, QPoint

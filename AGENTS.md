@@ -385,8 +385,8 @@ py -3.11 -m venv venv
 - Application dropdown combines running taskbar-style apps with configured
   executables, deduplicated by normalised full executable path. It refreshes on
   opening, preserves selection if still listed and marks closed saved profiles
-  '(configured)'. The selected-app control also shows its icon. File browsing
-  supports configuring another executable that is not running.
+  '(configured)'. The selected-app control also shows its icon. Use this dropdown
+  or the captured foreground app; configuration no longer offers file browsing.
 - WindowsInput.running_applications excludes tool, owned utility and cloaked
   windows. Icon extraction uses bounded WM_GETICON/SendMessageTimeout, then class
   icons, then QFileIconProvider. QImage.fromHICON copies borrowed handles; never
@@ -940,3 +940,33 @@ py -3.11 -m venv venv
   900x620 and 1000x720 with no horizontal overflow and equal dropdown widths
   (at most one pixel difference with registered Segoe UI). Style persistence
   and native Qt rounding are covered in editor tests. Diff formatting passed.
+
+
+## Compact RadialMenu configuration (2026-11-22)
+
+- Edit Buttons now opens at the host minimum size (normally 760x540), retaining
+  cursor-relative placement and smaller-work-area fitting. Users can enlarge it.
+- Configuration uses single rows for Radial Menu/appearance, activation hotkey
+  value/Edit Hotkey, Segments/count, and Application/picker/information button.
+  Removed executable browsing and the persistent application instruction line.
+  Application help is a tooltip/flyout; validation/cache errors still appear.
+- Normal Button held release clears the status instead of reporting routine
+  completion. Cleanup failures still show an error; blank status labels hide.
+- Validation: 71 tests passed with clean exits across separate editor/profile
+  (15), behaviour/input (25), hotkey (3), radial/tray (7) and Launch (21) runs.
+  Coverage checks minimum-size opening, same-row configuration controls and
+  quiet button release. Light/dark configuration screenshots inspected at
+  760x540; editor renders checked at 760x540, 900x620 and 1000x720 without
+  horizontal overflow. Diff formatting passed.
+
+
+## Compact standalone startup (2026-11-22)
+
+- SuiteWindow._select_app now uses the RadialMenu minimum (760x540) on first
+  entry, including standalone startup through RadialMenu.cmd. Previously it
+  retained the launcher's 1160x940 initial size until Edit Buttons was opened.
+  Subsequent app selections retain manual resizing; work-area fitting remains.
+- Validation: all 8 radial/tray and 21 Launch tests passed in separate
+  offscreen processes with clean exits. The new test uses the standalone
+  create_window path and verifies configuration starts at 760x540 and retains
+  later manual sizing. Diff formatting passed.

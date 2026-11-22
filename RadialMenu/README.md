@@ -47,7 +47,7 @@ Without a selected application, the main configuration page asks you to choose o
 
 ## Edit application buttons
 
-Choose an executable using **Choose application…**, or open settings from the
+Choose a running or saved executable in **Application**, or open settings from the
 popup cog to select the application captured by the hotkey. Saved applications
 appear in the Application selector. Profiles match the full executable path,
 case-insensitively, and apply to all windows of that executable.
@@ -223,3 +223,11 @@ and **Clear** to remove it. Hover over a preview to see its reference.
 The app uses its own matching icon on the Launch page, window title bar and
 Windows taskbar. Restart an open instance after icon updates. Editable SVG and
 multi-resolution ICO assets are shared under `../Launch/assets/icons`.
+
+Configuration keeps appearance, hotkey and segment controls on compact rows.
+Application help is available from the information button beside its dropdown;
+choose running or previously configured applications there. Edit Buttons opens
+at its minimum size (normally 760x540) and can be enlarged by dragging a corner.
+Releasing a Button held action stops it quietly; cleanup failures remain visible.
+
+Standalone configuration also opens at 760x540, matching Edit Buttons.
