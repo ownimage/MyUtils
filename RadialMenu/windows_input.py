@@ -126,6 +126,9 @@ class WindowsInput:
             return False
         return True
 
+    def button_down(self):
+        return bool(self.api.GetAsyncKeyState(1) & 0x8000)
+
     def gesture_state(self):
         return self.monitor.state() if self.monitor else 'cancelled'
 
@@ -160,11 +163,11 @@ class WindowsInput:
     def _key_flag(vk):
         return 1 if vk in {33, 34, 35, 36, 37, 38, 39, 40, 45, 46, 91, 92, 163, 165} else 0
 
-    def begin_hold(self, target, sequence, *, toggle=False):
+    def begin_hold(self, target, sequence, *, toggle=False, allow_mouse=False):
         from button_profiles import parse_sequence
         chords = parse_sequence(sequence)
         state = self.gesture_state()
-        if (len(chords) != 1 or not self.gesture_safe(target) or
+        if (len(chords) != 1 or not self.gesture_safe(target, allow_mouse=allow_mouse) or
                 (state not in ('down', 'ready') if toggle else state != 'down')):
             return False
         modifiers, key = chords[0]

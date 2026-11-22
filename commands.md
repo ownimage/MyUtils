@@ -108,10 +108,13 @@ and Icon 2, and a key sequence such as `Ctrl+C, Ctrl+V`. **Save Buttons**
 saves the profile for that executable; **Save and Hide** saves and hides the window to the tray (minimises when no tray is available). Save errors keep the editor open.
 Opening settings through the live popup cog selects its captured application.
 Choose a per-button **Behaviour**: Normal (`.`) sends once; Hold (`-`) holds one
-combo; Repeat (`...`) repeats the sequence up to 10 times per second. Hold/Repeat
-selection arms the action: the next hotkey press starts it (Ctrl/Alt may stay
-held while selecting; release and re-press only the main key). Press again to stop, leaving the menu hidden. For both modes, the next
-press after stopping opens the menu. Escape cancels.
+combo; Repeat (`...`) repeats at up to 10 times per second. The adjacent **Style**
+dropdown offers HK toggle (`T`, next hotkey starts/stops), Immediate (`I`, button
+release starts, hotkey stops), Button held (`B`, mouse down starts, release stops),
+and HK held (`H`, next hotkey down starts, release stops). Menu markers combine
+both, e.g. `-B` or `...I`. Button held shows only the selected segment while held.
+Existing buttons keep HK toggle. Escape cancels; after stopping, the next hotkey
+press opens the menu. Release the menu-opening main key before a new hotkey press.
 Select **Modifiers only** to send just Ctrl/Alt/Shift/Win. The editor title is in
 the window title bar; its top-aligned form scrolls on smaller screens while the
 Save/Cancel actions remain visible.

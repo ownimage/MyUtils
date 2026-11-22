@@ -20,7 +20,7 @@ from activation_monitor import parse_hotkey
 from about_page import AboutPage
 from application_icons import ApplicationIcons
 from icon_library import IconPicker, button_icon
-from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key, normalise_sequence, normalise_button, BEHAVIOURS
+from button_profiles import ButtonProfiles, default_button, parse_sequence, app_key, normalise_sequence, normalise_button, BEHAVIOURS, STYLES
 from photo_tools.fluent import QComboBox, QPushButton, QLineEdit, QCheckBox
 from qfluentwidgets import ToolButton, FluentIcon, TransparentToolButton, ToolTipFilter, Flyout, qconfig, isDarkTheme
 
@@ -34,6 +34,7 @@ def popup_geometry(cursor, available, diameter=360):
 class RadialPopup(QWidget):
     selected = Signal(int)
     settings_requested = Signal()
+    button_released = Signal()
 
     def __init__(self, parent=None, *, embedded=False):
         super().__init__(parent, Qt.WindowType.Widget if embedded else (Qt.WindowType.Tool |
@@ -42,6 +43,7 @@ class RadialPopup(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.setMouseTracking(True)
         self.embedded = embedded
+        self.pressed_button = -1
         self.active_button = -1
         self.buttons = [default_button(i) for i in range(26)]
         self.count = 12
@@ -78,6 +80,8 @@ class RadialPopup(QWidget):
         screen = QApplication.screenAt(cursor) or QApplication.primaryScreen()
         x, y, size = popup_geometry(cursor, screen.availableGeometry())
         self.setGeometry(x, y, size, size)
+        self.pressed_button = -1
+        self.settings_button.show()
         self.hover = -1
         self.refresh_settings_button()
         self.show()
@@ -102,6 +106,8 @@ class RadialPopup(QWidget):
         inner_rect = QRectF(c-inner, c-inner, inner*2, inner*2)
         span = 360/self.count
         for index in range(self.count):
+            if self.pressed_button >= 0 and index != self.pressed_button:
+                continue
             start = 90 + span/2 - index*span - 1
             path = QPainterPath()
             path.arcMoveTo(outer_rect, start)
@@ -131,6 +137,8 @@ class RadialPopup(QWidget):
             painter.drawText(QRectF(x-width/2, y if icons else y-14, width, 28),
                              Qt.AlignmentFlag.AlignCenter, label)
             marker = BEHAVIOURS[button.get('behaviour', 'normal')]
+            if button.get('behaviour', 'normal') != 'normal':
+                marker += STYLES[button.get('style', 'toggle')][1]
             # Keep the mode separate from names and both icon slots.
             marker_radius = outer - 12
             mx, my = c+marker_radius*math.cos(angle), c+marker_radius*math.sin(angle)
@@ -141,7 +149,22 @@ class RadialPopup(QWidget):
         self.hover = self.segment_at(event.position())
         self.update()
 
+    def mousePressEvent(self, event):
+        index = self.segment_at(event.position())
+        if (not self.embedded and event.button() == Qt.MouseButton.LeftButton and index >= 0
+                and self.buttons[index].get('behaviour') in ('hold', 'repeat')
+                and self.buttons[index].get('style') == 'button'):
+            self.pressed_button = index
+            self.settings_button.hide()
+            self.grabMouse()
+            self.update()
+            self.selected.emit(index+1)
+
     def mouseReleaseEvent(self, event):
+        if self.pressed_button >= 0:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.button_released.emit()
+            return
         index = self.segment_at(event.position())
         if not self.embedded:
             self.hide()
@@ -156,7 +179,7 @@ class RadialPopup(QWidget):
 
     def event(self, event):
         from PySide6.QtCore import QEvent
-        if not getattr(self, 'embedded', False) and event.type() == QEvent.Type.WindowDeactivate:
+        if not getattr(self, 'embedded', False) and getattr(self, 'pressed_button', -1) < 0 and event.type() == QEvent.Type.WindowDeactivate:
             self.hide()
         return super().event(event)
 
@@ -195,6 +218,8 @@ class RadialService(QObject):
         self.send_timer.setInterval(20)
         self.send_timer.timeout.connect(self.deliver_letter)
         self.popup.selected.connect(self.select_letter)
+        self.popup.button_released.connect(lambda: self.finish_gesture(
+            "Action stopped: button released.") if self.armed is not None else None)
         self.popup.settings_requested.connect(self.open_settings)
         self.tray = None
         self.registered = False
@@ -334,6 +359,10 @@ class RadialService(QObject):
 
     def cancel_delivery(self, *, resume=True):
         self.send_timer.stop()
+        if self.popup.pressed_button >= 0:
+            self.popup.releaseMouse()
+            self.popup.pressed_button = -1
+            self.popup.hide()
         self.pending = None
         self.target = None
         cleaned = True
@@ -360,11 +389,11 @@ class RadialService(QObject):
     def arm_gesture(self, target, button):
         if not self.input.begin_gesture(self.key):
             self.status = 'Could not capture the hotkey for Hold / Repeat.'
-            self.target = None
+            self.cancel_delivery()
             self.changed.emit()
             return
         self.armed = dict(target=target, sequence=button['sequence'],
-                          behaviour=button['behaviour'], phase='focus',
+                          behaviour=button['behaviour'], style=button.get('style', 'toggle'), phase='focus',
                           deadline=time.monotonic()+5, active=False, next_repeat=0,
                           presses=self.input.gesture_presses())
         # Suspend RegisterHotKey while the temporary hook owns activation, so
@@ -375,17 +404,34 @@ class RadialService(QObject):
                 return
             self.registered = False
             self.gesture_registration = True
-        instruction = 'press to start, press again to stop'
+        instruction = {'toggle': 'press to start, press again to stop',
+                       'immediate': 'starts after selection; press to stop',
+                       'button': 'runs while the menu button is held',
+                       'hotkey': 'hold the hotkey to run; release to stop'}[self.armed['style']]
         self.status = f"Armed {button['behaviour'].title()}: {self.key} — {instruction}. Escape cancels."
         self.changed.emit()
         self.input.restore(target)
         self.send_timer.start()
+
+    def action_stop_hint(self, style):
+        if style == 'button':
+            return 'Release the menu button to stop. Escape cancels.'
+        if style == 'hotkey':
+            return 'Release the hotkey to stop. Escape cancels.'
+        return f'Press {self.key} to stop. The following press opens the menu. Escape cancels.'
 
     def deliver_gesture(self):
         action = self.armed
         target, sequence = action['target'], action['sequence']
         now = time.monotonic()
         state = self.input.gesture_state()
+        style = action['style']
+        mouse_style = style == 'button'
+        # Native focus restoration may relinquish Qt's mouse capture. Poll the
+        # physical button too, so release outside the popup still stops input.
+        if mouse_style and not self.input.button_down():
+            self.finish_gesture('Action stopped: button released.')
+            return
         if state == 'cancelled' or not self.input.valid(target):
             self.finish_gesture('Action cancelled.')
             return
@@ -393,34 +439,43 @@ class RadialService(QObject):
             if now >= action['deadline']:
                 self.finish_gesture('Action cancelled: focus timed out.')
                 return
-            if state == 'waiting' or not self.input.focused(target) or not self.input.gesture_safe(target):
+            if state == 'waiting' or not self.input.focused(target) or not self.input.gesture_safe(target, allow_mouse=mouse_style):
                 return
             action['phase'] = 'ready'
-        allow_mouse = action['active']
+        allow_mouse = action['active'] or mouse_style
         if not self.input.focused(target) or not self.input.gesture_safe(target, allow_mouse=allow_mouse):
             self.finish_gesture('Action cancelled: original app lost focus or another modifier was pressed.')
             return
         presses = self.input.gesture_presses()
         fresh_press = presses > action['presses']
-        if fresh_press and (action['active'] or presses - action['presses'] > 1):
+        released_hotkey = (action['active'] or fresh_press) and state != 'down'
+        missed_release = fresh_press and (action['active'] or presses - action['presses'] > 1)
+        if style == 'hotkey' and (released_hotkey or missed_release):
+            self.finish_gesture('Action stopped: hotkey released.')
+            return
+        if fresh_press and (style == 'immediate' or
+                (style == 'toggle' and (action['active'] or presses - action['presses'] > 1))):
             self.finish_gesture('Action stopped. The next hotkey press opens the menu.')
             return
-        if not action['active'] and not fresh_press:
+        if not action['active'] and not fresh_press and style in ('toggle', 'hotkey'):
             return
         if action['behaviour'] == 'hold':
             if not action['active']:
-                if not self.input.begin_hold(target, sequence, toggle=True):
+                options = dict(toggle=style != 'hotkey')
+                if mouse_style:
+                    options['allow_mouse'] = True
+                if not self.input.begin_hold(target, sequence, **options):
                     self.finish_gesture('Could not hold the configured key.')
                     return
                 action['active'] = True
                 action['presses'] = presses
-                self.status = f'Holding {sequence}. Press {self.key} again to release. Escape cancels.'
+                self.status = f'Holding {sequence}. ' + self.action_stop_hint(style)
                 if self.tray is not None:
                     self.tray.setToolTip('RadialMenu - ' + self.status)
                 self.changed.emit()
             return
         if not action['active'] or now >= action['next_repeat']:
-            if not self.input.repeat_sequence(target, sequence, toggle=True):
+            if not self.input.repeat_sequence(target, sequence, toggle=style != 'hotkey'):
                 self.finish_gesture('Could not repeat the configured sequence.')
                 return
             first = not action['active']
@@ -428,7 +483,7 @@ class RadialService(QObject):
             action['presses'] = presses
             action['next_repeat'] = now + 0.1
             if first:
-                self.status = f'Repeating {sequence}. Press {self.key} again to stop. The following press opens the menu. Escape cancels.'
+                self.status = f'Repeating {sequence}. ' + self.action_stop_hint(style)
                 if self.tray is not None:
                     self.tray.setToolTip('RadialMenu - ' + self.status)
                 self.changed.emit()
@@ -459,9 +514,12 @@ class RadialService(QObject):
 
     def select_letter(self, number):
         if not self.target or not 1 <= number <= 26:
+            if self.popup.pressed_button >= 0:
+                self.cancel_delivery()
             return
-        self.popup.hide()
         button = self.popup.buttons[number-1]
+        if self.popup.pressed_button < 0:
+            self.popup.hide()
         letter = button['sequence']
         if not letter.strip():
             self.cancel_delivery()
@@ -658,9 +716,21 @@ class ButtonEditor(QWidget):
         self.behaviour.setAccessibleName('Button behaviour')
         for mode, marker in BEHAVIOURS.items():
             self.behaviour.addItem(f'{mode.title()} ({marker})', mode)
+        self.behaviour.setMinimumWidth(0)
         behaviour_row.addWidget(self.behaviour, 1)
+        self.style = QComboBox()
+        self.style.setMinimumWidth(0)
+        self.style.setAccessibleName('Interaction style')
+        for key, (label, marker) in STYLES.items():
+            self.style.addItem(f'{label} ({marker})', key)
+        self.style.setToolTip('Interaction style for Hold / Repeat')
+        behaviour_row.addWidget(self.style, 1)
+        self.style.currentIndexChanged.connect(self.update_draft)
         self.behaviour_help = EditorInfoButton('Behaviour',
-            'Press the hotkey to start Hold / Repeat; press again to stop. The following press opens the menu.')
+            'Hold (-) and Repeat (...) use a style letter: T: HK toggle, press to start/stop. '
+            'I: Immediate, starts on button release; hotkey stops. '
+            'B: Button held, runs from button down to release; only that segment remains. '
+            'H: HK held, runs while the next hotkey press is held. Escape cancels all styles.')
         behaviour_row.addWidget(self.behaviour_help)
         modifiers = field_row('Build')
         modifiers.setSpacing(2)
@@ -755,6 +825,7 @@ class ButtonEditor(QWidget):
         self.behaviour_changed()
 
     def behaviour_changed(self, *_):
+        self.style.setEnabled(self.behaviour.currentData() != 'normal')
         hold = self.behaviour.currentData() == 'hold'
         self.append_key.setVisible(not hold)
         self.sequence.setValidator(self.hold_validator if hold else None)
@@ -855,6 +926,7 @@ class ButtonEditor(QWidget):
         self.icons[1].set_reference(button['secondary_icon'])
         self.sequence.setText(button['sequence'])
         self.behaviour.setCurrentIndex(self.behaviour.findData(button.get('behaviour', 'normal')))
+        self.style.setCurrentIndex(self.style.findData(button.get('style', 'toggle')))
         for check in self.modifiers.values():
             check.setChecked(False)
         self.special_key.setCurrentIndex(0)
@@ -879,7 +951,7 @@ class ButtonEditor(QWidget):
             return
         self.buttons[self.current] = dict(name=self.name.text(), icon=self.icons[0].reference,
             secondary_icon=self.icons[1].reference, sequence=self.sequence.text(),
-            behaviour=self.behaviour.currentData())
+            behaviour=self.behaviour.currentData(), style=self.style.currentData())
         self.ring.update()
         self.message.setText('Unsaved changes')
 

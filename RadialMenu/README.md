@@ -93,28 +93,33 @@ The configured sequence uses the same focus/modifier guard as letter delivery.
 
 ## Button behaviour
 
-The **Behaviour** dropdown applies to each button. A marker near the outer edge
-of its radial segment shows the selected behaviour in both the editor and live menu:
+The **Behaviour** dropdown shares its row equally with **Style**. Normal (`.`)
+sends once. Hold (`-`) holds one key or combo; Repeat (`...`) repeats a sequence
+at up to 10 times per second. Style applies to Hold and Repeat:
 
-- **Normal (`.`)**: select a button to send its sequence once, as before.
-- **Hold (`-`)**: select a button, then press the activation hotkey once.
-  That first press holds the configured key/combo down; press it again to release.
-  Releasing the hotkey itself does not end the Hold. Hold accepts one combo.
-  After stopping, the next hotkey press opens the menu again.
-- **Repeat (`...`)**: select a button, then press the activation hotkey once.
-  That first press starts repeating the configured sequence at up to 10 times per
-  second. Press it again to stop. The following hotkey press opens the radial menu.
+| Style | Start | Stop | Menu letter |
+| --- | --- | --- | --- |
+| HK toggle | Next hotkey press after selection | Next hotkey press | T |
+| Immediate | Release the selected menu button | Next hotkey press | I |
+| Button held | Press the menu button | Release that mouse button, including outside the menu | B |
+| HK held | Press the hotkey after selection | Release the hotkey | H |
 
-Quick taps work; you do not need to keep the hotkey held. Release the main key
-(Space, R or F8) from the menu-opening press before pressing it again; Ctrl/Alt
-may remain held across selecting a button. No extra activation press is needed. Nothing is sent just
-by selecting a Hold or Repeat button. Escape, opening settings/preview, stopping
-RadialMenu, losing the original window or pressing an unrelated modifier cancels
-the armed action and releases keys inserted by Hold. Focus must return within
-five seconds of selection. The app captures physical or mouse/remapper-generated activation keys only
-while armed so Ctrl/Alt from the hotkey do not alter the configured output combo.
-Its own injected output is tagged and ignored by the activation monitor, so
-output cannot trigger itself. Existing profiles default to Normal. Blank sequences disable all three modes.
+The compact outer-edge marker combines behaviour and style: `-B` means Hold
+while the menu button is pressed; `...I` means Repeat immediately after selection.
+Normal keeps its single dot. Existing saved buttons use HK toggle. Normal retains
+the selected style for later but disables the Style dropdown.
+
+Button held leaves just the selected segment visible and hides the cog and other
+segments until release. Its preview never sends input. For hotkey-driven styles,
+release the main key from the menu-opening press first; Ctrl/Alt may remain held
+across selection. HK held requires the next complete hotkey chord to stay held.
+A tap completed between timer ticks cannot leave an action running.
+
+Escape, settings/preview, stopping RadialMenu, losing the original window or an
+unrelated modifier cancels the action and releases inserted keys. Focus must
+return within five seconds. After stopping, the next hotkey press opens the menu.
+The temporary keyboard monitor accepts physical/remapper input and ignores its
+own tagged output. Blank sequences disable every behaviour/style.
 
 ## Offline icon library and application list
 
