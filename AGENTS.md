@@ -385,8 +385,8 @@ py -3.11 -m venv venv
 - Application dropdown combines running taskbar-style apps with configured
   executables, deduplicated by normalised full executable path. It refreshes on
   opening, preserves selection if still listed and marks closed saved profiles
-  '(configured)'. The selected-app control also shows its icon. File browsing
-  supports configuring another executable that is not running.
+  '(configured)'. The selected-app control also shows its icon. Use this dropdown
+  or the captured foreground app; configuration no longer offers file browsing.
 - WindowsInput.running_applications excludes tool, owned utility and cloaked
   windows. Icon extraction uses bounded WM_GETICON/SendMessageTimeout, then class
   icons, then QFileIconProvider. QImage.fromHICON copies borrowed handles; never
@@ -530,8 +530,7 @@ py -3.11 -m venv venv
   draws a marker near each segment's outer edge without replacing its name/icons.
 - Normal retains one-shot guarded delivery. Hold/Repeat selection hides the menu
   and restores the captured HWND/PID/thread, with a five-second initial focus
-  timeout. Release the menu-opening main key, then tap to start and tap again
-  to stop; Ctrl/Alt may remain held across selection. Hold injects one chord's downs once. Repeat sends balanced sequences
+  timeout. The per-button style now controls start/stop (see 2026-11-22 below); Ctrl/Alt may remain held across selection. Hold injects one chord's downs once. Repeat sends balanced sequences
   immediately and at most every 100ms. Release does not stop either mode. Both modes leave the menu hidden on
   the stopping press; the next press opens it, per the user's updated instructions.
 - activation_monitor.py installs WH_KEYBOARD_LL only for the armed action, tracks
@@ -909,3 +908,82 @@ py -3.11 -m venv venv
   Launch 21, Import 27, Yearbook 19, Slideshow 49 and RadialMenu 51 (167 total,
   one opt-in native-input test skipped). All other tests passed. The strengthened
   native taskbar/icon-handle check also passed independently. Diff check passed.
+
+
+## Hold/Repeat interaction styles (2026-11-22)
+
+- button_profiles.STYLES defines toggle/T, immediate/I, button/B and hotkey/H.
+  Profiles persist style per slot; missing style migrates to toggle. Unknown
+  styles fail validation. Normal retains style but does not use it.
+- The Behaviour and Style dropdowns share the same row equally. Help explains
+  all styles; outer markers combine behaviour and one style letter (-B, ...I).
+- Toggle retains the prior press/start/press/stop behaviour. Immediate starts
+  after selection release and restored target focus; next hotkey stops. Button
+  starts on mouse down, paints only that segment and hides the cog until release.
+  Qt release plus physical mouse polling ensure release outside stops it.
+  HK held starts on the next fresh complete hotkey down and stops on release;
+  a tap completed between timer ticks cannot latch input. The opening press
+  still must release first. These rules supersede older toggle-only notes.
+- Target identity, five-second focus timeout, Escape/modifier cancellation,
+  registration suspension, tagged input and partial-injection cleanup remain.
+  Mouse input is permitted during Button held startup; preview never injects.
+- No new dependency. Tests cover both behaviours with new styles, saved-profile
+  migration, fast hotkey taps, button release outside and physical release polling.
+  Native physical input into other applications remains a hands-on check.
+- Validation: all 25 behaviour/input and 15 editor/profile tests passed in
+  separate offscreen processes with clean exits after the final changes. Full
+  runner also passed Launch (21), Yearbook (19), Slideshow (49), RadialMenu's
+  hotkey/radial/offline suites; native receiver test remained opt-in/skipped.
+  Import's junction test failed in the sandbox; all 18 Import backend tests,
+  including that junction check, passed on rerun with appropriate access.
+  Light/dark editor renders inspected at 760x540; renders also generated at
+  900x620 and 1000x720 with no horizontal overflow and equal dropdown widths
+  (at most one pixel difference with registered Segoe UI). Style persistence
+  and native Qt rounding are covered in editor tests. Diff formatting passed.
+
+
+## Compact RadialMenu configuration (2026-11-22)
+
+- Edit Buttons now opens at the host minimum size (normally 760x540), retaining
+  cursor-relative placement and smaller-work-area fitting. Users can enlarge it.
+- Configuration uses single rows for Radial Menu/appearance, activation hotkey
+  value/Edit Hotkey, Segments/count, and Application/picker/information button.
+  Removed executable browsing and the persistent application instruction line.
+  Application help is a tooltip/flyout; validation/cache errors still appear.
+- Normal Button held release clears the status instead of reporting routine
+  completion. Cleanup failures still show an error; blank status labels hide.
+- Validation: 71 tests passed with clean exits across separate editor/profile
+  (15), behaviour/input (25), hotkey (3), radial/tray (7) and Launch (21) runs.
+  Coverage checks minimum-size opening, same-row configuration controls and
+  quiet button release. Light/dark configuration screenshots inspected at
+  760x540; editor renders checked at 760x540, 900x620 and 1000x720 without
+  horizontal overflow. Diff formatting passed.
+
+
+## Compact standalone startup (2026-11-22)
+
+- SuiteWindow._select_app now uses the RadialMenu minimum (760x540) on first
+  entry, including standalone startup through RadialMenu.cmd. Previously it
+  retained the launcher's 1160x940 initial size until Edit Buttons was opened.
+  Subsequent app selections retain manual resizing; work-area fitting remains.
+- Validation: all 8 radial/tray and 21 Launch tests passed in separate
+  offscreen processes with clean exits. The new test uses the standalone
+  create_window path and verifies configuration starts at 760x540 and retains
+  later manual sizing. Diff formatting passed.
+
+
+## Transient radial hover cleanup (2026-11-22)
+
+- RadialPopup previously updated hover only on mouse movement inside the widget,
+  leaving the last segment highlighted after the cursor moved to another control
+  or the page was hidden. The independent active_button marks the edited button.
+- leaveEvent and hideEvent now clear hover and request repaint, preserving the
+  edited selection. Applies to embedded selectors and standalone popups without
+  altering Button held state, mouse capture or action cleanup.
+- TDD: added pointer-to-sibling and hide regressions first; both failed with
+  hover still 6 rather than -1. After the fix all 10 radial/tray, 15 editor/profile
+  and 25 behaviour/input tests passed in separate processes with clean exits.
+  The pointer regression checks light/dark rendered pixels and confirms the
+  selected segment remains highlighted while the departed segment returns to
+  its normal colour. Centre clearing and hide cleanup in both modes are covered.
+  Diff formatting passed.

@@ -36,9 +36,9 @@ class BehaviourTests(unittest.TestCase):
         self.app.aboutToQuit.disconnect(self.service.stop)
         self.tmp.cleanup()
 
-    def arm(self, mode):
+    def arm(self, mode, style="toggle"):
         buttons = [default_button(i) for i in range(26)]
-        buttons[0].update(sequence='Shift+F24', behaviour=mode)
+        buttons[0].update(sequence='Shift+F24', behaviour=mode, style=style)
         self.service.profiles.save('C:/Test.exe', buttons)
         self.service.toggle_popup()
         self.service.select_letter(1)
@@ -173,6 +173,118 @@ class BehaviourTests(unittest.TestCase):
         self.service.preview()
         self.service.select_letter(1)
         self.assertIsNone(self.service.armed)
+
+    def test_immediate_starts_after_selection_and_hotkey_stops(self):
+        for mode in ('hold', 'repeat'):
+            with self.subTest(mode=mode):
+                self.backend.reset_mock()
+                self.backend.gesture_presses.return_value = 0
+                self.backend.gesture_state.return_value = 'waiting'
+                self.arm(mode, 'immediate')
+                self.service.deliver_letter()
+                self.backend.begin_hold.assert_not_called()
+                self.backend.repeat_sequence.assert_not_called()
+                self.backend.gesture_state.return_value = 'ready'
+                self.service.deliver_letter()
+                self.assertTrue(self.service.armed['active'])
+                self.backend.gesture_presses.return_value = 1
+                self.service.deliver_letter()
+                self.assertIsNone(self.service.armed)
+                self.backend.end_gesture.assert_called_once()
+
+    def test_hotkey_held_starts_on_down_stops_on_up_and_ignores_opening_press(self):
+        for mode in ('hold', 'repeat'):
+            with self.subTest(mode=mode):
+                self.backend.reset_mock()
+                self.backend.gesture_presses.return_value = 0
+                self.backend.gesture_state.return_value = 'waiting'
+                self.arm(mode, 'hotkey')
+                self.service.deliver_letter()
+                self.backend.gesture_state.return_value = 'ready'
+                self.service.deliver_letter()
+                self.assertFalse(self.service.armed['active'])
+                self.backend.gesture_state.return_value = 'down'
+                self.backend.gesture_presses.return_value = 1
+                self.service.deliver_letter()
+                self.assertTrue(self.service.armed['active'])
+                sender = self.backend.begin_hold if mode == 'hold' else self.backend.repeat_sequence
+                sender.assert_called_once_with(self.target, 'Shift+F24', toggle=False)
+                self.backend.gesture_state.return_value = 'ready'
+                self.service.deliver_letter()
+                self.assertIsNone(self.service.armed)
+                self.backend.end_gesture.assert_called_once()
+
+    def test_hotkey_quick_tap_never_leaves_action_running(self):
+        self.arm('hold', 'hotkey')
+        self.backend.gesture_state.return_value = 'ready'
+        self.backend.gesture_presses.return_value = 1
+        self.service.deliver_letter()
+        self.assertIsNone(self.service.armed)
+        self.backend.begin_hold.assert_not_called()
+
+    def test_button_press_keeps_segment_and_release_outside_stops(self):
+        from PySide6.QtCore import Qt, QPoint
+        from PySide6.QtTest import QTest
+        for mode in ('hold', 'repeat'):
+            with self.subTest(mode=mode):
+                self.backend.reset_mock()
+                self.backend.gesture_presses.return_value = 0
+                self.backend.gesture_state.return_value = 'ready'
+                buttons = [default_button(i) for i in range(26)]
+                buttons[0].update(sequence='F24', behaviour=mode, style='button')
+                self.service.profiles.save('C:/Test.exe', buttons)
+                self.service.toggle_popup()
+                popup = self.service.popup
+                QTest.mousePress(popup, Qt.MouseButton.LeftButton, pos=QPoint(180, 50))
+                self.service.send_timer.stop()
+                self.assertEqual(popup.pressed_button, 0)
+                self.assertTrue(popup.isVisible())
+                self.assertFalse(popup.settings_button.isVisible())
+                self.service.deliver_letter()
+                self.assertTrue(self.service.armed['active'])
+                self.backend.gesture_safe.assert_called_with(self.target, allow_mouse=True)
+                image = popup.grab().toImage()
+                self.assertEqual(image.pixelColor(50, 180).alpha(), 0)
+                QTest.mouseRelease(popup, Qt.MouseButton.LeftButton, pos=QPoint(-20, -20))
+                self.assertIsNone(self.service.armed)
+                self.assertFalse(popup.isVisible())
+                self.backend.end_gesture.assert_called_once()
+
+    def test_native_button_release_poll_stops_without_qt_release_event(self):
+        self.arm('hold', 'button')
+        self.backend.button_down.return_value = True
+        self.backend.gesture_state.return_value = 'ready'
+        self.service.deliver_letter()
+        self.assertTrue(self.service.armed['active'])
+        self.backend.button_down.return_value = False
+        self.service.deliver_letter()
+        self.assertIsNone(self.service.armed)
+        self.backend.end_gesture.assert_called_once()
+        self.assertEqual(self.service.status, '')
+
+    def test_button_style_preview_does_not_arm_or_keep_mouse_capture(self):
+        from PySide6.QtCore import Qt, QPoint
+        from PySide6.QtTest import QTest
+        self.service.popup.buttons[0].update(behaviour='hold', style='button')
+        self.service.preview()
+        QTest.mousePress(self.service.popup, Qt.MouseButton.LeftButton, pos=QPoint(180, 50))
+        self.assertIsNone(self.service.armed)
+        self.assertEqual(self.service.popup.pressed_button, -1)
+        self.assertFalse(self.service.popup.isVisible())
+        self.backend.begin_gesture.assert_not_called()
+
+    def test_styles_round_trip_and_old_profiles_default_to_toggle(self):
+        from button_profiles import normalise_button, STYLES
+        old = default_button(0)
+        old.pop('style')
+        self.assertEqual(normalise_button(old)['style'], 'toggle')
+        for style in STYLES:
+            buttons = [default_button(i) for i in range(26)]
+            buttons[0].update(behaviour='repeat', style=style)
+            self.service.profiles.save('C:/Test.exe', buttons)
+            self.assertEqual(self.service.profiles.buttons('C:/Test.exe')[0]['style'], style)
+        with self.assertRaises(ValueError):
+            normalise_button(dict(old, style='unknown'))
 
 
 class PhysicalInputTests(unittest.TestCase):

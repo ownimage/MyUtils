@@ -35,7 +35,15 @@ class HotkeyTests(unittest.TestCase):
             service = page.service
             try:
                 layout = page.edit_buttons.parentWidget().layout()
-                self.assertEqual(layout.indexOf(page.edit_hotkey), layout.indexOf(page.edit_buttons)+1)
+                hotkey_row = layout.itemAt(1).layout()
+                self.assertEqual(hotkey_row.indexOf(page.hotkey_summary), 1)
+                self.assertEqual(hotkey_row.indexOf(page.edit_hotkey), 2)
+                self.assertEqual(layout.itemAt(0).layout().indexOf(page.appearance), 1)
+                self.assertEqual(layout.itemAt(2).layout().indexOf(page.segments), 1)
+                app_row = layout.itemAt(4).layout()
+                self.assertEqual(app_row.indexOf(page.application_picker), 1)
+                self.assertEqual(app_row.indexOf(page.application_help), 2)
+                self.assertTrue(page.profile_message.isHidden())
                 page.edit_hotkey.click()
                 editor = page.hotkey_editor
                 self.assertIs(page.pages.currentWidget(), editor)

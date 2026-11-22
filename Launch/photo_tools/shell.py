@@ -346,8 +346,12 @@ class SuiteWindow(QMainWindow):
             # Reserve the native frame/title bar even before the first show.
             frame_width = max(16, self.frameGeometry().width() - self.width())
             frame_height = max(40, self.frameGeometry().height() - self.height())
-            self.resize(min(self.width(), available.width() - frame_width),
-                        min(self.height(), available.height() - frame_height))
+            # The shared host starts at launcher size. Use RadialMenu's compact
+            # default on first entry; retain user resizing on subsequent visits.
+            preferred = self.size() if getattr(self, '_radial_size_initialized', False) else self.minimumSize()
+            self.resize(min(preferred.width(), available.width() - frame_width),
+                        min(preferred.height(), available.height() - frame_height))
+            self._radial_size_initialized = True
             frame = self.frameGeometry()
             x = max(available.left(), min(frame.left(), available.right()-frame.width()+1))
             y = max(available.top(), min(frame.top(), available.bottom()-frame.height()+1))

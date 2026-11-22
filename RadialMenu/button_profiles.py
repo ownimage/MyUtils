@@ -3,6 +3,9 @@ import copy
 import json
 import ntpath
 
+STYLES = {'toggle': ('HK toggle', 'T'), 'immediate': ('Immediate', 'I'),
+          'button': ('Button held', 'B'), 'hotkey': ('HK held', 'H')}
+
 BEHAVIOURS = {'normal': '.', 'hold': '-', 'repeat': '...'}
 
 def app_key(path):
@@ -10,7 +13,7 @@ def app_key(path):
 
 def default_button(index):
     letter = chr(97 + index)
-    return dict(name=letter, icon='', secondary_icon='', sequence=letter.upper(), behaviour='normal')
+    return dict(name=letter, icon='', secondary_icon='', sequence=letter.upper(), behaviour='normal', style='toggle')
 
 def normalise_sequence(text):
     """Uppercase single letter keys, preserving spacing and incomplete edits."""
@@ -33,12 +36,15 @@ def normalise_button(button):
     behaviour = button.get('behaviour', 'normal')
     if not isinstance(behaviour, str) or behaviour not in BEHAVIOURS:
         raise ValueError('Behaviour must be Normal, Hold or Repeat.')
+    style = button.get('style', 'toggle')
+    if not isinstance(style, str) or style not in STYLES:
+        raise ValueError('Unknown interaction style.')
     sequence = normalise_sequence(button['sequence'])
     chords = parse_sequence(sequence)
     if behaviour == 'hold' and len(chords) > 1:
         raise ValueError('Hold requires one key or shortcut, not a sequence.')
     return dict(name=button['name'], icon=button['icon'], secondary_icon=second,
-                sequence=sequence, behaviour=behaviour)
+                sequence=sequence, behaviour=behaviour, style=style)
 
 def character_key(character):
     """Resolve a printable character through the current Windows keyboard layout."""

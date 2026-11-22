@@ -8,6 +8,79 @@ class RadialTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
+    def test_standalone_configuration_starts_at_compact_editor_size(self):
+        import tempfile
+        from unittest.mock import patch
+        from PySide6.QtCore import QSize
+        from photo_tools.shell import SuiteContext
+        from radial_gui import RadialService
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(RadialService, 'start'), patch.object(RadialService, 'install_tray'):
+            context = SuiteContext(self.app, settings_path=folder+'/settings.ini')
+            window = context.create_window('radial-menu')
+            try:
+                self.app.processEvents()
+                page = window.pages['radial-menu']
+                self.assertEqual(page.pages.currentIndex(), 0)
+                self.assertEqual(window.size(), QSize(760, 540))
+                self.assertEqual(window.size(), window.minimumSize())
+                window.resize(780, 580)
+                window._select_app('radial-menu')
+                self.assertEqual(window.size(), QSize(780, 580))
+            finally:
+                page.service.stop()
+                self.app.aboutToQuit.disconnect(page.service.stop)
+                window.close()
+
+    def test_leaving_editor_ring_clears_hover_but_keeps_edited_button(self):
+        from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
+        from PySide6.QtTest import QTest
+        host = QWidget()
+        layout = QHBoxLayout(host)
+        ring = RadialPopup(embedded=True)
+        ring.setFixedSize(360, 360)
+        sibling = QPushButton('Other editor control')
+        layout.addWidget(ring)
+        layout.addWidget(sibling)
+        host.show()
+        self.app.processEvents()
+        try:
+            for dark in (False, True):
+                ring.dark = dark
+                QTest.mouseClick(ring, Qt.MouseButton.LeftButton, pos=QPoint(180, 50))
+                self.assertEqual(ring.active_button, 0)
+                QTest.mouseMove(ring, QPoint(180, 310))
+                self.assertEqual(ring.hover, 6)
+                QTest.mouseMove(sibling, sibling.rect().center())
+                self.app.processEvents()
+                self.assertEqual(ring.hover, -1, 'Hover must end on leaving the ring widget')
+                self.assertEqual(ring.active_button, 0, 'The edited button must remain selected')
+                image = ring.grab().toImage()
+                self.assertEqual(image.pixelColor(180, 100), ring.accent)
+                self.assertNotEqual(image.pixelColor(180, 260), ring.accent)
+                QTest.mouseMove(ring, QPoint(180, 310))
+                QTest.mouseMove(ring, QPoint(180, 180))
+                self.assertEqual(ring.hover, -1, 'The centre must also clear hover')
+        finally:
+            host.close()
+
+    def test_hiding_ring_clears_transient_hover_in_both_modes(self):
+        from PySide6.QtTest import QTest
+        for embedded in (False, True):
+            ring = RadialPopup(embedded=embedded)
+            ring.setFixedSize(360, 360)
+            ring.active_button = 0 if embedded else -1
+            ring.show()
+            self.app.processEvents()
+            try:
+                QTest.mouseMove(ring, QPoint(180, 310))
+                self.assertEqual(ring.hover, 6)
+                ring.hide()
+                self.assertEqual(ring.hover, -1, 'Hidden pages/popups must discard old hover')
+                self.assertEqual(ring.active_button, 0 if embedded else -1)
+            finally:
+                ring.close()
+
     def test_edges_and_negative_monitor(self):
         screen = QRect(-1920, -200, 1920, 1080)
         for point in (screen.topLeft(), screen.bottomRight(), screen.center()):
