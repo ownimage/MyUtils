@@ -145,6 +145,19 @@ class RadialPopup(QWidget):
             painter.drawText(QRectF(mx-12, my-10, 24, 20),
                              Qt.AlignmentFlag.AlignCenter, marker)
 
+    def clear_hover(self):
+        if self.hover != -1:
+            self.hover = -1
+            self.update()
+
+    def leaveEvent(self, event):
+        self.clear_hover()
+        super().leaveEvent(event)
+
+    def hideEvent(self, event):
+        self.clear_hover()
+        super().hideEvent(event)
+
     def mouseMoveEvent(self, event):
         self.hover = self.segment_at(event.position())
         self.update()

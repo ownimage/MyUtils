@@ -970,3 +970,20 @@ py -3.11 -m venv venv
   offscreen processes with clean exits. The new test uses the standalone
   create_window path and verifies configuration starts at 760x540 and retains
   later manual sizing. Diff formatting passed.
+
+
+## Transient radial hover cleanup (2026-11-22)
+
+- RadialPopup previously updated hover only on mouse movement inside the widget,
+  leaving the last segment highlighted after the cursor moved to another control
+  or the page was hidden. The independent active_button marks the edited button.
+- leaveEvent and hideEvent now clear hover and request repaint, preserving the
+  edited selection. Applies to embedded selectors and standalone popups without
+  altering Button held state, mouse capture or action cleanup.
+- TDD: added pointer-to-sibling and hide regressions first; both failed with
+  hover still 6 rather than -1. After the fix all 10 radial/tray, 15 editor/profile
+  and 25 behaviour/input tests passed in separate processes with clean exits.
+  The pointer regression checks light/dark rendered pixels and confirms the
+  selected segment remains highlighted while the departed segment returns to
+  its normal colour. Centre clearing and hide cleanup in both modes are covered.
+  Diff formatting passed.
