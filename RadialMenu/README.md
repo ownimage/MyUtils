@@ -231,3 +231,11 @@ at its minimum size (normally 760x540) and can be enlarged by dragging a corner.
 Releasing a Button held action stops it quietly; cleanup failures remain visible.
 
 Standalone configuration also opens at 760x540, matching Edit Buttons.
+
+
+In Edit Buttons, drag a segment onto another to swap their complete button
+settings. A translucent ghost snaps over the target while both positions show
+how the swap will look. Drop to apply it to the draft; Save Buttons or Save and
+Hide persists it. The dragged button remains selected at its new position.
+Escape or releasing in the centre/outside cancels the drag. Normal clicks still
+select buttons; the live radial menu does not support reordering.

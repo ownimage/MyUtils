@@ -987,3 +987,25 @@ py -3.11 -m venv venv
   selected segment remains highlighted while the departed segment returns to
   its normal colour. Centre clearing and hide cleanup in both modes are covered.
   Diff formatting passed.
+
+
+## Editor segment drag and swap (2026-11-22)
+
+- Embedded RadialPopup supports left-button drag after the native Qt drag-distance
+  threshold. Normal clicks still select; standalone menu input is unchanged.
+- Paint-only preview shows source/target button contents exchanged and both
+  segments highlighted. The dragged segment is translucent and snaps to valid
+  targets; over the centre/outside, a translucent ghost follows the pointer
+  within the selector bounds. Preview never mutates button data.
+- Drop emits swapped(source, target); ButtonEditor exchanges complete draft
+  records and selects the destination, retaining every name/icon/key/behaviour/
+  style setting. Save Buttons/Save and Hide persist it normally. Escape, hiding,
+  right-click and invalid/self drops cancel. Cancelled release is suppressed so
+  it cannot accidentally select another button. No new dependencies.
+- Validation: 53 tests passed with clean exits across separate drag (3),
+  editor/profile (15), behaviour/input (25), and radial/tray (10) modules.
+  Coverage verifies preview immutability, complete configuration swap/save,
+  no input delivery, cancellation, click selection and light/dark source pixels.
+  A light-theme editor preview was rendered and inspected: swapped labels,
+  both highlighted segments and translucent snapped ghost are visible.
+  Diff formatting passed.

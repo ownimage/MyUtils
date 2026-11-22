@@ -35,6 +35,7 @@ class RadialPopup(QWidget):
     selected = Signal(int)
     settings_requested = Signal()
     button_released = Signal()
+    swapped = Signal(int, int)
 
     def __init__(self, parent=None, *, embedded=False):
         super().__init__(parent, Qt.WindowType.Widget if embedded else (Qt.WindowType.Tool |
@@ -43,6 +44,15 @@ class RadialPopup(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.setMouseTracking(True)
         self.embedded = embedded
+        self.drag_source = -1
+        self.drag_target = -1
+        self.dragging = False
+        self.ignore_drag_release = False
+        self.drag_origin = QPoint()
+        self.drag_position = QPoint()
+        if embedded:
+            self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            self.setToolTip('Drag a segment onto another to swap their button settings.')
         self.pressed_button = -1
         self.active_button = -1
         self.buttons = [default_button(i) for i in range(26)]
@@ -105,8 +115,25 @@ class RadialPopup(QWidget):
         outer_rect = QRectF(c-outer, c-outer, outer*2, outer*2)
         inner_rect = QRectF(c-inner, c-inner, inner*2, inner*2)
         span = 360/self.count
-        for index in range(self.count):
+        draws = [(i, i, False) for i in range(self.count)]
+        if self.dragging and self.drag_target >= 0:
+            draws[self.drag_source] = (self.drag_source, self.drag_target, False)
+            draws[self.drag_target] = (self.drag_target, self.drag_source, False)
+        elif self.dragging:
+            draws.append((self.drag_source, self.drag_source, True))
+        for index, button_index, ghost in draws:
+            painter.save()
+            if ghost:
+                angle = math.radians(-90+index*span)
+                radius = (outer+inner)/2
+                painter.translate(self.drag_position.x()-(c+radius*math.cos(angle)),
+                                  self.drag_position.y()-(c+radius*math.sin(angle)))
+            if ghost or (self.dragging and index == self.drag_target):
+                painter.setOpacity(.65)
+            highlighted = (index in (self.drag_source, self.drag_target) if self.dragging
+                           else index in (self.hover, self.active_button))
             if self.pressed_button >= 0 and index != self.pressed_button:
+                painter.restore()
                 continue
             start = 90 + span/2 - index*span - 1
             path = QPainterPath()
@@ -116,17 +143,17 @@ class RadialPopup(QWidget):
             path.lineTo(c+inner*math.cos(end), c-inner*math.sin(end))
             path.arcTo(inner_rect, start-span+2, span-2)
             path.closeSubpath()
-            color = self.accent if index in (self.hover, self.active_button) else QColor('#28322f' if self.dark else '#f2f6f4')
+            color = self.accent if highlighted else QColor('#28322f' if self.dark else '#f2f6f4')
             painter.setBrush(color)
             painter.setPen(QPen(self.accent, 1))
             painter.drawPath(path)
-            painter.setPen(QColor('white' if self.dark or index in (self.hover, self.active_button) else '#172d24'))
+            painter.setPen(QColor('white' if self.dark or highlighted else '#172d24'))
             angle = math.radians(-90+index*span)
             radius = (outer+inner)/2
             x, y = c+radius*math.cos(angle), c+radius*math.sin(angle)
-            button = self.buttons[index]
+            button = self.buttons[button_index]
             width = min(74, max(30, radius * span * math.pi / 180 - 6))
-            icons = [button_icon(reference, self.dark or index in (self.hover, self.active_button))
+            icons = [button_icon(reference, self.dark or highlighted)
                      for reference in (button['icon'], button['secondary_icon']) if reference]
             icons = [icon for icon in icons if not icon.isNull()]
             size = min(20, int((width-4)/max(1,len(icons))))
@@ -144,6 +171,7 @@ class RadialPopup(QWidget):
             mx, my = c+marker_radius*math.cos(angle), c+marker_radius*math.sin(angle)
             painter.drawText(QRectF(mx-12, my-10, 24, 20),
                              Qt.AlignmentFlag.AlignCenter, marker)
+            painter.restore()
 
     def clear_hover(self):
         if self.hover != -1:
@@ -155,15 +183,44 @@ class RadialPopup(QWidget):
         super().leaveEvent(event)
 
     def hideEvent(self, event):
+        self.ignore_drag_release = self.drag_source >= 0
+        self.cancel_drag()
         self.clear_hover()
         super().hideEvent(event)
 
+    def cancel_drag(self):
+        self.drag_source = self.drag_target = -1
+        self.dragging = False
+        self.unsetCursor()
+        self.update()
+
     def mouseMoveEvent(self, event):
+        if self.embedded and self.drag_source >= 0:
+            self.drag_position = event.position()
+            if (event.position().toPoint()-self.drag_origin).manhattanLength() >= QApplication.startDragDistance():
+                self.dragging = True
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            if self.dragging:
+                self.drag_target = self.segment_at(event.position())
+                self.hover = -1
+                self.update()
+                return
         self.hover = self.segment_at(event.position())
         self.update()
 
     def mousePressEvent(self, event):
         index = self.segment_at(event.position())
+        if self.embedded:
+            if event.button() == Qt.MouseButton.LeftButton and index >= 0:
+                self.ignore_drag_release = False
+                self.drag_source = index
+                self.drag_origin = event.position().toPoint()
+                self.drag_position = event.position()
+                self.setFocus(Qt.FocusReason.MouseFocusReason)
+            elif event.button() == Qt.MouseButton.RightButton:
+                self.ignore_drag_release = True
+                self.cancel_drag()
+            return
         if (not self.embedded and event.button() == Qt.MouseButton.LeftButton and index >= 0
                 and self.buttons[index].get('behaviour') in ('hold', 'repeat')
                 and self.buttons[index].get('style') == 'button'):
@@ -174,6 +231,18 @@ class RadialPopup(QWidget):
             self.selected.emit(index+1)
 
     def mouseReleaseEvent(self, event):
+        if self.embedded and self.ignore_drag_release:
+            self.ignore_drag_release = False
+            return
+        if self.embedded and self.drag_source >= 0:
+            source, target = self.drag_source, self.segment_at(event.position())
+            was_dragging = self.dragging
+            self.cancel_drag()
+            self.hover = target if event.button() == Qt.MouseButton.LeftButton else -1
+            if was_dragging:
+                if event.button() == Qt.MouseButton.LeftButton and target >= 0 and target != source:
+                    self.swapped.emit(source, target)
+                return
         if self.pressed_button >= 0:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.button_released.emit()
@@ -188,6 +257,12 @@ class RadialPopup(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
+            if self.embedded and self.drag_source >= 0:
+                self.ignore_drag_release = True
+                self.cancel_drag()
+                self.clear_hover()
+                event.accept()
+                return
             self.hide()
 
     def event(self, event):
@@ -678,6 +753,7 @@ class ButtonEditor(QWidget):
         self.ring = RadialPopup(embedded=True)
         self.ring.setFixedSize(360, 360)
         self.ring.selected.connect(self.select_button)
+        self.ring.swapped.connect(self.swap_buttons)
         left.addWidget(self.ring)
         self.configuration_button = QPushButton('Main configuration')
         self.configuration_button.clicked.connect(lambda: self.owner.pages.setCurrentIndex(0))
@@ -929,6 +1005,11 @@ class ButtonEditor(QWidget):
         self.ring.dark = self.owner.service.popup.dark
         self.message.clear()
         self.select_button(1)
+
+    def swap_buttons(self, source, target):
+        self.buttons[source], self.buttons[target] = self.buttons[target], self.buttons[source]
+        self.select_button(target+1)
+        self.message.setText('Buttons swapped. Unsaved changes')
 
     def select_button(self, number):
         self.loading = True
