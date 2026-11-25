@@ -18,6 +18,7 @@ and validation. Read it before making changes anywhere in this repository.
 
 ## Scope and established decisions
 
+- `P:\git\MyUtils\Blender\` is for Blender-related projects and topics. Maintain all Blender details in `Blender/Agents.md`; Blender-only work requires no further updates to this root `AGENTS.md`.
 - Work only in `P:\git\MyUtils`. Slideshow was brought into this repository;
   the old image-processing-examples folder is no longer the working source.
 - Use one top-level `requirements.txt` and one top-level `venv` for every app,
