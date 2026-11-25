@@ -26,6 +26,40 @@ class SettingsTests(unittest.TestCase):
 
 
 class CutTests(unittest.TestCase):
+    def test_cut_stops_default_to_full_depth(self):
+        from snake_tape.core import cut_stops
+        positions,_=cuts(60,Settings(),True)
+        self.assertEqual(cut_stops(positions,Settings(),True),[0]*len(positions))
+
+    def test_cut_stop_variation_is_repeatable_bounded_and_independent(self):
+        from snake_tape.core import cut_stops
+        settings=Settings(cut_stop_mm=.5,cut_stop_variation_mm=.5)
+        positions,_=cuts(60,settings,True)
+        values=cut_stops(positions,settings,True)
+        self.assertEqual(values,cut_stops(positions,settings,True))
+        self.assertEqual(values[0],values[-1])
+        self.assertTrue(all(0<=v<=1 for v in values))
+        self.assertGreater(max(values)-min(values),.5)
+        self.assertNotEqual(values,cut_stops(positions,settings,True,side=1))
+        self.assertEqual(cuts(60,Settings(),True),cuts(60,settings,True))
+
+    def test_zero_mean_can_mix_full_and_short_cuts(self):
+        from snake_tape.core import cut_stops
+        settings=Settings(cut_stop_variation_mm=1)
+        positions,_=cuts(120,settings,True)
+        values=cut_stops(positions,settings,True)
+        self.assertIn(0,values)
+        self.assertTrue(any(v>.1 for v in values))
+
+    def test_cut_stop_values_are_nonnegative_and_leave_a_cut(self):
+        from snake_tape.core import cut_stops
+        for kwargs in ({'cut_stop_mm':-1},{'cut_stop_variation_mm':-1}):
+            with self.assertRaises(ValueError):
+                Settings(**kwargs).validate()
+        positions,_=cuts(60,Settings(),True)
+        values=cut_stops(positions,Settings(cut_stop_variation_mm=100),True,max_stop=2)
+        self.assertTrue(all(0<=v<=2 for v in values))
+
     def test_repeatable_but_seed_changes_pattern(self):
         a = cuts(100, Settings(seed=8), False)
         self.assertEqual(a, cuts(100, Settings(seed=8), False))

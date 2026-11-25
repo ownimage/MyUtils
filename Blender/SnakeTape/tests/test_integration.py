@@ -23,6 +23,9 @@ class IntegrationTests(unittest.TestCase):
             bpy.ops.object.mode_set(mode='OBJECT')
         clear()
         bpy.context.scene.unit_settings.scale_length=1
+        from snake_tape.core import Settings
+        from snake_tape.ui import copy_settings
+        copy_settings(bpy.context.scene.snaketape_options,Settings())
 
     def create(self):
         source,ids=make_rim('bend')
@@ -61,6 +64,8 @@ class IntegrationTests(unittest.TestCase):
             bpy.ops.mesh.snaketape_update()
 
     def test_save_reload_preserves_settings_and_pointer(self):
+        bpy.context.scene.snaketape_options.cut_stop_mm=.5
+        bpy.context.scene.snaketape_options.cut_stop_variation_mm=.5
         source,tape=self.create()
         source.name='Renamed cardboard'
         tape.snaketape_options.seed=37
@@ -71,8 +76,13 @@ class IntegrationTests(unittest.TestCase):
             bpy.ops.wm.open_mainfile(filepath=path)
             loaded=bpy.data.objects[tape_name]
             self.assertEqual(loaded.snaketape_options.seed,37)
+            self.assertAlmostEqual(loaded.snaketape_options.cut_stop_mm,.5)
+            self.assertAlmostEqual(loaded.snaketape_options.cut_stop_variation_mm,.5)
             self.assertEqual(loaded.snaketape_source.name,'Renamed cardboard')
             self.assertEqual(bpy.ops.mesh.snaketape_update(),{'FINISHED'})
+            settings=json.loads(bpy.context.object['snaketape_settings'])
+            self.assertEqual(settings['cut_stop_mm'],.5)
+            self.assertEqual(settings['cut_stop_variation_mm'],.5)
 
     def test_create_runs_all_four_operations_even_with_saved_preview_stage(self):
         from snake_tape.validation import measure

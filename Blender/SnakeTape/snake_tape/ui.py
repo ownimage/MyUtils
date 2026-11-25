@@ -14,6 +14,8 @@ class SnakeTapeOptions(bpy.types.PropertyGroup):
     spacing_mm: FloatProperty(name='Cut spacing (mm)',default=3,min=.2,max=1000,precision=2)
     variation: FloatProperty(name='Spacing randomness',default=.25,min=0,max=.8,subtype='FACTOR')
     angle_deg: FloatProperty(name='Cut angle (deg)',description='Maximum seeded variation in cut angle',default=10,min=0,max=45)
+    cut_stop_mm: FloatProperty(name='Uncut root (mm)',description='Material left joined between the fold line and each cut tip; zero reaches the fold',default=0,min=0,max=1000,precision=2)
+    cut_stop_variation_mm: FloatProperty(name='Depth variation (mm)',description='Random plus/minus change in uncut root; zero root with variation mixes full and shorter cuts',default=0,min=0,max=1000,precision=2)
     wave_strength: FloatProperty(name='Wave strength',default=.2,min=0,max=.8,subtype='FACTOR')
     wave_length_mm: FloatProperty(name='Wave length (mm)',default=25,min=.1,max=10000)
     seed: IntProperty(name='Seed',default=1,min=0,max=2147483647)
@@ -140,7 +142,7 @@ class SNAKETAPE_PT_panel(bpy.types.Panel):
         else:
             layout.label(text='Select one row of rim quad faces')
             layout.label(text='in Edit Mode, then Create Tape.')
-        for key in ('thickness_mm','width_mode','width_mm','spacing_mm','variation','angle_deg','wave_strength','wave_length_mm','seed','fold_radius_mm','reverse'):
+        for key in ('thickness_mm','width_mode','width_mm','spacing_mm','variation','angle_deg','cut_stop_mm','cut_stop_variation_mm','wave_strength','wave_length_mm','seed','fold_radius_mm','reverse'):
             layout.prop(options,key)
         box=layout.box()
         box.label(text='Advanced')

@@ -9,6 +9,78 @@ from tests.fixtures import clear, make_rim, make_cylinder
 
 
 class GeometryTests(unittest.TestCase):
+    def test_short_cuts_leave_real_connected_material_below_the_tip(self):
+        obj,ids=make_rim()
+        settings=Settings(stage='CUT',variation=0,wave_strength=0,angle_deg=0,
+                          cut_stop_mm=1)
+        tape,_=build_tape(obj,ids,settings)
+        mesh=tape.data
+        counts={}
+        for polygon in mesh.polygons:
+            for a,b in polygon.edge_keys:
+                edge=tuple(sorted((a,b)))
+                counts[edge]=counts.get(edge,0)+1
+        points=[(tape.matrix_world@v.co)*1000 for v in mesh.vertices]
+        joined_length=0
+        for (a,b),uses in counts.items():
+            p,q=points[a],points[b]
+            if abs(p.x-3)<.001 and abs(q.x-3)<.001 and min(p.z,q.z)>.06 and 1.999<=min(p.y,q.y) and max(p.y,q.y)<=3.001:
+                self.assertEqual(uses,2,'The material below the tip must be joined, not two coincident free edges')
+                joined_length+=(p-q).length
+        self.assertAlmostEqual(joined_length,1,delta=.003)
+        self.assertEqual(measure(tape)['nonmanifold_edges'],0)
+
+    def test_variable_cut_depth_keeps_folded_reference_meshes_valid(self):
+        for kind in ('straight','bend','loop','cylinder'):
+            with self.subTest(kind=kind):
+                clear()
+                source,ids=make_cylinder() if kind=='cylinder' else make_rim(kind)
+                flat,_=build_tape(source,ids,Settings(stage='CUT',cut_stop_mm=.5,cut_stop_variation_mm=.5))
+                self.assertEqual(measure(flat)['self_intersection_pairs'],0,'Cut-tip walls must not cross the flat tape')
+                tape,data=build_tape(source,ids,Settings(cut_stop_mm=.5,cut_stop_variation_mm=.5))
+                stats=measure(tape,source)
+                self.assertEqual(stats['self_intersection_pairs'],0)
+                self.assertEqual(stats['source_intersection_pairs'],0)
+                self.assertEqual(stats['nonmanifold_edges'],0)
+                self.assertEqual(stats['components'],1)
+                self.assertGreater(data['max_cut_stop_mm'],data['min_cut_stop_mm'])
+
+    def test_mixed_full_and_short_cuts_and_reversed_total_width(self):
+        for kind,seed,reverse in (('straight',7,False),('bend',19,True),('cylinder',7,True)):
+            with self.subTest(kind=kind):
+                clear()
+                source,ids=make_cylinder() if kind=='cylinder' else make_rim(kind)
+                tape,data=build_tape(source,ids,Settings(cut_stop_variation_mm=1,seed=seed,reverse=reverse,
+                                                        width_mode='TOTAL',width_mm=24 if kind=='cylinder' else 20))
+                self.assertEqual(data['min_cut_stop_mm'],0)
+                self.assertGreater(data['max_cut_stop_mm'],0)
+                n=tape['snaketape_shell_vertices']
+                for i in range(n):
+                    self.assertAlmostEqual((tape.data.vertices[i].co-tape.data.vertices[i+n].co).length*1000,.1,delta=.002)
+                stats=measure(tape,source)
+                for key in ('nonmanifold_edges','self_intersection_pairs','source_intersection_pairs','source_penetrating_vertices'):
+                    self.assertEqual(stats[key],0,key)
+
+    def test_cut_depth_limits_reject_impossible_roots_and_zero_kerf(self):
+        source,ids=make_rim()
+        before=len(bpy.data.objects)
+        for settings in (Settings(cut_stop_mm=10),Settings(cut_stop_mm=.5,cut_gap_mm=0)):
+            with self.assertRaisesRegex(ValueError,'Uncut root|positive Cut gap'):
+                build_tape(source,ids,settings)
+            self.assertEqual(len(bpy.data.objects),before)
+
+    def test_total_width_on_a_varying_band_preserves_the_uncut_web(self):
+        source,ids=make_rim()
+        for vertex in source.data.vertices:
+            vertex.co.y*=1+vertex.co.x/.036*.25
+        source.data.update()
+        bpy.context.view_layer.update()
+        tape,_=build_tape(source,ids,Settings(stage='CUT',width_mode='TOTAL',width_mm=20,cut_stop_mm=1))
+        stats=measure(tape)
+        self.assertEqual(stats['nonmanifold_edges'],0)
+        self.assertEqual(stats['components'],1)
+        self.assertEqual(stats['self_intersection_pairs'],0)
+
     def setUp(self):
         clear()
         bpy.context.scene.unit_settings.scale_length = 1

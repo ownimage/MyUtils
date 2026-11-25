@@ -24,9 +24,10 @@
 | `SnakeTape/Gen_Previews.cmd` | Generate an offline HTML gallery, stage renders, measurements and inspectable scenes. |
 | `SnakeTape/snake_tape/core.py` | Settings, millimetre conversion, deterministic cuts and periodic/correlated variation. |
 | `SnakeTape/snake_tape/geometry.py` | Quad-rim analysis, staged tape surfaces, flap folding, contact and final-shell intersection repair. |
+| `SnakeTape/snake_tape/short_cuts.py` | Partly joined overhangs, local slit-outline triangulation and thickness from material-frame normals. |
 | `SnakeTape/snake_tape/validation.py` | Independent measurements on evaluated solid geometry, source contact and triangle intersections. |
 | `SnakeTape/snake_tape/ui.py` | Native settings, panel, menus and atomic Create/Update operators. |
-| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.1.2. |
+| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.2.0. |
 | `SnakeTape/tests/` | Synthetic reference meshes and core, geometry, persistence, launcher and preview tests. |
 | `SnakeTape/tools/launch.cmd` | Shared Blender discovery, isolated profile setup and process exit forwarding. |
 | `SnakeTape/tools/run_tests.py` | Standard-library test discovery, timestamped logs/JSON and extension packaging. |
@@ -89,9 +90,9 @@
   unstable sliver faces. Coplanar band faces need no extra anchors.
 - Spatial queries first fit flaps to the source and earlier strips. Conservative
   nearby-edge support and one-sided slope relief handle overlaps narrower than a
-  sampling cell. A centred Solidify shell on the offset surface supplies physical
-  thickness while keeping the tape outside the cardboard.
-- After Solidify, test non-adjacent triangle pairs on the evaluated shell and
+  sampling cell. Full-depth cuts use a centred Solidify shell; short cuts use explicit
+  shells with material-frame normals, preserving the connected web and thickness.
+- After adding thickness, test non-adjacent triangle pairs on the evaluated shell and
   intersections against the source. Locally raise the later flap where needed,
   preserving pinned roots. Fail and clean up if the finite iteration limit cannot
   resolve the contacts; never publish a known intersecting folded result.
@@ -107,7 +108,7 @@
 - In Edit Mode select rim faces, then **Mesh > SnakeTape > Create Tape**, or use
   **F3 > SnakeTape: Create Tape**.
 - **3D Viewport > Sidebar (N) > SnakeTape** contains thickness, width mode/value,
-  cut spacing/randomness/angle, wave strength/length, seed, fold radius,
+  cut spacing/randomness/angle, Uncut root/Depth variation, wave strength/length, seed, fold radius,
   Reverse Direction and advanced clearance/cut gap/mesh spacing.
 - The four stages (Base, Extended, Cut and Folded) are internal. One **Create Tape**
   click performs all four. **Update Tape** also rebuilds the complete folded tape.
@@ -115,7 +116,7 @@
   stage property is hidden and ignored by Create/Update for older saved files.
   Merely changing a setting does not trigger a costly rebuild.
 - Selecting generated tape exposes its saved settings and **Update Tape**.
-- Install `generated/packages/snake_tape-0.1.2.zip` through **Edit > Preferences >
+- Install `generated/packages/snake_tape-0.2.0.zip` through **Edit > Preferences >
   Get Extensions > top-right dropdown > Install from Disk...**.
 
 ## Commands and previews
@@ -138,14 +139,16 @@
 - Test runs produce timestamped `generated/tests/<run>/tests.log` and `results.json`.
   A failed suite does not build a new release ZIP. Package manifests and successful
   ZIPs are checked using Blender's extension CLI.
-- Preview runs produce `generated/previews/<run>/index.html`, 72 PNGs, eight
+- Preview runs produce `generated/previews/<run>/index.html`, 92 PNGs, ten
   `inspect.blend` scenes, JSON measurements and native renderer logs. `--quick`
   renders the first two cases at smaller resolution. `--output` chooses a new or
   empty folder; existing results must not be overwritten.
-- The eight gallery cases are straight, convex/concave, S bend, closed loop/seam,
-  rotated/non-uniformly scaled edge, corrugated cardboard, a 0.3 mm curved rim
-  and a cylinder side-face band at the reported scale. Each has four stages,
-  front/back/top views, diagnostic flap colours and a 12 mm overlap close-up.
+- The ten gallery cases are straight, convex/concave, S bend, closed loop/seam,
+  rotated/non-uniformly scaled edge, corrugated cardboard, a 0.3 mm curved rim,
+  a cylinder side-face band at the reported scale, and two mixed full/short-cut
+  examples (straight and cylinder). Each has four stages, front/back/top views,
+  diagnostic flap colours and a 12 mm overlap close-up. The short-cut cases also
+  have an 8 mm cut-tip view before folding.
 - The corrugated example has visible liners/flutes and a hidden solid rim/contact
   proxy. This supports a continuous tape bridge over flute openings. Use a similar
   guide/proxy for detailed cardboard without a continuous selectable quad rim.
@@ -177,7 +180,7 @@
 ## Known limits
 
 - Triangles, multi-row bands, branching selections and arbitrary patches are not
-  supported in 0.1.2. Use a simple quad guide/proxy instead of changing detailed art.
+  supported in 0.2.0. Use a simple quad guide/proxy instead of changing detailed art.
 - Apply geometry/deformation modifiers on a duplicate before capturing its rim.
 - Overhang should fit the available side surface. Wrapping around the underside,
   arbitrary very tight/complex bends, torn paper and adhesive physics are outside
@@ -246,3 +249,43 @@
   source scale and original geometry were preserved.
 - No Stage control or extra operation button was introduced. Create and Update
   still run the entire four-stage construction. No root AGENTS.md update was made.
+
+## Version 0.2.0 irregular cut depth on 2026-11-25
+
+- User requested some cuts to stop short instead of all reaching the underlying
+  edge. Added **Uncut root (mm)** (mean material left between fold and tip) and
+  **Depth variation (mm)** (seeded plus/minus). Defaults 0/0 preserve the previous
+  path. Try 0/1 for mixed full and short cuts, or 0.75/0.25 for 0.5–1 mm of web.
+- Depth noise uses an independent stream per side, so depth changes preserve
+  spacing/angles and closed seams repeat. Negative samples become full-depth cuts.
+  Uncut root must be less than available overhang; variation is capped to retain
+  at least one thickness of slit. Short cuts require a positive kerf.
+- The web is welded actual material. Short-cut geometry bends coherently until
+  the deepest tip, releases into independent flaps gradually, and settles over a
+  longer shoulder before contact fitting. It preserves overlap and contact checks.
+- Triangulate the actual concave slot outlines with Blender's constrained Delaunay
+  API; moving vertices of a triangulated rectangle can bridge across slit tips.
+  Keep local anchors rather than putting every tip row through the full tape.
+- Short cuts use explicit closed shells offset by stable material-frame normals.
+  Solidify averaging on narrow tip triangles caused inverted rims; full-depth
+  geometry still uses its existing Solidify path. Contact repair moves both sides
+  of explicit shells together. Thickness and manifoldness are measured independently.
+- Weld within max(0.00001 mm, thickness * 0.001) on the short-cut path to remove
+  float32/CDT near-duplicate points and false internal caps. The original full-depth
+  path retains its original welding. Total width supports a varying source band.
+- New settings persist through Create, Update and save/reload. Both actions still
+  perform all four operations through one button. Root AGENTS.md remains unchanged.
+- **50 automated tests passed**, with no failures/errors/skips, using the project
+  Run_Tests.cmd in Blender 4.4.3. The initial new tests failed before implementation;
+  later regressions caught slot-tip triangles crossing their boundary, unstable
+  thickness, and float32 near-duplicate points on varying-width bands.
+  Report: `generated/tests/20261125-191139-820646`.
+- The 0.2.0 ZIP was installed and enabled in a separate, existing isolated profile
+  and repository. The installed operators created and updated mixed-depth tape on
+  the scaled cylinder, saved/reloaded both controls, retained the source, and
+  produced closed solids with zero measured tape/tape or tape/source intersections.
+  No existing Blender workspace or installation was changed.
+- **10 preview cases / 92 PNGs passed** with zero measured tape/tape and
+  tape/source intersections, source penetration and nonmanifold edges in all folded
+  results. Gallery: `generated/previews/20261125-191418-626858`. New CUT-stage close-ups
+  visibly show different tip depths; folded views retain joined web and overlaps.

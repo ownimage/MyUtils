@@ -153,15 +153,31 @@ def analyze_rim(obj, face_indices, reverse=False):
 
 
 class Surface:
-    def __init__(self):
+    def __init__(self,weld_tolerance=None):
         self.vertices=[]
         self.faces=[]
         self.materials=[]
         self.owners=[]
         self.vertex_info={}
+        self.shell_normals={}
         self.lookup={}
+        self.weld_tolerance=weld_tolerance
+        self.buckets={}
 
     def vertex(self,p):
+        if self.weld_tolerance:
+            tolerance=self.weld_tolerance
+            cell=tuple(math.floor(x/tolerance) for x in p)
+            for x in (-1,0,1):
+                for y in (-1,0,1):
+                    for z in (-1,0,1):
+                        for index in self.buckets.get((cell[0]+x,cell[1]+y,cell[2]+z),()):
+                            if (self.vertices[index]-p).length<=tolerance:
+                                return index
+            index=len(self.vertices)
+            self.vertices.append(p.copy())
+            self.buckets.setdefault(cell,[]).append(index)
+            return index
         key=tuple(round(x,7) for x in p)
         if key not in self.lookup:
             self.lookup[key]=len(self.vertices)
@@ -245,7 +261,8 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
     source_corners=[rim.distances[i] for i in range(1,len(rim.normals))
                     if rim.normals[i-1].dot(rim.normals[i])<.999999]
     sampling=[_grid_positions(a,b,settings.resolution_mm,source_corners) for a,b in zip(positions,positions[1:])]
-    surface=Surface()
+    short_cuts=(settings.cut_stop_mm>0 or settings.cut_stop_variation_mm>0) and settings.stage in ('CUT','FOLDED')
+    surface=Surface(max(1e-5,settings.thickness_mm*.001) if short_cuts else None)
     root_height=radius if folded else mid
     def roots(s):
         a,b,width,tangent,normal=rim.sample(s)
@@ -274,7 +291,11 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
     previous_triangles=[]
     flap_count=0
     raised_vertices=0
-    if settings.stage!='BASE':
+    depth_data={}
+    if short_cuts:
+        from .short_cuts import add_short_flaps
+        flap_count,depth_data=add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,source_tree,diagnostic)
+    elif settings.stage!='BASE':
         for side in (0,1):
             previous_vertices.clear()
             previous_triangles.clear()
@@ -395,22 +416,28 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
     try:
         mesh.from_pydata([v/rim.unit_scale for v in surface.vertices],[],surface.faces)
         mesh.update()
+        if short_cuts:
+            from .short_cuts import thicken
+            shell_owners,shell_materials=thicken(surface,mesh,settings.thickness_mm,rim.unit_scale)
         ownership=mesh.attributes.new('snaketape_flap','INT','FACE')
-        for item,value in zip(ownership.data,surface.owners):
+        for item,value in zip(ownership.data,shell_owners if short_cuts else surface.owners):
             item.value=value
         obj=bpy.data.objects.new(name,mesh)
         bpy.context.collection.objects.link(obj)
         obj.location=rim.origin
         for material in _materials():
             mesh.materials.append(material)
-        for p,material in zip(mesh.polygons,surface.materials):
+        for p,material in zip(mesh.polygons,shell_materials if short_cuts else surface.materials):
             p.material_index=material
-        solidify=obj.modifiers.new('Tape thickness','SOLIDIFY')
-        solidify.thickness=settings.thickness_mm/rim.unit_scale
-        solidify.offset=0
-        solidify.use_even_offset=True
-        solidify.use_quality_normals=True
-        solidify.use_rim=True
+        if short_cuts:
+            obj['snaketape_shell_vertices']=len(surface.vertices)
+        else:
+            solidify=obj.modifiers.new('Tape thickness','SOLIDIFY')
+            solidify.thickness=settings.thickness_mm/rim.unit_scale
+            solidify.offset=0
+            solidify.use_even_offset=True
+            solidify.use_quality_normals=True
+            solidify.use_rim=True
         obj['snaketape_settings']=json.dumps(asdict(requested_settings),sort_keys=True)
         obj['snaketape_faces']=json.dumps(list(face_indices))
         obj['snaketape_topology']=topology_signature(source)
@@ -419,7 +446,8 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
         repairs=_resolve_shell_contacts(obj,surface,rim,settings,source_tree) if folded else 0
         data={'length_mm':rim.length,'flaps':flap_count,'raised_vertices':raised_vertices,'contact_iterations':repairs,
               'min_band_width_mm':min_band_width,'fold_radius_mm':radius if folded else None,
-              'surface_vertices':len(mesh.vertices),'closed':rim.closed,'stage':settings.stage}
+              'surface_vertices':len(surface.vertices),'closed':rim.closed,'stage':settings.stage}
+        data.update(depth_data)
         obj['snaketape_metrics']=json.dumps(data)
         bpy.context.view_layer.update()
         return obj,data
@@ -431,7 +459,7 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
         raise
 
 
-def _resolve_shell_contacts(obj,surface,rim,settings,source_tree):
+def _resolve_shell_contacts(obj,surface,rim,settings,source_tree,max_iterations=60):
     """Resolve sub-cell collisions on the evaluated solid, preserving pinned roots.
 
     The broad contact fit is followed by local, one-sided relief. Final validation
@@ -440,7 +468,7 @@ def _resolve_shell_contacts(obj,surface,rim,settings,source_tree):
     owners_to_vertices={}
     for index,(owner,direction,weight) in surface.vertex_info.items():
         owners_to_vertices.setdefault(owner,[]).append(index)
-    for iteration in range(60):
+    for iteration in range(max_iterations):
         bpy.context.view_layer.update()
         evaluated=obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
         mesh=evaluated.to_mesh()
@@ -493,6 +521,8 @@ def _resolve_shell_contacts(obj,surface,rim,settings,source_tree):
                 shift=falloff*weight*settings.thickness_mm*.6
                 if shift>1e-6:
                     obj.data.vertices[index].co+=direction*(shift/rim.unit_scale)
+                    if 'snaketape_shell_vertices' in obj:
+                        obj.data.vertices[index+obj['snaketape_shell_vertices']].co+=direction*(shift/rim.unit_scale)
                     moved+=1
         obj.data.update()
         if not moved:

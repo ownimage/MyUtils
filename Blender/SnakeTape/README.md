@@ -1,6 +1,6 @@
-n# SnakeTape
+# SnakeTape
 
-SnakeTape 0.1.2 generates finite-thickness masking tape over a selected cardboard
+SnakeTape 0.2.0 generates finite-thickness masking tape over a selected cardboard
 rim in **Blender 4.4.3**. The overhang is slit into irregular flaps and folded onto
 both sides, with local relief where flaps overlap. The cardboard mesh is preserved.
 
@@ -35,7 +35,7 @@ changed.
 ## Install and operate
 
 1. Run `Run_Tests.cmd`. A successful run builds
-   `generated/packages/snake_tape-0.1.2.zip` and validates the ZIP.
+   `generated/packages/snake_tape-0.2.0.zip` and validates the ZIP.
 2. In Blender choose **Edit > Preferences > Get Extensions**, open the top-right
    dropdown and choose **Install from Disk...**. Select the ZIP and enable SnakeTape
    if it is not enabled automatically.
@@ -57,7 +57,7 @@ always generate the complete folded result. Intermediate stages remain available
 only to the offline preview generator and geometry scripts; a stage saved by an
 older add-on version cannot stop Create/Update at an intermediate result.
 Updating changes only generated tape; failure retains the previous result. Regeneration rebuilds
-the tape and its generated thickness modifier, so manual tape edits are replaced.
+the tape and its thickness, so manual tape edits are replaced.
 Moving/deforming the source requires Update Tape; this is not a live modifier.
 
 ## Controls
@@ -69,6 +69,8 @@ Moving/deforming the source requires Update Tape; this is not a live modifier.
 | Cut spacing | Nominal mean spacing, default 3 mm. The interval partition includes the full rim. |
 | Spacing randomness | Bounded independent spacing variation. |
 | Cut angle variation | Maximum angular variation; cuts are constrained to avoid crossing. |
+| Uncut root | Mean distance left joined between the fold line and each cut tip, in mm. Default 0 reaches the fold. |
+| Depth variation | Seeded plus/minus variation of Uncut root, in mm. Negative samples become zero (full depth). |
 | Wave strength / length | Smooth runs of closer/further spacing and more aligned cut angles. Closed loops use periodic noise. |
 | Seed | Reproduce exactly the same geometry for unchanged inputs/settings. |
 | Fold radius | Leave at zero for automatic sizing from tape thickness, physical rim width and available overhang. Larger explicit radii introduce a lifted crease and need more material to bend and settle. |
@@ -76,6 +78,21 @@ Moving/deforming the source requires Update Tape; this is not a live modifier.
 | Contact clearance | Small geometric separation from the cardboard; extra local relief is added at overlapping strips. |
 | Cut gap | Narrow visible slit width, tapering to zero at its root. |
 | Mesh spacing | Maximum requested cell size; folded geometry refines automatically to at most 0.65 mm and four cells per nominal flap. |
+
+For a mix of full and slightly shorter cuts, start with **Uncut root = 0 mm** and
+**Depth variation = 1 mm**. To leave every cut short, try **0.75 mm / 0.25 mm**
+(0.5–1 mm remains joined). Both controls at zero preserve the previous geometry.
+Depth noise is independent on each side and does not reshuffle spacing or angles;
+Seed reproduces the pattern. Uncut root must be less than the available overhang.
+Variation is clamped to leave at least one tape thickness of slit; short cuts need
+a positive Cut gap. These distances are measured along the flat tape from its fold
+line, before bending.
+
+Short cuts leave a real connected web. It bends as one sheet near the rim; free
+flaps are released gradually and receive overlap relief. This needs a slightly
+longer raised settling region than full-depth cuts. Local triangulation follows
+the slit outlines, and a closed shell supplies thickness without unstable normals
+at the small tips. The old full-depth path continues to use Solidify.
 
 The sealing band stays connected. Fold arc length consumes the overhang, so the
 adhered side length is slightly less than the entered flat overhang width. The
@@ -92,13 +109,15 @@ periodic waves, sealing-band connectivity, final-shell manifoldness, source
 preservation, triangle intersections, contact, reverse traversal, saved settings,
 safe failed updates, stale topology, launcher failures, gallery output and a real
 PNG render. Several seeds are checked on straight, curved, S-shaped and closed-loop
-rims. Validation evaluates the finished thickness modifier, not only its surface.
+rims. Validation evaluates the finished solid tape, including its thickness.
 
 Previews contain all stages, front/back/top views, diagnostic flap colours and a
 12 mm close-up. The seventh case tests automatic radius on a 0.3 mm curved rim.
 The eighth uses all side faces of a 32-sided cylinder at scale 0.010, 0.010, 0.004
 with default tape settings. This folds tape onto both end caps and tests changing
 surface normals, original polygon corners and overlapping flaps near the centre.
+Two further cases show mixed full/short cuts on a straight band and the scaled
+cylinder, including an 8 mm close-up of the cut tips before folding.
 The corrugated example uses visible liners/flutes with a hidden
 solid contact/selection proxy; this shows the tape bridging the exposed flutes.
 Use the same proxy technique for a highly detailed cardboard model without a

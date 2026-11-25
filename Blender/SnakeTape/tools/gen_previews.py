@@ -160,6 +160,7 @@ def main():
     from snake_tape.ui import copy_settings
     snake_tape.register()
     specifications=[('Straight edge','straight'),('Convex and concave bend','bend'),('S bend','s_bend'),('Closed loop and seam','loop'),('Rotated and scaled edge','transformed'),('Corrugated cardboard','corrugated'),('Narrow 0.3 mm rim (automatic radius)','narrow'),('Cylinder side faces (reported scale)','cylinder')]
+    specifications += [('Mixed full and short cuts','short_straight'),('Cylinder with irregular cut depth','short_cylinder')]
     if args.quick:
         specifications=specifications[:2]
     cases=[]
@@ -172,7 +173,9 @@ def main():
         directory.mkdir()
         try:
             fixture_kind='bend' if kind=='narrow' else kind if kind in ('bend','s_bend','loop') else 'straight'
-            source,ids=make_cylinder() if kind=='cylinder' else make_rim(fixture_kind,width=.3 if kind=='narrow' else 4)
+            source,ids=make_cylinder() if kind in ('cylinder','short_cylinder') else make_rim(fixture_kind,width=.3 if kind=='narrow' else 4)
+            if kind.startswith('short_'):
+                case['description']='Uncut root 0 mm, Depth variation 1 mm: seeded full-depth cuts mixed with cuts stopping up to 1 mm short. The material below each short tip remains connected.'
             if kind=='narrow':
                 case['description']='A 0.3 mm rim with default 0.1 mm tape and automatic fold radius. This reproduces the narrow-band rejection fixed in 0.1.1.'
             if kind=='cylinder':
@@ -187,7 +190,7 @@ def main():
                 case['description']='Visible liners and flutes with a hidden solid rim/contact proxy; the central tape bridges the flute openings.'
             setup_render(480 if args.quick else 720,320 if args.quick else 480)
             camera,centre,span=camera_and_lights(source)
-            if kind=='cylinder':
+            if kind in ('cylinder','short_cylinder'):
                 span*=1.8
             tape=None
             for stage in ('BASE','EXTENDED','CUT','FOLDED'):
@@ -196,7 +199,7 @@ def main():
                     bpy.data.objects.remove(tape,do_unlink=True)
                     if not old_mesh.users:
                         bpy.data.meshes.remove(old_mesh)
-                settings=Settings(stage=stage)
+                settings=Settings(stage=stage,cut_stop_variation_mm=1 if kind.startswith('short_') else 0)
                 tape,generation=build_tape(source,ids,settings,diagnostic=True)
                 tape.snaketape_source=source
                 copy_settings(tape.snaketape_options,settings)
@@ -206,6 +209,14 @@ def main():
                 filename=stage.lower()+'.png'
                 render_view(directory/filename,camera,centre,span)
                 case['images'].append((f'{slug}/{filename}',stage.title()))
+                if stage=='CUT' and kind.startswith('short_'):
+                    from snake_tape.geometry import analyze_rim
+                    rim=analyze_rim(source,ids)
+                    a,b,_,t,n=rim.sample(rim.length*(.35 if kind=='short_straight' else .55))
+                    out=(a-b).normalized()
+                    focus=rim.origin+(a+out*1.5)/rim.unit_scale
+                    render_view(directory/'cut-tips.png',camera,focus,.008,n)
+                    case['images'].append((f'{slug}/cut-tips.png','Full and short cut tips before folding (8 mm field)'))
             stats=measure(tape,source)
             case['metrics']=stats
             case['generation']=generation
