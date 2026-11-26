@@ -165,6 +165,9 @@ def main():
     specifications=[('Straight edge','straight'),('Convex and concave bend','bend'),('S bend','s_bend'),('Closed loop and seam','loop'),('Rotated and scaled edge','transformed'),('Corrugated cardboard','corrugated'),('Narrow 0.3 mm rim (automatic radius)','narrow'),('Cylinder side faces (reported scale)','cylinder')]
     specifications += [('Mixed full and short cuts','short_straight'),('Cylinder with irregular cut depth','short_cylinder')]
     specifications += [('Reported crease: root 0 mm, depth variation 0.48 mm','short_reported')]
+    specifications += [('One edge: 6 mm tape / 3 mm finished wrap','one_straight'),
+                       ('One edge: cylinder Edge A','one_cylinder_a'),
+                       ('One edge: cylinder Edge B, reversed overlap order','one_cylinder_b')]
     if args.quick:
         specifications=specifications[:2]
     cases=[]
@@ -177,7 +180,13 @@ def main():
         directory.mkdir()
         try:
             fixture_kind='bend' if kind=='narrow' else kind if kind in ('bend','s_bend','loop') else 'straight'
-            source,ids=make_cylinder() if kind in ('cylinder','short_cylinder','short_reported') else make_rim(fixture_kind,width=.3 if kind=='narrow' else 4)
+            cylinder=kind in ('cylinder','short_cylinder','short_reported') or kind.startswith('one_cylinder')
+            source,ids=make_cylinder() if cylinder else make_rim(fixture_kind,width=.3 if kind=='narrow' else 4)
+            if kind.startswith('one_'):
+                case['description']=('One edge only. Overall width includes the bend; Wrap depth is the finished distance on the adjacent surface. '
+                    + ('10 mm overall / 3 mm depth, on the original 8 mm side-face band. Depth variation 0.48 mm. '
+                       + ('Edge B with Reverse direction; the physical edge stays B.' if kind.endswith('_b') else 'Edge A; the opposite end stays uncovered.')
+                       if cylinder else '6 mm overall / 3 mm depth, on a 4 mm selected band. The unused tape edge lies flat.'))
             if kind.startswith('short_'):
                 case['description']='Uncut root 0 mm, Depth variation 1 mm: seeded full-depth cuts mixed with cuts stopping up to 1 mm short. The material below each short tip remains connected.'
             if kind=='short_reported':
@@ -196,7 +205,7 @@ def main():
                 case['description']='Visible liners and flutes with a hidden solid rim/contact proxy; the central tape bridges the flute openings.'
             setup_render(480 if args.quick else 720,320 if args.quick else 480)
             camera,centre,span=camera_and_lights(source)
-            if kind in ('cylinder','short_cylinder','short_reported'):
+            if cylinder:
                 span*=1.8
             tape=None
             for stage in ('BASE','EXTENDED','CUT','FOLDED'):
@@ -206,6 +215,10 @@ def main():
                     if not old_mesh.users:
                         bpy.data.meshes.remove(old_mesh)
                 settings=Settings(stage=stage,cut_stop_variation_mm=.48 if kind=='short_reported' else 1 if kind.startswith('short_') else 0)
+                if kind.startswith('one_'):
+                    settings=replace(settings,wrap_mode='ONE_EDGE',wrap_edge='B' if kind.endswith('_b') else 'A',
+                        width_mm=10 if cylinder else 6,wrap_depth_mm=3,reverse=kind.endswith('_b'),
+                        cut_stop_variation_mm=.48 if cylinder else 0)
                 tape,generation=build_tape(source,ids,settings,diagnostic=True)
                 tape.snaketape_source=source
                 copy_settings(tape.snaketape_options,settings)
@@ -238,7 +251,9 @@ def main():
                 if not old_mesh.users:
                     bpy.data.meshes.remove(old_mesh)
                 tape.hide_render=False
-            for title,direction in [('Front',(0,-1,.3)),('Back',(0,1,.3)),('Top',(0,0,1))]:
+            views=[('Front',(0,-1,.3)),('Back',(0,1,.3)),('Top',(0,0,1))]
+            if kind.startswith('one_'):views.append(('Bottom',(0,0,-1)))
+            for title,direction in views:
                 filename=title.lower()+'.png'
                 render_view(directory/filename,camera,centre,span,direction)
                 case['images'].append((f'{slug}/{filename}',title))
@@ -251,10 +266,14 @@ def main():
             from snake_tape.geometry import analyze_rim
             rim=analyze_rim(source,ids)
             a,b,_,t,n=rim.sample(rim.length*.55)
+            if kind.endswith('_b'):a,b=b,a
             focus=rim.origin+(a-n*3)/rim.unit_scale
             out=(a-b).normalized()
             render_view(directory/'closeup.png',camera,focus,.012,(out+n*.5+t*.4))
             case['images'].append((f'{slug}/closeup.png','Fold and overlap close-up (12 mm field)'))
+            if kind=='one_straight':
+                render_view(directory/'profile.png',camera,rim.origin+(a-n*.8)/rim.unit_scale,.009,t)
+                case['images'].append((f'{slug}/profile.png','One-fold profile: finished depth and flat unused edge (9 mm field)'))
             if kind=='short_reported':
                 a,b,_,t,n=rim.sample(rim.length*.12)
                 focus=rim.origin+(a-n*.5+(a-b).normalized()*.12)/rim.unit_scale

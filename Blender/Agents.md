@@ -22,16 +22,20 @@
 | --- | --- |
 | `SnakeTape/Run_Tests.cmd` | Run every automated suite, validate/build/validate the extension ZIP; nonzero failure exit. |
 | `SnakeTape/Gen_Previews.cmd` | Generate an offline HTML gallery, stage renders, measurements and inspectable scenes. |
+| `SnakeTape/Build.cmd` | Validate/build/validate the extension ZIP without running tests. |
 | `SnakeTape/snake_tape/core.py` | Settings, millimetre conversion, deterministic cuts and periodic/correlated variation. |
 | `SnakeTape/snake_tape/geometry.py` | Quad-rim analysis, staged tape surfaces, flap folding, contact and final-shell intersection repair. |
 | `SnakeTape/snake_tape/short_cuts.py` | Partly joined overhangs, local slit-outline triangulation and thickness from material-frame normals. |
 | `SnakeTape/snake_tape/optimization.py` | Validated reduction of finished solids, surface-distance checks and transfer of smooth corner normals. |
 | `SnakeTape/snake_tape/validation.py` | Independent measurements on evaluated solid geometry, source contact and triangle intersections. |
 | `SnakeTape/snake_tape/ui.py` | Native settings, panel, menus and atomic Create/Update operators. |
-| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.3.1. |
+| `SnakeTape/snake_tape/support.py` | Clipboard settings/version/source context and last-build diagnostics. |
+| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.4.0. |
 | `SnakeTape/tests/` | Synthetic reference meshes and core, geometry, persistence, launcher and preview tests. |
 | `SnakeTape/tools/launch.cmd` | Shared Blender discovery, isolated profile setup and process exit forwarding. |
 | `SnakeTape/tools/run_tests.py` | Standard-library test discovery, timestamped logs/JSON and extension packaging. |
+| `SnakeTape/tools/build.py` | Build-only entry point and timestamped build logs/results. |
+| `SnakeTape/tools/packaging.py` | Shared native Blender extension validation/building. |
 | `SnakeTape/tools/gen_previews.py` | Production-generator renders, gallery, JSON measurements and framed `.blend` scenes. |
 | `SnakeTape/README.md` | Installation, controls, launchers and supported input/limitations. |
 | `SnakeTape/generated/` | Ignored test reports, preview runs and built extension packages. |
@@ -41,7 +45,7 @@
 - Target **Blender 4.4.3**. Installed executable:
   `C:\Program Files\Blender Foundation\Blender 4.4\blender.exe`.
 - The user agreed to the architecture and TDD/preview approach on 2026-11-25,
-  then requested the implementation. The add-on and both launchers now exist.
+  then requested the implementation. The add-on and test/preview/build launchers exist.
 - Start from selected connected rim faces of corrugated cardboard. Seal the
   exposed edge with masking tape whose excess width is slit and folded down.
 - Stage 1: x mm outward tape thickness, typically 0.1 mm. Thickness is added once;
@@ -51,7 +55,7 @@
 - Stage 3: nominal z mm cuts (default 3 mm, expected use 2-5 mm). Randomise spacing
   and cut angles with a repeatable seed plus smooth waves of more closely spaced
   and/or more aligned cuts. Preserve the uncut central sealing band.
-- Stage 4: fold finite-thickness flaps onto both sides. Relief at bends lifts a
+- Stage 4: fold finite-thickness flaps onto the chosen edge or both sides. Relief at bends lifts a
   flap over previously placed tape rather than allowing solid intersections.
 - Generate a separate tape object. Preserve the source mesh. Save generator
   settings, source pointer, selected face indices and topology signature for updates.
@@ -415,3 +419,58 @@
   operators created and updated the cylinder at root 0 / variation 0.48, retained
   source geometry/scale, saved/reloaded normals/settings and passed solid/contact
   measurements. The user's active Blender installation and preferences were untouched.
+
+## Version 0.4.0 one-edge wrapping, build and support on 2026-11-26
+
+- Preserve Both edges as the default and retain existing width modes/geometry.
+  One edge uses Overall width (the original flat material including the bend)
+  and Wrap depth (the finished distance on the adjacent surface after the bend).
+  The user explicitly confirmed this definition of finished wrap depth.
+- Allocate `flat = overall - depth - pi * radius / 2`. Anchor that flat part at
+  the chosen selected-row boundary and trim the other rail inward. It must fit
+  inside the selected row. Reject impossible widths/depths with measured values;
+  do not silently alter material width or extend across the other corner.
+- One edge uses a quarter bend and the existing validated contact/overlap pipeline.
+  The unused tape edge lies flat; only the selected fold has a raised shoulder.
+  Full-depth and short-cut paths both accept an explicit set of active sides.
+  Metrics record flat width, bend allowance, wrap depth and selected physical edge.
+- A/B are based on the original (non-reversed) rail ordering. Reverse direction
+  changes overlap traversal but keeps the same physical wrapped edge. Swap Edge
+  toggles source options before Create, or atomically rebuilds the selected tape
+  in Object Mode. Failed swaps restore the old setting and retain the old mesh.
+- Example: cylinder side-face band 8 mm, overall 10 mm, finished wrap 3 mm,
+  automatic radius 0.2 mm leaves 6.686 mm flat. A 4 mm straight band accepts
+  overall 6 mm / finished wrap 3 mm, leaving 2.686 mm flat.
+- Persist requested dimensions, not internal effective overhang settings. New
+  controls use RNA defaults so older blend files retain Both edges behaviour.
+- Copy Settings copies JSON containing every current setting, version, scene
+  units, source dimensions/transform/face indices and last-generated settings/
+  measurements. Flag pending edits. Include the blend basename without directories.
+  Tests substitute a clipboard object; never overwrite the user's clipboard in tests.
+- Build.cmd uses the existing isolated launcher; it builds and validates without
+  running tests. tools/packaging.py is shared with Run_Tests.cmd. Read archive
+  id/version from the manifest. Default archive is generated/packages/
+  snake_tape-0.4.0.zip; timestamped build logs/results go under generated/builds/.
+  --no-pause and --output support unattended invocation and paths with spaces.
+- TDD: the initial nine new behavioural checks failed before implementation, then
+  passed. Coverage includes material width/finished depth, both physical edges and
+  reversed order, one-sided contact, atomic swap, copy reports and native Build.cmd.
+  Further checks cover saved/reloaded controls and copying without an active object.
+- Previews add a straight one-edge profile and the scaled cylinder with Edge A
+  and Edge B (reversed order), overall 10 mm / depth 3 mm / depth variation 0.48 mm.
+  Keep previous cases and timestamped reports for regression comparison.
+- Final project Run_Tests.cmd: **70 passed**, zero failures/errors/skips, in
+  Blender 4.4.3. Report: `generated/tests/20261126-085508-740412`.
+- Final gallery: **14 cases / 137 PNGs passed**, with zero measured self/source
+  intersections, penetration or nonmanifold edges. Gallery:
+  `generated/previews/20261126-085508-790149`. Straight profile and both cylinder
+  choices were visually reviewed. One-edge cylinder reference: 10,690 triangles.
+- Standalone Build.cmd built/validated the ZIP without tests. Report:
+  `generated/builds/20261126-085744-732684`. The regression also exercises output
+  and working-directory paths containing spaces, plus missing-executable failures.
+- The packaged 0.4.0 extension was installed/enabled in an isolated profile and
+  passed Create/Swap/Update, reverse keeping the same physical edge, save/reload,
+  support reporting, source preservation and independent solid/contact checks.
+  The real clipboard was not changed by verification. All nine packaged source
+  files were byte-checked against the live project. Interactive panel layout and
+  undo/redo remain manual checks; they are not counted among automated passes.

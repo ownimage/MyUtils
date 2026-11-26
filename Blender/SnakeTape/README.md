@@ -1,8 +1,8 @@
 # SnakeTape
 
-SnakeTape 0.3.1 generates finite-thickness masking tape over a selected cardboard
+SnakeTape 0.4.0 generates finite-thickness masking tape over a selected cardboard
 rim in **Blender 4.4.3**. The overhang is slit into irregular flaps and folded onto
-both sides, with local relief where flaps overlap. The cardboard mesh is preserved.
+one or both edges, with local relief where flaps overlap. The cardboard mesh is preserved.
 
 ## Test and preview without opening the Blender workspace
 
@@ -10,12 +10,17 @@ Double-click `Run_Tests.cmd` to run all automated checks and build the installab
 extension ZIP. Double-click `Gen_Previews.cmd` to generate the offline HTML gallery,
 PNG images, measurements and inspectable `.blend` scenes. Each launcher prints the
 output location and pauses at the end. They can be run from any working directory.
+Double-click **Build.cmd** to build and validate the ZIP without running tests.
+Its default output is `generated/packages/snake_tape-0.4.0.zip`; use
+`Build.cmd --no-pause --output "P:\some folder\packages"` for a different location.
+Build logs are saved separately under `generated/builds/`.
 
 For unattended use from PowerShell:
 
 ```powershell
 & 'P:\git\MyUtils\Blender\SnakeTape\Run_Tests.cmd' --no-pause
 & 'P:\git\MyUtils\Blender\SnakeTape\Gen_Previews.cmd' --no-pause
+& 'P:\git\MyUtils\Blender\SnakeTape\Build.cmd' --no-pause
 ```
 
 Use `Gen_Previews.cmd --no-pause --quick` for the first two cases at reduced image
@@ -35,7 +40,8 @@ changed.
 ## Install and operate
 
 1. Run `Run_Tests.cmd`. A successful run builds
-   `generated/packages/snake_tape-0.3.1.zip` and validates the ZIP.
+   `generated/packages/snake_tape-0.4.0.zip` and validates the ZIP.
+   Use `Build.cmd` for subsequent packaging without rerunning the tests.
 2. In Blender choose **Edit > Preferences > Get Extensions**, open the top-right
    dropdown and choose **Install from Disk...**. Select the ZIP and enable SnakeTape
    if it is not enabled automatically.
@@ -64,6 +70,9 @@ Moving/deforming the source requires Update Tape; this is not a live modifier.
 
 | Control | Meaning |
 | --- | --- |
+| Wrap mode | Both edges preserves the original sealing behaviour. One edge wraps only the chosen boundary. |
+| Overall width / Wrap depth | One edge only: flat tape width including bend material / finished depth on the adjacent surface. |
+| Edge A / Edge B / Swap Edge | Select the wrapped boundary. Swap Edge rebuilds an existing tape immediately; before Create it changes the choice. |
 | Thickness | Outward tape thickness, default 0.1 mm; clearance is separate. |
 | Width mode / Width | Default: add 10 mm per side. Total mode includes the original selected band. |
 | Cut spacing | Nominal mean spacing, default 3 mm. The interval partition includes the full rim. |
@@ -81,6 +90,37 @@ Moving/deforming the source requires Update Tape; this is not a live modifier.
 | Contact clearance | Small geometric separation from the cardboard; extra local relief is added at overlapping strips. |
 | Cut gap | Narrow visible slit width, tapering to zero at its root. |
 | Mesh spacing | Maximum requested cell size; folded geometry refines automatically to at most 0.65 mm and four cells per nominal flap. |
+
+### One-edge wrapping in 0.4
+
+Choose **Wrap mode > One edge**, enter **Overall width** and **Wrap depth**, then
+click **Create Tape**. Tape covers part of the selected row and folds over its
+chosen boundary. Choose **Edge A** or **Edge B**; if the wrong edge is wrapped,
+click **Swap Edge** on the generated tape to rebuild it on the other boundary.
+**Reverse direction** changes overlap order while keeping the same physical edge.
+Changing the A/B selector alone takes effect when you click **Update Tape**.
+
+Overall width measures the original flat material, including the quarter-circle
+bend. Wrap depth measures the finished distance along the adjacent surface after
+the bend; it excludes bend allowance. The remaining flat width is
+`overall width - wrap depth - pi * fold radius / 2` and must fit inside the
+selected row. The tape is anchored at the chosen edge; its other edge lies flat
+on that row. For example, a 10 mm tape with a 3 mm wrap and automatic 0.2 mm radius
+leaves approximately 6.686 mm on the cylinder's 8 mm side-face band. On a 4 mm
+band, 6 mm overall / 3 mm wrap leaves approximately 2.686 mm flat. If it cannot
+fit, reduce overall width, increase wrap depth, or select a wider row.
+The adjacent surface must also be deep enough for the entered wrap depth.
+Contact relief and finite thickness can slightly change the final measured envelope.
+
+### Copy settings for support
+
+Click **Copy Settings** at the bottom of the SnakeTape panel, then paste the text
+into your problem report. It includes all current settings, add-on/Blender versions,
+scene scale, source dimensions/transform and face selection, plus the last build's
+settings and geometry diagnostics. Pending changes are marked so a screenshot
+of an older result is not confused with newly entered values. It works before
+Create, on generated tape, and with no active object. The blend filename is
+included without its directory path; no scene geometry is exported.
 
 For a mix of full and slightly shorter cuts, start with **Uncut root = 0 mm** and
 **Depth variation = 1 mm**. To leave every cut short, try **0.75 mm / 0.25 mm**
@@ -150,6 +190,9 @@ cylinder, including an 8 mm close-up of the cut tips before folding and a Detail
 render alongside the optimized result. Triangle counts and checked shape error
 appear in the gallery. A further cylinder case reproduces Optimized mode with
 Uncut root 0 mm / Depth variation 0.48 mm and includes a shoulder close-up.
+Three one-edge cases show a straight 6 mm tape with 3 mm finished wrap and both
+cylinder edge choices at 10 mm / 3 mm, including reversed overlap order on Edge B.
+They include bottom views and a profile view of the straight tape.
 The corrugated example uses visible liners/flutes with a hidden
 solid contact/selection proxy; this shows the tape bridging the exposed flutes.
 Use the same proxy technique for a highly detailed cardboard model without a
@@ -182,9 +225,11 @@ passes. Reference cases passing does not establish support for every possible me
 
 ## Source layout
 
-`snake_tape/` contains the extension and geometry pipeline; `tests/` contains
+`snake_tape/` contains the extension and geometry pipeline, including clipboard
+support reports; `tests/` contains
 synthetic fixtures and independent measurements; `tools/` runs tests and previews.
-Both commands use the production generator. Keep Blender project decisions and
+Tests and previews use the production generator. Build and tests share the same
+native extension validation/packaging helper. Keep Blender project decisions and
 validation results in the parent `Blender/Agents.md`.
 
 ## Cut-tip and fold correction in 0.3.1

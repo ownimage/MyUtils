@@ -11,6 +11,9 @@ class SnakeTapeOptions(bpy.types.PropertyGroup):
     thickness_mm: FloatProperty(name='Thickness (mm)',default=.1,min=.005,max=5,precision=3)
     width_mode: EnumProperty(name='Width mode',items=[('PER_SIDE','Each side','Add this width to each side'),('TOTAL','Total tape','Include the original band in the total width')])
     width_mm: FloatProperty(name='Width (mm)',default=10,min=.01,max=1000,precision=2)
+    wrap_mode: EnumProperty(name='Wrap mode',items=[('BOTH','Both edges','Seal the strip and fold onto both sides'),('ONE_EDGE','One edge','Lay tape on the selected faces and wrap one boundary')],default='BOTH')
+    wrap_edge: EnumProperty(name='Wrap edge',items=[('A','Edge A','First boundary of the selected strip; use Swap Edge if needed'),('B','Edge B','Other boundary of the selected strip')],default='A')
+    wrap_depth_mm: FloatProperty(name='Wrap depth (mm)',description='Finished depth on the adjacent surface; bend material is included in overall width',default=3,min=.01,max=1000,precision=2)
     spacing_mm: FloatProperty(name='Cut spacing (mm)',default=3,min=.2,max=1000,precision=2)
     variation: FloatProperty(name='Spacing randomness',default=.25,min=0,max=.8,subtype='FACTOR')
     angle_deg: FloatProperty(name='Cut angle (deg)',description='Maximum seeded variation in cut angle',default=10,min=0,max=45)
@@ -86,7 +89,7 @@ def generate(context,old=None):
 class SNAKETAPE_OT_create(bpy.types.Operator):
     bl_idname='mesh.snaketape_create'
     bl_label='SnakeTape: Create Tape'
-    bl_description='Create complete tape: add thickness, extend, cut and fold onto both sides'
+    bl_description='Create complete tape: add thickness, extend, cut and fold over the chosen edge or both edges'
     bl_options={'REGISTER','UNDO'}
 
     @classmethod
@@ -129,6 +132,48 @@ class SNAKETAPE_MT_menu(bpy.types.Menu):
         self.layout.operator('mesh.snaketape_create',text='Create Tape')
 
 
+def swap_edge(context):
+    tape=context.object if context.object and 'snaketape_version' in context.object else None
+    options=tape.snaketape_options if tape else context.scene.snaketape_options
+    if options.wrap_mode!='ONE_EDGE':
+        raise ValueError('Choose One edge wrap mode before swapping')
+    previous=options.wrap_edge
+    options.wrap_edge='B' if previous=='A' else 'A'
+    if tape:
+        try:
+            return generate(context,tape)
+        except Exception:
+            options.wrap_edge=previous
+            raise
+
+
+class SNAKETAPE_OT_swap_edge(bpy.types.Operator):
+    bl_idname='mesh.snaketape_swap_edge'
+    bl_label='SnakeTape: Swap Edge'
+    bl_description='Switch the wrapped boundary; rebuild the selected tape in Object Mode'
+    bl_options={'REGISTER','UNDO'}
+    @classmethod
+    def poll(cls,context):
+        obj=context.object
+        return not (obj and 'snaketape_version' in obj and obj.mode!='OBJECT')
+    def execute(self,context):
+        try:swap_edge(context)
+        except (ValueError,KeyError) as error:
+            self.report({'ERROR'},str(error));return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class SNAKETAPE_OT_copy_settings(bpy.types.Operator):
+    bl_idname='mesh.snaketape_copy_settings'
+    bl_label='SnakeTape: Copy Settings'
+    bl_description='Copy all current settings, version, source transform/selection and build diagnostics for support'
+    def execute(self,context):
+        from .support import copy_support_settings
+        copy_support_settings(context)
+        self.report({'INFO'},'SnakeTape settings copied to clipboard')
+        return {'FINISHED'}
+
+
 class SNAKETAPE_PT_panel(bpy.types.Panel):
     bl_label='SnakeTape'
     bl_space_type='VIEW_3D'
@@ -145,7 +190,17 @@ class SNAKETAPE_PT_panel(bpy.types.Panel):
         else:
             layout.label(text='Select one row of rim quad faces')
             layout.label(text='in Edit Mode, then Create Tape.')
-        for key in ('thickness_mm','width_mode','width_mm','spacing_mm','variation','angle_deg','cut_stop_mm','cut_stop_variation_mm','wave_strength','wave_length_mm','seed','fold_radius_mm','mesh_detail','reverse'):
+        layout.prop(options,'wrap_mode')
+        layout.prop(options,'thickness_mm')
+        if options.wrap_mode=='ONE_EDGE':
+            layout.prop(options,'width_mm',text='Overall width (mm)')
+            layout.prop(options,'wrap_depth_mm')
+            layout.prop(options,'wrap_edge',expand=True)
+            layout.operator('mesh.snaketape_swap_edge',text='Swap Edge',icon='ARROW_LEFTRIGHT')
+        else:
+            layout.prop(options,'width_mode')
+            layout.prop(options,'width_mm')
+        for key in ('spacing_mm','variation','angle_deg','cut_stop_mm','cut_stop_variation_mm','wave_strength','wave_length_mm','seed','fold_radius_mm','mesh_detail','reverse'):
             layout.prop(options,key)
         box=layout.box()
         box.label(text='Advanced')
@@ -160,13 +215,15 @@ class SNAKETAPE_PT_panel(bpy.types.Panel):
                 layout.label(text=f"{metrics['triangles_after']:,} triangles ({metrics['reduction_percent']:.0f}% fewer)")
         else:
             layout.operator('mesh.snaketape_create',text='Create Tape',icon='MOD_SOLIDIFY')
+        layout.operator('mesh.snaketape_copy_settings',text='Copy Settings',icon='COPYDOWN')
 
 
 def draw_mesh_menu(self,context):
     self.layout.menu('SNAKETAPE_MT_menu')
 
 
-classes=(SnakeTapeOptions,SNAKETAPE_OT_create,SNAKETAPE_OT_update,SNAKETAPE_MT_menu,SNAKETAPE_PT_panel)
+classes=(SnakeTapeOptions,SNAKETAPE_OT_create,SNAKETAPE_OT_update,SNAKETAPE_OT_swap_edge,
+         SNAKETAPE_OT_copy_settings,SNAKETAPE_MT_menu,SNAKETAPE_PT_panel)
 
 
 def register():

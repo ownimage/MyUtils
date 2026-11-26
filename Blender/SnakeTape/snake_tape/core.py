@@ -15,6 +15,9 @@ class Settings:
     thickness_mm: float = .1
     width_mode: str = 'PER_SIDE'
     width_mm: float = 10
+    wrap_mode: str = 'BOTH'
+    wrap_edge: str = 'A'
+    wrap_depth_mm: float = 3
     spacing_mm: float = 3
     variation: float = .25
     angle_deg: float = 10
@@ -37,7 +40,7 @@ class Settings:
         for key, value in asdict(self).items():
             if isinstance(value, (int, float)) and not math.isfinite(value):
                 raise ValueError(f'{key} must be finite')
-        for key in ('thickness_mm','width_mm','spacing_mm','wave_length_mm','resolution_mm'):
+        for key in ('thickness_mm','width_mm','wrap_depth_mm','spacing_mm','wave_length_mm','resolution_mm'):
             if getattr(self,key) <= 0:
                 raise ValueError(f'{key} must be positive')
         for key in ('variation','wave_strength'):
@@ -54,6 +57,8 @@ class Settings:
             raise ValueError('Cut gap must be smaller than one quarter of spacing')
         if self.mesh_detail not in ('OPTIMIZED','DETAILED'):
             raise ValueError('Unknown mesh detail')
+        if self.wrap_mode not in ('BOTH','ONE_EDGE') or self.wrap_edge not in ('A','B'):
+            raise ValueError('Unknown wrap mode or edge')
         if not 0 < self.mesh_error_mm <= .1:
             raise ValueError('Shape tolerance must be positive and at most 0.1 mm')
         return self
@@ -63,6 +68,33 @@ class Settings:
         if value <= 0:
             raise ValueError('Total tape width must exceed the selected band width')
         return value
+
+    def one_edge_dimensions(self,available_width):
+        """Allocate flat tape width to a finished wrap depth and its quarter bend."""
+        self.validate()
+        mid=self.thickness_mm*.5+self.clearance_mm
+        if self.wrap_depth_mm<=self.thickness_mm+.2:
+            raise ValueError('Wrap depth is too short to bend and settle; increase wrap depth')
+        minimum=max(mid,self.thickness_mm*1.5)
+        radius=max(mid,self.fold_radius_mm) if self.fold_radius_mm else minimum
+        if not self.fold_radius_mm:
+            for _ in range(6):
+                flat=self.width_mm-self.wrap_depth_mm-radius*math.pi/2
+                preferred=max(minimum,min(2*self.thickness_mm,min(available_width,flat)*.4))
+                radius=max(minimum,min(preferred,(self.wrap_depth_mm-self.thickness_mm)/3))
+        overhang=self.wrap_depth_mm+radius*math.pi/2
+        flat=self.width_mm-overhang
+        if flat<=2*self.thickness_mm:
+            raise ValueError('Overall width must leave a flat part wider than twice the tape thickness after the wrap and bend')
+        if flat>available_width+max(1e-4,available_width*1e-6):
+            raise ValueError(f'Overall width {self.width_mm:.4g} mm and wrap depth {self.wrap_depth_mm:.4g} mm need '
+                             f'{flat:.4g} mm on the selected faces; only {available_width:.4g} mm is available. '
+                             'Reduce overall width, increase wrap depth or select a wider face strip.')
+        if self.wrap_depth_mm<self.thickness_mm+max(.2,3*radius)-1e-7:
+            raise ValueError(f'Wrap depth {self.wrap_depth_mm:.4g} mm is too short for a {radius:.4g} mm fold radius; '
+                             'increase wrap depth or reduce fold radius/thickness')
+        return {'flat_width_mm':flat,'overhang_mm':overhang,'bend_allowance_mm':radius*math.pi/2,
+                'fold_radius_mm':radius,'wrap_depth_mm':self.wrap_depth_mm}
 
 
 def cuts(length, settings, closed=False):

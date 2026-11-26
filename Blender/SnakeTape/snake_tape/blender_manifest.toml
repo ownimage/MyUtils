@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "snake_tape"
-version = "0.3.1"
+version = "0.4.0"
 name = "SnakeTape"
 tagline = "Cut and fold masking tape over a cardboard rim"
 maintainer = "MyUtils"

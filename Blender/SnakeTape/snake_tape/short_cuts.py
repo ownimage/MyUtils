@@ -95,7 +95,7 @@ def _tip_mesh(samples, start, end, rows, stops, gap, overhang, warp, ends=(False
     return points,faces,boundary
 
 
-def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,source_tree,diagnostic):
+def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,source_tree,diagnostic,sides=(0,1)):
     folded=settings.stage=='FOLDED'
     min_overhang=min(settings.overhang(rim.sample(s)[2]) for s in rim.distances)
     if settings.cut_stop_mm>=min_overhang:
@@ -110,6 +110,8 @@ def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,so
     if rim.closed:
         limits[0]=limits[-1]=min(widths[0],widths[-1])*.22
     for side,stops in enumerate(depth_sets):
+        if side not in sides:
+            continue
         # The common web bends coherently. Independent flap expansion is released
         # smoothly after the web, rather than pulling shared vertices apart.
         release_start=max(stops)
@@ -242,5 +244,6 @@ def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,so
             if folded:
                 previous_tree=BVHTree.FromPolygons(previous_vertices,previous_triangles,all_triangles=True)
             flap_count+=1
-    values=[v for depths in depth_sets for v in depths]
-    return flap_count,{'min_cut_stop_mm':min(values),'max_cut_stop_mm':max(values),'cut_stops_mm':depth_sets}
+    values=[v for side,depths in enumerate(depth_sets) if side in sides for v in depths]
+    return flap_count,{'min_cut_stop_mm':min(values),'max_cut_stop_mm':max(values),
+                       'cut_stops_mm':[depths if side in sides else [] for side,depths in enumerate(depth_sets)]}

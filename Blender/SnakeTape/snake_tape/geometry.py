@@ -221,6 +221,27 @@ def _grid_positions(start,end,resolution,breaks=()):
     return result
 
 
+def _one_edge_rim(source,face_indices,rim,settings):
+    available=min(rim.sample(s)[2] for s in rim.distances)
+    dimensions=settings.one_edge_dimensions(available)
+    reference=analyze_rim(source,face_indices,False) if settings.reverse else rim
+    target=reference.rails[0][0 if settings.wrap_edge=='A' else 1]+(reference.origin-rim.origin)*rim.unit_scale
+    distances=[min((rail[side]-target).length for rail in rim.rails) for side in (0,1)]
+    side=0 if distances[0]<distances[1] else 1
+    flat=dimensions['flat_width_mm']
+    rails=[]
+    for a,b in rim.rails:
+        across=(b-a).normalized()
+        rails.append((a,a+across*flat) if side==0 else (b-across*flat,b))
+    trimmed=Rim(rails,rim.closed,rim.normals)
+    for key in ('origin','unit_scale','face_indices'):
+        setattr(trimmed,key,getattr(rim,key))
+    effective=replace(settings,width_mode='PER_SIDE',width_mm=dimensions['overhang_mm'],
+                      fold_radius_mm=dimensions['fold_radius_mm'])
+    return trimmed,effective,(side,),dict(dimensions,selected_band_width_mm=available,
+                                         wrapped_edge=settings.wrap_edge,side_count=1,wrap_mode='ONE_EDGE')
+
+
 def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
     settings.validate()
     requested_settings=settings
@@ -229,6 +250,10 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
     if any(m.show_viewport and m.type not in {'WEIGHTED_NORMAL','NORMAL_EDIT'} for m in source.modifiers):
         raise ValueError('Apply geometry/deformation modifiers on a duplicate before selecting the rim')
     rim=analyze_rim(source,face_indices,settings.reverse)
+    sides=(0,1)
+    placement={'wrap_mode':'BOTH','side_count':2}
+    if settings.wrap_mode=='ONE_EDGE':
+        rim,settings,sides,placement=_one_edge_rim(source,face_indices,rim,settings)
     for distance in rim.distances:
         width=rim.sample(distance)[2]
         if width<=settings.thickness_mm*2:
@@ -277,6 +302,10 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
                 nt=rim.sample(t)[4]
                 width_steps=max(4,math.ceil((b-a).length/settings.resolution_mm))
                 def belt(p,q,n,f):
+                    if settings.wrap_mode=='ONE_EDGE':
+                        distance=(q-p).length*(f if sides[0]==0 else 1-f)
+                        blend=min(1,distance/max(.5,3*radius))
+                        return p.lerp(q,f)-n*((root_height-mid)*blend*blend*(3-2*blend))
                     # A thin rim has no room for a deep centre dip between the
                     # two shoulders. Bridge it smoothly instead of forcing a
                     # sub-thickness crease into the middle of the sealing band.
@@ -295,9 +324,9 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
     depth_data={}
     if short_cuts:
         from .short_cuts import add_short_flaps
-        flap_count,depth_data=add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,source_tree,diagnostic)
+        flap_count,depth_data=add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,source_tree,diagnostic,sides=sides)
     elif settings.stage!='BASE':
-        for side in (0,1):
+        for side in sides:
             previous_vertices.clear()
             previous_triangles.clear()
             previous_tree=None
@@ -457,6 +486,7 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
               'min_band_width_mm':min_band_width,'fold_radius_mm':radius if folded else None,
               'surface_vertices':len(surface.vertices),'closed':rim.closed,'stage':settings.stage}
         data.update(depth_data)
+        data.update(placement)
         from .optimization import finish_mesh
         data.update(finish_mesh(obj,source,settings,rim.unit_scale))
         mesh=obj.data

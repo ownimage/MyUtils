@@ -1,18 +1,16 @@
 """All automated suites, packaging, and lightweight preview-pipeline validation."""
 from datetime import datetime
 import json
-import os
 from pathlib import Path
-import subprocess
 import sys
 import time
-import tomllib
 import unittest
 import bpy
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 sys.dont_write_bytecode=True
+from tools.packaging import build_extension,validate_source
 
 
 class Tee:
@@ -42,18 +40,14 @@ def main():
                 'manual_checks':'Installation, panel layout, selection workflow, undo/redo and artistic acceptance require real-window review.'}
         package=ROOT/'generated'/'packages'
         package.mkdir(parents=True,exist_ok=True)
-        manifest=tomllib.loads((ROOT/'snake_tape'/'blender_manifest.toml').read_text(encoding='utf8'))
-        extension_zip=package/f"{manifest['id']}-{manifest['version']}.zip"
-        commands=[['validate',str(ROOT/'snake_tape')]]
-        if result.wasSuccessful():
-            commands += [['build','--source-dir',str(ROOT/'snake_tape'),'--output-dir',str(package)],
-                         ['validate',str(extension_zip)]]
-        for command in commands:
-            output=subprocess.run([bpy.app.binary_path,'--background','--factory-startup','--command','extension']+command,capture_output=True,text=True,env=os.environ)
-            stream.write(output.stdout+output.stderr)
-            if output.returncode:
-                status['packaging_error']=output.returncode
-                break
+        extension_zip=None
+        try:
+            if result.wasSuccessful():
+                extension_zip=build_extension(ROOT,package,stream)
+            else:
+                validate_source(ROOT,stream)
+        except RuntimeError as error:
+            status['packaging_error']=str(error)
         status['packaging_passed']=result.wasSuccessful() and not status.get('packaging_error')
         status['extension_zip']=str(extension_zip) if status['packaging_passed'] else None
         (report/'results.json').write_text(json.dumps(status,indent=2),encoding='utf8')

@@ -17,7 +17,7 @@ class LauncherTests(unittest.TestCase):
     @unittest.skipUnless(os.name=='nt','Windows batch launchers')
     def test_missing_override_reports_failure_without_hanging(self):
         root=Path(__file__).resolve().parents[1]
-        for name in ('Run_Tests.cmd','Gen_Previews.cmd'):
+        for name in ('Run_Tests.cmd','Gen_Previews.cmd','Build.cmd'):
             env=os.environ.copy()
             env['SNAKETAPE_BLENDER']=str(root/'does not exist'/'blender.exe')
             with tempfile.TemporaryDirectory(prefix='SnakeTape working directory ') as cwd:
