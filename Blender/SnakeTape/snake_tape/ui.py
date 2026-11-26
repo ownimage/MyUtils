@@ -23,6 +23,9 @@ class SnakeTapeOptions(bpy.types.PropertyGroup):
     clearance_mm: FloatProperty(name='Clearance (mm)',description='Minimum requested contact clearance; overlap relief can raise the tape further',default=.01,min=0,max=10,precision=3)
     cut_gap_mm: FloatProperty(name='Cut gap (mm)',default=.06,min=0,max=5,precision=3)
     resolution_mm: FloatProperty(name='Mesh spacing (mm)',default=.65,min=.1,max=10,precision=2)
+    mesh_detail: EnumProperty(name='Mesh detail',items=[('OPTIMIZED','Optimized','Reduce the finished solid and preserve its smooth normals; validate contacts and shape'),('DETAILED','Detailed','Keep the dense construction mesh')],default='OPTIMIZED')
+    mesh_error_mm: FloatProperty(name='Shape tolerance (mm)',description='Maximum checked simplification error; retains more geometry when needed for contacts',default=.02,min=.001,max=.1,precision=3)
+    paper_bump_mm: FloatProperty(name='Paper bump (mm)',description='Fine procedural paper grain; zero disables it without changing the mesh',default=.003,min=0,max=.1,precision=3)
     stage: EnumProperty(name='Stage',items=[('BASE','1 Base','Original rim with tape thickness'),('EXTENDED','2 Extended','Full width without cuts'),('CUT','3 Cut','Slit overhangs before folding'),('FOLDED','4 Folded','Conformed flaps with overlap relief')],default='FOLDED',options={'HIDDEN'})
     reverse: BoolProperty(name='Reverse direction',description='Reverse rim traversal and overlap placement order',default=False)
 
@@ -142,14 +145,19 @@ class SNAKETAPE_PT_panel(bpy.types.Panel):
         else:
             layout.label(text='Select one row of rim quad faces')
             layout.label(text='in Edit Mode, then Create Tape.')
-        for key in ('thickness_mm','width_mode','width_mm','spacing_mm','variation','angle_deg','cut_stop_mm','cut_stop_variation_mm','wave_strength','wave_length_mm','seed','fold_radius_mm','reverse'):
+        for key in ('thickness_mm','width_mode','width_mm','spacing_mm','variation','angle_deg','cut_stop_mm','cut_stop_variation_mm','wave_strength','wave_length_mm','seed','fold_radius_mm','mesh_detail','reverse'):
             layout.prop(options,key)
         box=layout.box()
         box.label(text='Advanced')
+        box.prop(options,'mesh_error_mm')
+        box.prop(options,'paper_bump_mm')
         for key in ('clearance_mm','cut_gap_mm','resolution_mm'):
             box.prop(options,key)
         if tape:
             layout.operator('mesh.snaketape_update',text='Update Tape',icon='FILE_REFRESH')
+            metrics=json.loads(tape.get('snaketape_metrics','{}'))
+            if 'triangles_after' in metrics:
+                layout.label(text=f"{metrics['triangles_after']:,} triangles ({metrics['reduction_percent']:.0f}% fewer)")
         else:
             layout.operator('mesh.snaketape_create',text='Create Tape',icon='MOD_SOLIDIFY')
 

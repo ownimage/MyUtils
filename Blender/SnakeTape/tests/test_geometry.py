@@ -51,7 +51,8 @@ class GeometryTests(unittest.TestCase):
                 clear()
                 source,ids=make_cylinder() if kind=='cylinder' else make_rim(kind)
                 tape,data=build_tape(source,ids,Settings(cut_stop_variation_mm=1,seed=seed,reverse=reverse,
-                                                        width_mode='TOTAL',width_mm=24 if kind=='cylinder' else 20))
+                                                        width_mode='TOTAL',width_mm=24 if kind=='cylinder' else 20,
+                                                        mesh_detail='DETAILED'))
                 self.assertEqual(data['min_cut_stop_mm'],0)
                 self.assertGreater(data['max_cut_stop_mm'],0)
                 n=tape['snaketape_shell_vertices']

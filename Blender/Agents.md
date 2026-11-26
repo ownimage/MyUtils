@@ -25,9 +25,10 @@
 | `SnakeTape/snake_tape/core.py` | Settings, millimetre conversion, deterministic cuts and periodic/correlated variation. |
 | `SnakeTape/snake_tape/geometry.py` | Quad-rim analysis, staged tape surfaces, flap folding, contact and final-shell intersection repair. |
 | `SnakeTape/snake_tape/short_cuts.py` | Partly joined overhangs, local slit-outline triangulation and thickness from material-frame normals. |
+| `SnakeTape/snake_tape/optimization.py` | Validated reduction of finished solids, surface-distance checks and transfer of smooth corner normals. |
 | `SnakeTape/snake_tape/validation.py` | Independent measurements on evaluated solid geometry, source contact and triangle intersections. |
 | `SnakeTape/snake_tape/ui.py` | Native settings, panel, menus and atomic Create/Update operators. |
-| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.2.0. |
+| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.3.0. |
 | `SnakeTape/tests/` | Synthetic reference meshes and core, geometry, persistence, launcher and preview tests. |
 | `SnakeTape/tools/launch.cmd` | Shared Blender discovery, isolated profile setup and process exit forwarding. |
 | `SnakeTape/tools/run_tests.py` | Standard-library test discovery, timestamped logs/JSON and extension packaging. |
@@ -109,14 +110,15 @@
   **F3 > SnakeTape: Create Tape**.
 - **3D Viewport > Sidebar (N) > SnakeTape** contains thickness, width mode/value,
   cut spacing/randomness/angle, Uncut root/Depth variation, wave strength/length, seed, fold radius,
-  Reverse Direction and advanced clearance/cut gap/mesh spacing.
+  Mesh detail, Reverse Direction and advanced clearance/cut gap/mesh spacing,
+  Shape tolerance and Paper bump. The selected tape shows actual triangles saved.
 - The four stages (Base, Extended, Cut and Folded) are internal. One **Create Tape**
   click performs all four. **Update Tape** also rebuilds the complete folded tape.
   Intermediate stages are only for offline previews/geometry scripts. The legacy
   stage property is hidden and ignored by Create/Update for older saved files.
   Merely changing a setting does not trigger a costly rebuild.
 - Selecting generated tape exposes its saved settings and **Update Tape**.
-- Install `generated/packages/snake_tape-0.2.0.zip` through **Edit > Preferences >
+- Install `generated/packages/snake_tape-0.3.0.zip` through **Edit > Preferences >
   Get Extensions > top-right dropdown > Install from Disk...**.
 
 ## Commands and previews
@@ -139,7 +141,7 @@
 - Test runs produce timestamped `generated/tests/<run>/tests.log` and `results.json`.
   A failed suite does not build a new release ZIP. Package manifests and successful
   ZIPs are checked using Blender's extension CLI.
-- Preview runs produce `generated/previews/<run>/index.html`, 92 PNGs, ten
+- Preview runs produce `generated/previews/<run>/index.html`, 94 PNGs, ten
   `inspect.blend` scenes, JSON measurements and native renderer logs. `--quick`
   renders the first two cases at smaller resolution. `--output` chooses a new or
   empty folder; existing results must not be overwritten.
@@ -148,7 +150,8 @@
   a cylinder side-face band at the reported scale, and two mixed full/short-cut
   examples (straight and cylinder). Each has four stages, front/back/top views,
   diagnostic flap colours and a 12 mm overlap close-up. The short-cut cases also
-  have an 8 mm cut-tip view before folding.
+  have an 8 mm cut-tip view before folding and a Detailed reference render. The
+  gallery reports triangle reduction and checked shape error.
 - The corrugated example has visible liners/flutes and a hidden solid rim/contact
   proxy. This supports a continuous tape bridge over flute openings. Use a similar
   guide/proxy for detailed cardboard without a continuous selectable quad rim.
@@ -180,7 +183,7 @@
 ## Known limits
 
 - Triangles, multi-row bands, branching selections and arbitrary patches are not
-  supported in 0.2.0. Use a simple quad guide/proxy instead of changing detailed art.
+  supported in 0.3.0. Use a simple quad guide/proxy instead of changing detailed art.
 - Apply geometry/deformation modifiers on a duplicate before capturing its rim.
 - Overhang should fit the available side surface. Wrapping around the underside,
   arbitrary very tight/complex bends, torn paper and adhesive physics are outside
@@ -255,7 +258,7 @@
 - User requested some cuts to stop short instead of all reaching the underlying
   edge. Added **Uncut root (mm)** (mean material left between fold and tip) and
   **Depth variation (mm)** (seeded plus/minus). Defaults 0/0 preserve the previous
-  path. Try 0/1 for mixed full and short cuts, or 0.75/0.25 for 0.5–1 mm of web.
+  path. Try 0/1 for mixed full and short cuts, or 0.75/0.25 for 0.5â€“1 mm of web.
 - Depth noise uses an independent stream per side, so depth changes preserve
   spacing/angles and closed seams repeat. Negative samples become full-depth cuts.
   Uncut root must be less than available overhang; variation is capped to retain
@@ -289,3 +292,73 @@
   tape/source intersections, source penetration and nonmanifold edges in all folded
   results. Gallery: `generated/previews/20261125-191418-626858`. New CUT-stage close-ups
   visibly show different tip depths; folded views retain joined web and overlaps.
+
+## Version 0.3.0 mesh reduction and material detail on 2026-11-26
+
+- User accepted the shape but reported excessive polygons and asked about using
+  normals/displacement. New **Mesh detail = Optimized** is the default. **Detailed**
+  retains the construction geometry. Existing tapes receive these defaults when
+  updated; no extra operation button is needed.
+- Continue solving the dense solid first. Native Decimate collapse trials retain
+  25%, 35%, 45%, 60%, 75% or 90% of its triangles. Accept the first candidate with
+  one component, no nonmanifold/degenerate geometry, no self/source intersections
+  and no penetrating source vertices. Unsafe trials retain the original result.
+- Check shape distance at every vertex and triangle centre of both meshes against the
+  other BVH, in physical mm. **Shape tolerance** defaults to 0.02 mm (max 0.1 mm).
+  These samples do not establish an exact global Hausdorff bound; full triangle
+  intersection checks remain separate. If every trial fails, preserve dense geometry.
+- Transfer smoothed high-resolution corner normals to the accepted mesh. Keep
+  thickness/cut creases sharp in the dense normal source at 45 degrees. Normals
+  are stored on the reduced mesh; no duplicate dense object or texture remains.
+- **Paper bump** defaults to 0.003 mm and adds native Noise/Bump shader nodes.
+  Object coordinates and scene unit scale give physical grain height/spacing.
+  Zero disables grain. Materials are keyed by colour, bump height and unit scale
+  without exposing internal scaling in their display names. No external images,
+  subdivision or true geometric displacement are needed for paper grain.
+- This transfers smooth shading and supplies procedural grain; it is not a bake of
+  every geometric fold into a texture. Slits, silhouette, thickness and overlap
+  remain real geometry. Generation time still includes the dense contact solve.
+- Save before/after triangle and polygon counts, percentage reduction and maximum
+  checked shape distance in snaketape_metrics. Display triangles saved in the panel
+  and gallery. Update and save/reload persist all controls and the corner normals.
+- Raw shell-pair thickness regression uses Detailed because reduction changes vertex
+  ordering. Optimized regressions separately enforce performance, shape, manifoldness,
+  contacts and custom normals. Tests were added and observed failing before coding.
+- Do not apply unvalidated planar dissolve as an optimization: probes created
+  crossing or degenerate triangles on the thin closed shell. Collapsing to 15% also
+  crossed cylinder layers. Trial validation is required, rather than one fixed ratio.
+- Sample the actual triangles, not an average of a nonplanar quad's corners.
+  That average can lie off the dense surface, falsely rejecting every reduction.
+  A failing full-depth performance regression exposed this and verifies the fix.
+- Freeze the dense evaluated mesh's loop-triangle diagonals in an isolated trial
+  object before Decimate. Its implicit BMesh triangulation otherwise changes
+  twisted quads before collapse, even at high ratios. This was the other cause of
+  full-depth reductions being falsely rejected. Remove trial objects/meshes on
+  every path; publishing occurs only after independent checks.
+- Reject high-resolution normal correspondences more than 30 degrees from the
+  reduced surface's own smooth normal. Nearest-point matching at slits can choose
+  a perpendicular wall or another layer and create dark triangular patches despite
+  valid geometry. Fall back to local smooth normals and keep every corner within
+  60 degrees of its face. A normal-direction regression and native render verified
+  the correction; do not rely only on geometry tests for shading acceptance.
+- Accept a reduction only if its polygon count is also lower. A mild collapse
+  of a quad mesh can reduce triangles yet increase visible faces after triangulation.
+  Keep the original instead; a closed-loop regression covers this case.
+- Final project launcher: **56 tests passed**, zero failures/errors/skips in
+  Blender 4.4.3. Report: `generated/tests/20261125-202950-589569` (host timestamp).
+- Final gallery: **10 passing cases / 94 PNGs**, all with zero measured tape/tape,
+  tape/source intersections, source penetration and nonmanifold edges. Gallery:
+  `generated/previews/20261125-202948-850957`. Native renders were visually reviewed
+  after correcting the normal correspondence at slit walls.
+- Irregular cylinder: **59,126 to 23,292 polygons**, 66,552 to 23,292 triangles,
+  about 61% fewer faces / 65% fewer triangles; checked surface distance 0.00892 mm.
+  Mixed-depth straight band: 27,564 to 7,714 polygons. The closed-loop and full-depth
+  cylinder references retained their original meshes when no tested candidate met
+  all safety and polygon-count requirements. Never claim a fixed reduction for all
+  inputs; the panel/gallery show the actual outcome.
+- The final ZIP was installed/enabled in a fresh isolated Blender 4.4.3 profile.
+  Create/Update on the scaled cylinder preserved the source, reduced the solid,
+  saved/reloaded custom normals and settings, retained the procedural bump, and
+  had no detected intersections. The user's active installation was untouched.
+- Blender notes and the README are saved as UTF-8; previous local default encoding
+  had written an en dash as Windows-1252, which displayed incorrectly in UTF-8 tools.

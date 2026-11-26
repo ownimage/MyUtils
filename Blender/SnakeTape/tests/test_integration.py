@@ -66,6 +66,8 @@ class IntegrationTests(unittest.TestCase):
     def test_save_reload_preserves_settings_and_pointer(self):
         bpy.context.scene.snaketape_options.cut_stop_mm=.5
         bpy.context.scene.snaketape_options.cut_stop_variation_mm=.5
+        bpy.context.scene.snaketape_options.mesh_error_mm=.015
+        bpy.context.scene.snaketape_options.paper_bump_mm=.005
         source,tape=self.create()
         source.name='Renamed cardboard'
         tape.snaketape_options.seed=37
@@ -78,6 +80,10 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(loaded.snaketape_options.seed,37)
             self.assertAlmostEqual(loaded.snaketape_options.cut_stop_mm,.5)
             self.assertAlmostEqual(loaded.snaketape_options.cut_stop_variation_mm,.5)
+            self.assertEqual(loaded.snaketape_options.mesh_detail,'OPTIMIZED')
+            self.assertAlmostEqual(loaded.snaketape_options.mesh_error_mm,.015)
+            self.assertAlmostEqual(loaded.snaketape_options.paper_bump_mm,.005)
+            self.assertTrue(loaded.data.has_custom_normals)
             self.assertEqual(loaded.snaketape_source.name,'Renamed cardboard')
             self.assertEqual(bpy.ops.mesh.snaketape_update(),{'FINISHED'})
             settings=json.loads(bpy.context.object['snaketape_settings'])

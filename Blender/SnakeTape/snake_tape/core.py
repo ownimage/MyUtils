@@ -27,6 +27,9 @@ class Settings:
     clearance_mm: float = .01
     cut_gap_mm: float = .06
     resolution_mm: float = .65
+    mesh_detail: str = 'OPTIMIZED'
+    mesh_error_mm: float = .02
+    paper_bump_mm: float = .003
     stage: str = 'FOLDED'
     reverse: bool = False
 
@@ -43,12 +46,16 @@ class Settings:
         if not 0 <= self.angle_deg <= 45:
             raise ValueError('Cut angle must be between 0 and 45 degrees')
         if min(self.fold_radius_mm,self.clearance_mm,self.cut_gap_mm,
-               self.cut_stop_mm,self.cut_stop_variation_mm) < 0:
-            raise ValueError('Radius, clearance, gap and cut-stop distances cannot be negative')
+               self.cut_stop_mm,self.cut_stop_variation_mm,self.paper_bump_mm) < 0:
+            raise ValueError('Radius, clearance, gap, cut-stop and paper-bump distances cannot be negative')
         if self.width_mode not in ('PER_SIDE','TOTAL') or self.stage not in ('BASE','EXTENDED','CUT','FOLDED'):
             raise ValueError('Unknown width mode or preview stage')
         if self.cut_gap_mm >= self.spacing_mm*.25:
             raise ValueError('Cut gap must be smaller than one quarter of spacing')
+        if self.mesh_detail not in ('OPTIMIZED','DETAILED'):
+            raise ValueError('Unknown mesh detail')
+        if not 0 < self.mesh_error_mm <= .1:
+            raise ValueError('Shape tolerance must be positive and at most 0.1 mm')
         return self
 
     def overhang(self, band_width):

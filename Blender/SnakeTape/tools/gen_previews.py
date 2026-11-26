@@ -1,6 +1,6 @@
 """Render the production generator into a self-contained offline review gallery."""
 import argparse
-from dataclasses import asdict
+from dataclasses import asdict,replace
 from datetime import datetime
 import html
 import json
@@ -132,6 +132,9 @@ def write_gallery(folder,cases):
         status=case.get('status','FAILED')
         metrics=case.get('metrics',{})
         badges=' '.join(f'<span>{html.escape(key)}: {html.escape(str(value))}</span>' for key,value in metrics.items() if key in ('source_intersection_pairs','source_penetrating_vertices','self_intersection_pairs','nonmanifold_edges','components'))
+        generation=case.get('generation',{})
+        if 'triangles_after' in generation:
+            badges+=f"<span>Triangles: {generation['triangles_before']:,} → {generation['triangles_after']:,} ({generation['reduction_percent']:.0f}% fewer)</span><span>Checked shape error: {generation['shape_error_mm']:.4f} mm</span>"
         error=f'<pre>{html.escape(case["error"])}</pre>' if case.get('error') else ''
         cards.append(f'<section><h2>{html.escape(case["name"])} <small class="{status.lower()}">{status}</small></h2><p>{html.escape(case.get("description",""))}</p><div class="metrics">{badges}</div>{error}<div class="grid">{figures}</div><p><a href="{html.escape(case["slug"])}/metrics.json">Measurements and settings</a> · <a href="{html.escape(case["slug"])}/inspect.blend">Inspect scene in Blender</a></p></section>')
     page='''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SnakeTape geometry previews</title><style>
@@ -222,6 +225,16 @@ def main():
             case['generation']=generation
             case['settings']=asdict(settings)
             case['status']='PASS' if not any(stats.get(key,0) for key in ('nonmanifold_edges','nonfinite_vertices','source_intersection_pairs','source_penetrating_vertices','self_intersection_pairs')) else 'FAILED'
+            if kind.startswith('short_'):
+                tape.hide_render=True
+                detailed,reference=build_tape(source,ids,replace(settings,mesh_detail='DETAILED'))
+                render_view(directory/'detailed-reference.png',camera,centre,span)
+                case['images'].append((f'{slug}/detailed-reference.png','Detailed reference before reduction (same paper bump)'))
+                old_mesh=detailed.data
+                bpy.data.objects.remove(detailed,do_unlink=True)
+                if not old_mesh.users:
+                    bpy.data.meshes.remove(old_mesh)
+                tape.hide_render=False
             for title,direction in [('Front',(0,-1,.3)),('Back',(0,1,.3)),('Top',(0,0,1))]:
                 filename=title.lower()+'.png'
                 render_view(directory/filename,camera,centre,span,direction)

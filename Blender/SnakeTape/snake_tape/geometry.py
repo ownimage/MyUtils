@@ -425,7 +425,7 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
         obj=bpy.data.objects.new(name,mesh)
         bpy.context.collection.objects.link(obj)
         obj.location=rim.origin
-        for material in _materials():
+        for material in _materials(settings,rim.unit_scale):
             mesh.materials.append(material)
         for p,material in zip(mesh.polygons,shell_materials if short_cuts else surface.materials):
             p.material_index=material
@@ -448,6 +448,9 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
               'min_band_width_mm':min_band_width,'fold_radius_mm':radius if folded else None,
               'surface_vertices':len(surface.vertices),'closed':rim.closed,'stage':settings.stage}
         data.update(depth_data)
+        from .optimization import finish_mesh
+        data.update(finish_mesh(obj,source,settings,rim.unit_scale))
+        mesh=obj.data
         obj['snaketape_metrics']=json.dumps(data)
         bpy.context.view_layer.update()
         return obj,data
@@ -530,17 +533,37 @@ def _resolve_shell_contacts(obj,surface,rim,settings,source_tree,max_iterations=
     raise ValueError(f'Could not resolve contact ({self_intersections} tape/tape and {source_intersections} tape/source triangle pairs); reduce width/angle or use a gentler bend')
 
 
-def _materials():
+def _materials(settings,unit_scale):
     colors=[(.83,.71,.43,1),(.27,.62,.85,1),(.92,.45,.22,1),(.35,.72,.45,1),
             (.73,.38,.79,1),(.9,.73,.2,1),(.2,.73,.74,1),(.84,.4,.51,1)]
     materials=[]
     for i,color in enumerate(colors):
         name='SnakeTape Masking tape' if i==0 else f'SnakeTape Diagnostic {i}'
-        material=bpy.data.materials.get(name) or bpy.data.materials.new(name)
+        name+=' (paper grain)' if settings.paper_bump_mm else ' (plain)'
+        key=f'{i}:{settings.paper_bump_mm:.9g}:{unit_scale:.9g}'
+        material=next((m for m in bpy.data.materials if m.get('snaketape_material_key')==key),None)
+        if material is None:
+            material=bpy.data.materials.new(name)
+            material['snaketape_material_key']=key
         material.diffuse_color=color
         material.use_nodes=True
         shader=material.node_tree.nodes.get('Principled BSDF')
         shader.inputs['Base Color'].default_value=color
         shader.inputs['Roughness'].default_value=.78
+        if settings.paper_bump_mm>0 and not material.node_tree.nodes.get('SnakeTape paper bump'):
+            nodes=material.node_tree.nodes
+            noise=nodes.new('ShaderNodeTexNoise')
+            noise.name='SnakeTape paper grain'
+            noise.inputs['Scale'].default_value=unit_scale*5
+            noise.inputs['Detail'].default_value=2
+            noise.inputs['Roughness'].default_value=.7
+            bump=nodes.new('ShaderNodeBump')
+            bump.name='SnakeTape paper bump'
+            bump.inputs['Distance'].default_value=settings.paper_bump_mm/unit_scale
+            bump.inputs['Strength'].default_value=.35
+            coords=nodes.new('ShaderNodeTexCoord')
+            material.node_tree.links.new(coords.outputs['Object'],noise.inputs['Vector'])
+            material.node_tree.links.new(noise.outputs['Fac'],bump.inputs['Height'])
+            material.node_tree.links.new(bump.outputs['Normal'],shader.inputs['Normal'])
         materials.append(material)
     return materials

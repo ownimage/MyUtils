@@ -1,6 +1,6 @@
 # SnakeTape
 
-SnakeTape 0.2.0 generates finite-thickness masking tape over a selected cardboard
+SnakeTape 0.3.0 generates finite-thickness masking tape over a selected cardboard
 rim in **Blender 4.4.3**. The overhang is slit into irregular flaps and folded onto
 both sides, with local relief where flaps overlap. The cardboard mesh is preserved.
 
@@ -35,7 +35,7 @@ changed.
 ## Install and operate
 
 1. Run `Run_Tests.cmd`. A successful run builds
-   `generated/packages/snake_tape-0.2.0.zip` and validates the ZIP.
+   `generated/packages/snake_tape-0.3.0.zip` and validates the ZIP.
 2. In Blender choose **Edit > Preferences > Get Extensions**, open the top-right
    dropdown and choose **Install from Disk...**. Select the ZIP and enable SnakeTape
    if it is not enabled automatically.
@@ -74,6 +74,9 @@ Moving/deforming the source requires Update Tape; this is not a live modifier.
 | Wave strength / length | Smooth runs of closer/further spacing and more aligned cut angles. Closed loops use periodic noise. |
 | Seed | Reproduce exactly the same geometry for unchanged inputs/settings. |
 | Fold radius | Leave at zero for automatic sizing from tape thickness, physical rim width and available overhang. Larger explicit radii introduce a lifted crease and need more material to bend and settle. |
+| Mesh detail | Optimized (default) reduces the finished solid; Detailed keeps the construction mesh. Create and Update still perform all four operations in one click. |
+| Shape tolerance | Advanced: maximum checked simplification distance, default 0.02 mm. More geometry is retained when needed for shape or contacts. |
+| Paper bump | Advanced: physical height of procedural paper grain, default 0.003 mm; zero disables it. It adds no polygons and needs no image files or UVs. |
 | Reverse direction | Reverse the rim traversal and overlap placement order. |
 | Contact clearance | Small geometric separation from the cardboard; extra local relief is added at overlapping strips. |
 | Cut gap | Narrow visible slit width, tapering to zero at its root. |
@@ -81,7 +84,7 @@ Moving/deforming the source requires Update Tape; this is not a live modifier.
 
 For a mix of full and slightly shorter cuts, start with **Uncut root = 0 mm** and
 **Depth variation = 1 mm**. To leave every cut short, try **0.75 mm / 0.25 mm**
-(0.5–1 mm remains joined). Both controls at zero preserve the previous geometry.
+(0.5â€“1 mm remains joined). Both controls at zero preserve the previous geometry.
 Depth noise is independent on each side and does not reshuffle spacing or angles;
 Seed reproduces the pattern. Uncut root must be less than the available overhang.
 Variation is clamped to leave at least one tape thickness of slit; short cuts need
@@ -102,6 +105,30 @@ centre dip. A sampling/contact margin and local overlap relief keep the final so
 outside the object; clearance is not a promise that every point is exactly that
 distance from the source.
 
+## Lower polygon count and surface detail
+
+Leave **Mesh detail = Optimized**, then click **Update Tape** on an existing tape.
+SnakeTape first solves the complete dense tape, then tries progressively gentler
+reductions of the finished solid. Each candidate is checked for manifoldness,
+source penetration, tape/source and tape/tape intersections, and distance from the
+dense surface. Candidates must also reduce the polygon count. The first acceptable result is used; if none is safe, the original
+mesh is retained. The panel shows the actual triangle count and percentage saved.
+**Detailed** provides the original dense geometry for comparison or manual editing.
+
+Cuts, thickness, silhouette and overlaps remain real geometry. Smooth normals from
+the detailed mesh are transferred to the reduced mesh's corners. Fine paper grain
+comes from a procedural **Bump** node in the material, with **Paper bump (mm)** as
+its height control. This is shading detail; it needs no subdivision or true
+geometric displacement. It is not a texture bake of every fold. The main folds and
+slit outlines remain in the reduced mesh. Normals and material nodes are saved in
+the `.blend` file, with no external textures to manage.
+
+The default **Shape tolerance = 0.02 mm** is checked at every vertex and triangle centre
+on both meshes. This sampling is not a mathematical bound over every surface point;
+the full triangle contact checks are separate. Reductions vary with the source and
+settings. Generation still computes the dense contact solution and can take longer;
+the saved/viewport/render geometry is smaller.
+
 ## Tests and preview interpretation
 
 The tests cover physical dimensions, scene units, transforms, deterministic cuts,
@@ -117,7 +144,9 @@ The eighth uses all side faces of a 32-sided cylinder at scale 0.010, 0.010, 0.0
 with default tape settings. This folds tape onto both end caps and tests changing
 surface normals, original polygon corners and overlapping flaps near the centre.
 Two further cases show mixed full/short cuts on a straight band and the scaled
-cylinder, including an 8 mm close-up of the cut tips before folding.
+cylinder, including an 8 mm close-up of the cut tips before folding and a Detailed reference
+render alongside the optimized result. Triangle counts and checked shape error
+appear in the gallery.
 The corrugated example uses visible liners/flutes with a hidden
 solid contact/selection proxy; this shows the tape bridging the exposed flutes.
 Use the same proxy technique for a highly detailed cardboard model without a
