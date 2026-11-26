@@ -160,6 +160,7 @@ class Surface:
         self.owners=[]
         self.vertex_info={}
         self.shell_normals={}
+        self.protected_vertices=set()
         self.lookup={}
         self.weld_tolerance=weld_tolerance
         self.buckets={}
@@ -419,6 +420,14 @@ def build_tape(source,face_indices,settings,name='SnakeTape',diagnostic=False):
         if short_cuts:
             from .short_cuts import thicken
             shell_owners,shell_materials=thicken(surface,mesh,settings.thickness_mm,rim.unit_scale)
+            skin=mesh.attributes.new('snaketape_surface','INT','FACE')
+            count=len(surface.faces)
+            for i,item in enumerate(skin.data):
+                item.value=1 if i<count else -1 if i<2*count else 0
+            protected=mesh.attributes.new('snaketape_protect','BOOLEAN','POINT')
+            for i in surface.protected_vertices:
+                protected.data[i].value=True
+                protected.data[i+len(surface.vertices)].value=True
         ownership=mesh.attributes.new('snaketape_flap','INT','FACE')
         for item,value in zip(ownership.data,shell_owners if short_cuts else surface.owners):
             item.value=value

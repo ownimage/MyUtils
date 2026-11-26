@@ -28,7 +28,7 @@
 | `SnakeTape/snake_tape/optimization.py` | Validated reduction of finished solids, surface-distance checks and transfer of smooth corner normals. |
 | `SnakeTape/snake_tape/validation.py` | Independent measurements on evaluated solid geometry, source contact and triangle intersections. |
 | `SnakeTape/snake_tape/ui.py` | Native settings, panel, menus and atomic Create/Update operators. |
-| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.3.0. |
+| `SnakeTape/snake_tape/blender_manifest.toml` | Blender extension metadata, version 0.3.1. |
 | `SnakeTape/tests/` | Synthetic reference meshes and core, geometry, persistence, launcher and preview tests. |
 | `SnakeTape/tools/launch.cmd` | Shared Blender discovery, isolated profile setup and process exit forwarding. |
 | `SnakeTape/tools/run_tests.py` | Standard-library test discovery, timestamped logs/JSON and extension packaging. |
@@ -118,7 +118,7 @@
   stage property is hidden and ignored by Create/Update for older saved files.
   Merely changing a setting does not trigger a costly rebuild.
 - Selecting generated tape exposes its saved settings and **Update Tape**.
-- Install `generated/packages/snake_tape-0.3.0.zip` through **Edit > Preferences >
+- Install `generated/packages/snake_tape-0.3.1.zip` through **Edit > Preferences >
   Get Extensions > top-right dropdown > Install from Disk...**.
 
 ## Commands and previews
@@ -141,17 +141,18 @@
 - Test runs produce timestamped `generated/tests/<run>/tests.log` and `results.json`.
   A failed suite does not build a new release ZIP. Package manifests and successful
   ZIPs are checked using Blender's extension CLI.
-- Preview runs produce `generated/previews/<run>/index.html`, 94 PNGs, ten
+- Preview runs produce `generated/previews/<run>/index.html`, 106 PNGs, eleven
   `inspect.blend` scenes, JSON measurements and native renderer logs. `--quick`
   renders the first two cases at smaller resolution. `--output` chooses a new or
   empty folder; existing results must not be overwritten.
-- The ten gallery cases are straight, convex/concave, S bend, closed loop/seam,
+- The eleven gallery cases are straight, convex/concave, S bend, closed loop/seam,
   rotated/non-uniformly scaled edge, corrugated cardboard, a 0.3 mm curved rim,
   a cylinder side-face band at the reported scale, and two mixed full/short-cut
   examples (straight and cylinder). Each has four stages, front/back/top views,
   diagnostic flap colours and a 12 mm overlap close-up. The short-cut cases also
   have an 8 mm cut-tip view before folding and a Detailed reference render. The
-  gallery reports triangle reduction and checked shape error.
+  gallery reports triangle reduction and checked shape error. An additional cylinder
+  reproduces root 0 / depth variation 0.48 mm and shows its shoulder at close range.
 - The corrugated example has visible liners/flutes and a hidden solid rim/contact
   proxy. This supports a continuous tape bridge over flute openings. Use a similar
   guide/proxy for detailed cardboard without a continuous selectable quad rim.
@@ -183,7 +184,7 @@
 ## Known limits
 
 - Triangles, multi-row bands, branching selections and arbitrary patches are not
-  supported in 0.3.0. Use a simple quad guide/proxy instead of changing detailed art.
+  supported in 0.3.1. Use a simple quad guide/proxy instead of changing detailed art.
 - Apply geometry/deformation modifiers on a duplicate before capturing its rim.
 - Overhang should fit the available side surface. Wrapping around the underside,
   arbitrary very tight/complex bends, torn paper and adhesive physics are outside
@@ -362,3 +363,55 @@
   had no detected intersections. The user's active installation was untouched.
 - Blender notes and the README are saved as UTF-8; previous local default encoding
   had written an en dash as Windows-1252, which displayed incorrectly in UTF-8 tools.
+
+## Version 0.3.1 cut-tip and shoulder correction on 2026-11-26
+
+- User reported unnatural kinks and tear-like sideways notches at slit tips, worse
+  with Optimized than Detailed. Their parameters were Uncut root 0 mm / Depth
+  variation 0.48 mm. Preserve the same values and regenerate through Update Tape.
+- Two issues combined. Longitudinal-only CDT constraints admitted skinny ears from
+  three successive curved column/border points. Also unconstrained decimation
+  moved cut-tip/crease vertices, amplifying the defect despite passing volume tests.
+- _tip_mesh now constrains transverse rows and connects tip nodes into the interior.
+  Interior columns stay at fixed arc positions; only actual slit boundaries move
+  with angle/kerf. Drop points outside a slanted outline. Curved interior columns
+  can create another class of skinny ear, so do not interpolate all columns with
+  the slit warp. Preserve the full perimeter including the upper-left corner.
+- Preserve the common web during collision relief. Its displacement weight is zero
+  through the deepest tip, then rises smoothly before independent flap lifting.
+  Keep final solid intersection checks; do not hide artifacts through shading alone.
+- Explicit shells label snaketape_surface on FACE: +1 outer skin, -1 inner skin,
+  0 rim. A BOOLEAN POINT snaketape_protect identifies boundary vertices in the
+  collar through max(deepest tip, quarter-arc length) + max(0.3 mm, 4 thicknesses).
+  These attributes support independent geometry tests and optimization constraints.
+- Optimization gives collar vertices zero Decimate weights and the remaining
+  vertices unit weight. Blender 4.4.3 explicitly skips edge collapses touching a
+  zero-weight vertex. Full-depth legacy meshes use their existing sharp outline
+  detection. Slit tips and shoulders are locked; distant flap edges still use the
+  existing shape tolerance and full contact checks.
+- Pinning entire long cut borders was needlessly expensive. Protect the collar,
+  rather than disabling reduction over the whole flap. The curved performance
+  regression permits up to 65% of dense triangles/vertices, versus 50% on straight
+  tape, so shape preservation takes priority while still requiring real savings.
+- Added failing shoulder-normal tests before fixing geometry. They reproduce
+  Detailed at 1 mm variation and Optimized at the reported 0.48 mm, plus a landmark
+  test retaining cut tips within 0.0005 mm. Restrict the shoulder measurement to
+  the outer barrel; settled cap faces can have the same height but are not bends.
+- Root AGENTS.md remains unchanged. Runtime still uses only Blender 4.4.3/native
+  Python, and Create/Update remain one complete operation.
+- Relevant native implementation: https://github.com/blender/blender/blob/v4.4.3/source/blender/bmesh/tools/bmesh_decimate_collapse.cc
+- Temporary Decimate vertex-group weights are cleared from each candidate before
+  publication; no unnamed group memberships are left in the saved tape.
+- Final project launcher: **59 tests passed**, zero failures/errors/skips, in
+  Blender 4.4.3. Report: `generated/tests/20261126-081034-978264`.
+- Final gallery: **11 cases / 106 PNGs passed**, with zero measured self/source
+  intersections, penetration or nonmanifold edges in all folded outputs. Gallery:
+  `generated/previews/20261126-081035-977107`. The last case reproduces the exact
+  reported 0 / 0.48 mm values and has a dedicated shoulder close-up.
+- Reported reference case: 59,530 dense polygons to 30,234 optimized polygons,
+  67,188 to 30,234 triangles; checked surface distance about 0.00553 mm. Native
+  before/after close-ups were reviewed for the crease/tear-like notch.
+- The final 0.3.1 ZIP was installed/enabled in a fresh isolated profile. Installed
+  operators created and updated the cylinder at root 0 / variation 0.48, retained
+  source geometry/scale, saved/reloaded normals/settings and passed solid/contact
+  measurements. The user's active Blender installation and preferences were untouched.

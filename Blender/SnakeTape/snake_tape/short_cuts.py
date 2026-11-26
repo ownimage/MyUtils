@@ -35,7 +35,7 @@ def thicken(surface,mesh,thickness,unit_scale):
 
 
 def _tip_mesh(samples, start, end, rows, stops, gap, overhang, warp, ends=(False,False)):
-    """Triangulate columns locally, preserving matching nodes along shared webs.
+    """Triangulate transverse rows, preserving matching nodes along shared webs.
 
     A cut tip must not add a thin row all the way across unrelated strips.
     Keeping the input coordinates also avoids float32 CDT rounding at welds.
@@ -43,6 +43,7 @@ def _tip_mesh(samples, start, end, rows, stops, gap, overhang, warp, ends=(False
     coords=[]
     columns=[]
     edges=[]
+    column_values=[]
     for i,s in enumerate(samples):
         values=list(rows)
         if i in (0,len(samples)-1) and not ends[0 if i==0 else 1]:
@@ -50,17 +51,48 @@ def _tip_mesh(samples, start, end, rows, stops, gap, overhang, warp, ends=(False
             anchors=[stop]+[min(overhang,stop+gap*.5*f) for f in (.333333,.666667,1)]
             values=[v for v in values if all(abs(v-a)>.005 for a in anchors) or v in (0,overhang)]
             values+=anchors
-        column=[]
-        for v in sorted(set(values)):
-            column.append(len(coords))
-            coords.append(warp(s-start,v))
-        edges.extend(zip(column,column[1:]))
+        column_values.append(set(values))
+    # Give each cut-tip node a transverse connection. With only longitudinal
+    # constraints CDT can make an ear from three successive curved boundary
+    # points; bending that skinny ear creates a false crease across the web.
+    if len(samples)>2:
+        column_values[1].update(column_values[0])
+        column_values[-2].update(column_values[-1])
+    for column_index,(s,values) in enumerate(zip(samples,column_values)):
+        column={}
+        for v in sorted(values):
+            # Warping interior columns can form a skinny ear along their curved
+            # chain. Keep the samples straight; only the actual slit border moves.
+            point=warp(s-start,v) if column_index in (0,len(samples)-1) else (s-start,v)
+            if 0<column_index<len(samples)-1 and not warp(0,v)[0]<point[0]<warp(end-start,v)[0]:
+                continue
+            column[v]=len(coords)
+            coords.append(point)
         columns.append(column)
-    perimeter=[c[0] for c in columns]+columns[-1][1:]+[c[-1] for c in columns[-2::-1]]+columns[0][-2:0:-1]
+    for v in rows:
+        row=[c[v] for c in columns if v in c]
+        edges.extend(zip(row,row[1:]))
+    for boundary,order in ((0,range(1,len(columns))),(-1,range(len(columns)-2,-1,-1))):
+        for v,vertex in columns[boundary].items():
+            inside=next((i for i in order if v in columns[i]),None)
+            if inside is not None:
+                edges.append((vertex,columns[inside][v]))
+    ordered=[list(c.values()) for c in columns]
+    perimeter=[c[0] for c in columns]
+    perimeter.extend(ordered[-1][1:])
+    perimeter.extend(c[overhang] for c in columns[-2:0:-1] if overhang in c)
+    perimeter.append(columns[0][overhang])
+    perimeter.extend(ordered[0][-2:0:-1])
     vertices,_,faces,origins,_,_=delaunay_2d_cdt(
         [Vector(p) for p in coords],edges,[perimeter],1,1e-7,True)
     points=[coords[ids[0]] if ids else tuple(p) for p,ids in zip(vertices,origins)]
-    return points,faces
+    counts={}
+    for face in faces:
+        for a,b in zip(face,face[1:]+face[:1]):
+            edge=tuple(sorted((a,b)))
+            counts[edge]=counts.get(edge,0)+1
+    boundary={i for edge,count in counts.items() if count==1 for i in edge}
+    return points,faces,boundary
 
 
 def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,source_tree,diagnostic):
@@ -120,7 +152,7 @@ def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,so
                 return (u+shifts[0]*(1-fraction)+shifts[1]*fraction,v)
             # Triangulate the actual concave slit outline. Triangulating a
             # rectangle then moving its boundary can put triangles across a tip.
-            uv,faces=_tip_mesh(samples,start,end,rows,tip_depths,settings.cut_gap_mm,overhang,warp,ends)
+            uv,faces,boundary=_tip_mesh(samples,start,end,rows,tip_depths,settings.cut_gap_mm,overhang,warp,ends)
             points=[]
             info=[]
             displacements=[]
@@ -174,7 +206,9 @@ def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,so
                                 displacement=max(displacement,(q-p).dot(direction)+
                                                  (settings.thickness_mm+settings.clearance_mm+.025)/max(.2,n.dot(direction)),0)
                 points.append(p)
-                info.append((direction,min(1,v/.5)))
+                relief=max(0,min(1,(v-release_start)/max(.5,2*radius,settings.resolution_mm))) if folded else 1
+                relief=relief*relief*(3-2*relief)
+                info.append((direction,relief))
                 displacements.append(displacement)
             if folded:
                 neighbours=[set() for _ in points]
@@ -188,7 +222,7 @@ def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,so
                         if physical_depths[i]>release_start+.05:
                             for j in adjacent:
                                 displacements[i]=max(displacements[i],old[j]-(points[i]-points[j]).length*.15)
-                points=[p+info[i][0]*max(0,displacements[i]) for i,p in enumerate(points)]
+                points=[p+info[i][0]*max(0,displacements[i])*info[i][1] for i,p in enumerate(points)]
             material=1+(index%7) if diagnostic else 0
             for face in faces:
                 polygon=[points[i] for i in face]
@@ -199,8 +233,10 @@ def add_short_flaps(surface,rim,settings,positions,angles,sampling,radius,mid,so
                     base=len(previous_vertices)
                     previous_vertices.extend(polygon)
                     previous_triangles.extend((base,base+j,base+j+1) for j in range(1,len(polygon)-1))
-            for p,(direction,weight) in zip(points,info):
+            for point_index,(p,(direction,weight)) in enumerate(zip(points,info)):
                 surface.shell_normals[surface.vertex(p)]=direction
+                if point_index in boundary and physical_depths[point_index]<=max(release_start,radius*math.pi/2)+max(.3,4*settings.thickness_mm):
+                    surface.protected_vertices.add(surface.vertex(p))
                 if weight>0:
                     surface.vertex_info[surface.vertex(p)]=(flap_count,direction,weight)
             if folded:

@@ -33,6 +33,21 @@ def _smooth(mesh):
     mesh.update()
 
 
+def _outline_vertices(mesh):
+    collar=mesh.attributes.get('snaketape_protect')
+    if collar:
+        return {i for i,item in enumerate(collar.data) if item.value}
+    neighbours={}
+    for face in mesh.polygons:
+        for edge in face.edge_keys:
+            neighbours.setdefault(tuple(sorted(edge)),[]).append(face.index)
+    protected=set()
+    for edge,faces in neighbours.items():
+        if len(faces)!=2 or mesh.polygons[faces[0]].normal.dot(mesh.polygons[faces[1]].normal)<math.cos(math.radians(55)):
+            protected.update(edge)
+    return protected
+
+
 def _transfer_normals(dense,low,tree,scale):
     """Carry smooth high-resolution shading in the reduced mesh's corner normals."""
     _smooth(dense)
@@ -83,17 +98,25 @@ def finish_mesh(obj,source,settings,unit_scale):
         trial_mesh.materials.append(material)
     for face,triangle in zip(trial_mesh.polygons,dense.loop_triangles):
         face.material_index=dense.polygons[triangle.polygon_index].material_index
-    original_owners=dense.attributes.get('snaketape_flap')
-    if original_owners:
-        owners=trial_mesh.attributes.new('snaketape_flap','INT','FACE')
-        for item,triangle in zip(owners.data,dense.loop_triangles):
-            item.value=original_owners.data[triangle.polygon_index].value
+    for name in ('snaketape_flap','snaketape_surface'):
+        original=dense.attributes.get(name)
+        if original:
+            values=trial_mesh.attributes.new(name,'INT','FACE')
+            for item,triangle in zip(values.data,dense.loop_triangles):
+                item.value=original.data[triangle.polygon_index].value
     trial_mesh.update()
     trial=bpy.data.objects.new('SnakeTape reduction trial',trial_mesh)
     bpy.context.collection.objects.link(trial)
     trial.matrix_world=obj.matrix_world.copy()
     decimate=trial.modifiers.new('SnakeTape reduction','DECIMATE')
     decimate.use_collapse_triangulate=True
+    protected=_outline_vertices(dense)
+    group=trial.vertex_groups.new(name='SnakeTape outline constraints')
+    group.add(list(range(len(trial_mesh.vertices))),1,'REPLACE')
+    if protected:
+        group.add(list(protected),0,'REPLACE')
+    decimate.vertex_group=group.name
+    decimate.vertex_group_factor=1
     try:
         for ratio in (.25,.35,.45,.6,.75,.9):
             decimate.ratio=ratio
@@ -120,11 +143,13 @@ def finish_mesh(obj,source,settings,unit_scale):
             if error<=settings.mesh_error_mm:
                 check=bpy.data.objects.new('SnakeTape reduction check',candidate)
                 bpy.context.collection.objects.link(check)
+                check.vertex_groups.new(name=group.name)
                 check.matrix_world=obj.matrix_world.copy()
                 try:
                     bpy.context.view_layer.update()
                     stats=measure(check,source)
                 finally:
+                    check.vertex_groups.clear()
                     bpy.data.objects.remove(check,do_unlink=True)
                 if stats['components']==1 and not any(stats[k] for k in (
                         'nonmanifold_edges','nonfinite_vertices','degenerate_triangles',

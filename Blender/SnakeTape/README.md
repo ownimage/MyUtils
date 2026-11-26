@@ -1,6 +1,6 @@
 # SnakeTape
 
-SnakeTape 0.3.0 generates finite-thickness masking tape over a selected cardboard
+SnakeTape 0.3.1 generates finite-thickness masking tape over a selected cardboard
 rim in **Blender 4.4.3**. The overhang is slit into irregular flaps and folded onto
 both sides, with local relief where flaps overlap. The cardboard mesh is preserved.
 
@@ -35,7 +35,7 @@ changed.
 ## Install and operate
 
 1. Run `Run_Tests.cmd`. A successful run builds
-   `generated/packages/snake_tape-0.3.0.zip` and validates the ZIP.
+   `generated/packages/snake_tape-0.3.1.zip` and validates the ZIP.
 2. In Blender choose **Edit > Preferences > Get Extensions**, open the top-right
    dropdown and choose **Install from Disk...**. Select the ZIP and enable SnakeTape
    if it is not enabled automatically.
@@ -120,7 +120,9 @@ the detailed mesh are transferred to the reduced mesh's corners. Fine paper grai
 comes from a procedural **Bump** node in the material, with **Paper bump (mm)** as
 its height control. This is shading detail; it needs no subdivision or true
 geometric displacement. It is not a texture bake of every fold. The main folds and
-slit outlines remain in the reduced mesh. Normals and material nodes are saved in
+slit outlines remain in the reduced mesh. Cut-tip and shoulder vertices are locked
+during reduction so it cannot pull the slit into a sideways notch. This can retain
+more polygons around curved overlaps than earlier versions. Normals and material nodes are saved in
 the `.blend` file, with no external textures to manage.
 
 The default **Shape tolerance = 0.02 mm** is checked at every vertex and triangle centre
@@ -146,7 +148,8 @@ surface normals, original polygon corners and overlapping flaps near the centre.
 Two further cases show mixed full/short cuts on a straight band and the scaled
 cylinder, including an 8 mm close-up of the cut tips before folding and a Detailed reference
 render alongside the optimized result. Triangle counts and checked shape error
-appear in the gallery.
+appear in the gallery. A further cylinder case reproduces Optimized mode with
+Uncut root 0 mm / Depth variation 0.48 mm and includes a shoulder close-up.
 The corrugated example uses visible liners/flutes with a hidden
 solid contact/selection proxy; this shows the tape bridging the exposed flutes.
 Use the same proxy technique for a highly detailed cardboard model without a
@@ -183,3 +186,17 @@ passes. Reference cases passing does not establish support for every possible me
 synthetic fixtures and independent measurements; `tools/` runs tests and previews.
 Both commands use the production generator. Keep Blender project decisions and
 validation results in the parent `Blender/Agents.md`.
+
+## Cut-tip and fold correction in 0.3.1
+
+This fixes artificial kinks and tear-like notches near the fold. The material is
+triangulated across the bend, with local connections at slit tips and straight
+interior sampling columns. The connected web is held during contact repair, with
+a gradual transition into free-flap relief. Optimization locks the cut-tip collar
+instead of moving its vertices to meet a lower polygon target. Keep your existing
+settings and click **Update Tape** after installing the update.
+
+The regression reproduces **Optimized / Uncut root 0 / Depth variation 0.48 mm**.
+Tests check geometric shoulder normals, retained cut-tip positions, connected
+closed solids, contacts and remaining polygon savings. The curved reference uses
+a less aggressive performance budget to preserve the repaired outline.
