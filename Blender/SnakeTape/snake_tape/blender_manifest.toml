@@ -1,0 +1,13 @@
+schema_version = "1.0.0"
+id = "snake_tape"
+version = "0.4.0"
+name = "SnakeTape"
+tagline = "Cut and fold masking tape over a cardboard rim"
+maintainer = "MyUtils"
+type = "add-on"
+tags = ["Mesh", "Modeling"]
+blender_version_min = "4.4.3"
+license = ["SPDX:GPL-3.0-or-later"]
+
+[build]
+paths_exclude_pattern = ["__pycache__/", "*.pyc", ".git/"]
